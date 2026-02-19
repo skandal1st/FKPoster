@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+client/node_modules
+server/node_modules
+
+# Build
+client/dist
+
+# Local env and secrets (example files are committed)
+.env
+.env.local
+.env.production
+.env.*.local
+server/.env
+
+# DB (local/session)
+server/hookahpos.db
+
+# IDE / tooling
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,408 @@
+.pos-page {
+  display: flex;
+  height: 100vh;
+  position: relative;
+  padding-bottom: 56px;
+}
+
+.pos-page--embedded {
+  height: 100%;
+  padding-bottom: 0;
+  flex-direction: column;
+}
+
+.pos-page--embedded .pos-embedded-body {
+  flex: 1;
+  min-height: 0;
+}
+
+.pos-page--embedded .pos-catalog {
+  flex: 1;
+  min-height: 0;
+}
+
+.pos-page--embedded .pos-order-panel {
+  border-left: 1px solid var(--border-color);
+}
+
+.pos-embedded-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  flex-shrink: 0;
+}
+
+.pos-embedded-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.pos-embedded-close {
+  flex-shrink: 0;
+}
+
+.pos-embedded-empty {
+  margin: 0 0 12px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.pos-catalog {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.pos-categories {
+  display: flex;
+  gap: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.pos-category-btn {
+  padding: 8px 18px;
+  border-radius: 20px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  white-space: nowrap;
+  font-size: 14px;
+  transition: all 0.15s;
+}
+
+.pos-category-btn:hover {
+  border-color: var(--cat-color);
+  color: var(--text-primary);
+}
+
+.pos-category-btn.active {
+  background: var(--cat-color);
+  color: #fff;
+  border-color: var(--cat-color);
+}
+
+.pos-products {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  padding: 16px 20px;
+  overflow-y: auto;
+  align-content: start;
+}
+
+/* Планшет и embedded: крупнее карточки и кнопки для тач-управления */
+@media (min-width: 768px) {
+  .pos-page--embedded .pos-products {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 14px;
+    padding: 18px 24px;
+  }
+
+  .pos-page--embedded .pos-product-card {
+    padding: 18px;
+    min-height: 88px;
+  }
+
+  .pos-page--embedded .pos-product-name {
+    font-size: 15px;
+  }
+
+  .pos-page--embedded .pos-product-price {
+    font-size: 17px;
+  }
+
+  .pos-page--embedded .pos-categories {
+    padding: 18px 24px;
+    gap: 10px;
+  }
+
+  .pos-page--embedded .pos-category-btn {
+    padding: 12px 22px;
+    font-size: 15px;
+  }
+
+  .pos-page--embedded .pos-order-item {
+    padding: 14px 24px;
+  }
+
+  .pos-page--embedded .pos-order-item-actions .btn-icon {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .pos-page--embedded .pos-pay-btn {
+    padding: 16px;
+    font-size: 16px;
+    min-height: 52px;
+  }
+
+  .pos-page--embedded .pos-embedded-header {
+    padding: 16px 24px;
+  }
+
+  .pos-page--embedded .pos-embedded-title {
+    font-size: 20px;
+  }
+
+  .pos-page--embedded .pos-embedded-close {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+@media (pointer: coarse) {
+  .pos-product-card {
+    min-height: 80px;
+    padding: 16px;
+  }
+
+  .pos-category-btn {
+    padding: 10px 20px;
+  }
+
+  .pos-order-item-actions .btn-icon {
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  .pos-pay-btn {
+    min-height: 48px;
+    padding: 14px;
+  }
+}
+
+.pos-product-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 14px;
+  text-align: left;
+  transition: all 0.15s;
+  border-left: 3px solid var(--cat-color);
+  color: var(--text-primary);
+}
+
+.pos-product-card:hover {
+  background: var(--bg-hover);
+  transform: translateY(-1px);
+}
+
+.pos-product-name {
+  font-weight: 500;
+  margin-bottom: 6px;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.pos-product-price {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.pos-product-stock {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* Order panel */
+.pos-order-panel {
+  width: 340px;
+  min-width: 280px;
+  background: var(--bg-secondary);
+  border-left: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+}
+
+/* В embedded (панель из зала) — панель заказа шире и удобнее на планшете */
+.pos-page--embedded .pos-order-panel {
+  width: min(380px, 35vw);
+  min-width: 280px;
+}
+
+/* Удобнее тап на планшете: убираем задержку, крупнее зоны нажатия */
+.pos-page--embedded .pos-product-card,
+.pos-page--embedded .pos-category-btn,
+.pos-page--embedded .pos-pay-btn,
+.pos-page--embedded .btn-icon {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pos-order-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.pos-order-header h3 {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.pos-notice {
+  padding: 16px 20px;
+  color: var(--warning);
+  font-size: 13px;
+  background: var(--warning-bg);
+  margin: 12px;
+  border-radius: var(--radius-sm);
+}
+
+.pos-order-items {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.pos-order-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.pos-order-item-name {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.pos-order-item-price {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.pos-order-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pos-order-item-qty {
+  font-size: 14px;
+  font-weight: 600;
+  min-width: 24px;
+  text-align: center;
+}
+
+.pos-order-item-total {
+  font-weight: 600;
+  text-align: right;
+  color: var(--accent);
+  grid-column: 2;
+}
+
+/* Footer */
+.pos-order-footer {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.pos-order-total {
+  display: flex;
+  justify-content: space-between;
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.pos-pay-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.pos-pay-btn {
+  flex: 1;
+  justify-content: center;
+  padding: 12px;
+  font-size: 14px;
+}
+
+/* Bottom bar */
+.pos-bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: var(--sidebar-width);
+  right: 0;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow-x: auto;
+  z-index: 50;
+}
+
+.pos-bottom-bar-label {
+  font-size: 13px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.pos-bottom-order {
+  padding: 6px 14px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 13px;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pos-bottom-order.active {
+  border-color: var(--accent);
+  background: rgba(99, 102, 241, 0.15);
+}
+
+.pos-bottom-order-sum {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+/* Table picker */
+.pos-table-btn {
+  padding: 20px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 500;
+  text-align: center;
+  transition: all 0.15s;
+}
+
+.pos-table-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.pos-table-btn.occupied {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pos-table-busy {
+  display: block;
+  font-size: 11px;
+  color: var(--warning);
+  margin-top: 4px;
+}

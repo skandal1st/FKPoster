@@ -1,0 +1,204 @@
+.hall-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.hall-tab {
+  padding: 8px 20px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.hall-tab.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.hall-map {
+  position: relative;
+  width: 100%;
+  height: 60vh;
+  min-height: 400px;
+  background: #1e1e1e;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  overflow: visible;
+  touch-action: none;
+}
+
+.hall-map--readonly {
+  cursor: default;
+}
+
+.hall-table--clickable {
+  cursor: pointer;
+}
+
+.hall-table--clickable:hover {
+  filter: brightness(1.08);
+}
+
+/* Оверлей и панель POS при клике на столик */
+.hall-pos-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: flex-end;
+  align-items: stretch;
+  animation: hall-pos-fade 0.2s ease-out;
+}
+
+@keyframes hall-pos-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.hall-pos-panel {
+  width: 66.666%;
+  min-width: 320px;
+  max-width: 100%;
+  background: var(--bg-primary);
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: hall-pos-slide 0.25s ease-out;
+}
+
+/* На узком экране (телефон) панель на весь экран */
+@media (max-width: 600px) {
+  .hall-pos-panel {
+    width: 100%;
+  }
+}
+
+@keyframes hall-pos-slide {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.hall-table {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transform: translate(-50%, -50%);
+  cursor: grab;
+  transition: box-shadow 0.15s;
+  user-select: none;
+  min-width: 64px;
+  min-height: 64px;
+  overflow: visible;
+  border: none;
+}
+
+/* Формы столиков: скруглённые углы как в референсе */
+.hall-table--square {
+  border-radius: 10px;
+}
+
+.hall-table--rectangle {
+  border-radius: 10px;
+}
+
+.hall-table--round {
+  border-radius: 50%;
+}
+
+.hall-table--corner {
+  border-radius: 0 0 0 12px;
+}
+
+.hall-table.free {
+  background: #363636;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.hall-table.occupied {
+  background: #363636;
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.hall-table.dragging,
+.hall-table.resizing {
+  cursor: grabbing;
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+  z-index: 10;
+}
+
+/* Номер столика — синий бейдж по центру */
+.hall-table-number {
+  position: relative;
+  z-index: 1;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  background: #3b6bb9;
+  padding: 6px 12px;
+  border-radius: 8px;
+  min-width: 32px;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  line-height: 1.2;
+}
+
+.hall-table-sum {
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 600;
+  position: relative;
+  z-index: 1;
+  margin-top: 2px;
+}
+
+.hall-table-delete {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--danger);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 2;
+  cursor: pointer;
+  border: none;
+  font-size: 12px;
+}
+
+.hall-table:hover .hall-table-delete {
+  opacity: 1;
+}
+
+/* Ручка изменения размера */
+.hall-table-resize-handle {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  width: 18px;
+  height: 18px;
+  cursor: nwse-resize;
+  z-index: 2;
+  background: var(--accent);
+  border-radius: 0 0 6px 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.hall-table:hover .hall-table-resize-handle,
+.hall-table.resizing .hall-table-resize-handle {
+  opacity: 1;
+}
