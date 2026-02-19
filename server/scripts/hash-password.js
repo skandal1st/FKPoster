@@ -1,14 +1,24 @@
 /**
  * Получить bcrypt-хэш пароля для создания пользователя в БД (например, суперадмина).
  *
- * Запуск:
- *   node scripts/hash-password.js "ваш_пароль"
+ * Запуск из папки server (обязательно):
+ *   cd server && node scripts/hash-password.js "ваш_пароль"
  *
  * Или интерактивно (пароль не попадёт в историю команд):
- *   node scripts/hash-password.js
+ *   cd server && node scripts/hash-password.js
  */
 
-const bcrypt = require('bcryptjs');
+let bcrypt;
+try {
+  bcrypt = require('bcryptjs');
+} catch (e) {
+  if (e.code === 'MODULE_NOT_FOUND') {
+    console.error('Ошибка: запускайте скрипт из папки server, где установлен bcryptjs:');
+    console.error('  cd server && node scripts/hash-password.js "ваш_пароль"');
+    process.exit(1);
+  }
+  throw e;
+}
 const readline = require('readline');
 
 const password = process.argv[2];
