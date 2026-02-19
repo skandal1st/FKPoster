@@ -81,12 +81,28 @@ app.use((err, req, res, next) => {
   }
 });
 
+async function connectDb(retries = 10, delayMs = 2000) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      await getDb();
+      console.log('Database connected');
+      return;
+    } catch (err) {
+      console.error(`Database connection attempt ${i + 1}/${retries} failed:`, err.message);
+      if (i === retries - 1) throw err;
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+  }
+}
+
 async function start() {
-  await getDb();
-  console.log('Database connected');
-  app.listen(config.PORT, () => {
-    console.log(`Server running on http://localhost:${config.PORT}`);
+  await connectDb();
+  app.listen(config.PORT, '0.0.0.0', () => {
+    console.log(`Server running on http://0.0.0.0:${config.PORT}`);
   });
 }
 
-start().catch(console.error);
+start().catch((err) => {
+  console.error('Failed to start server:', err);
+  process.exit(1);
+});
