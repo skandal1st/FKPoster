@@ -2,6 +2,8 @@ import { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import Layout from './components/Layout';
+import LayoutSwitch from './components/LayoutSwitch';
+import SuperadminTenants from './pages/superadmin/SuperadminTenants';
 import Login from './pages/Login';
 import RegisterPage from './pages/Register';
 import AcceptInvite from './pages/AcceptInvite';
@@ -33,6 +35,20 @@ function AdminRoute({ children }) {
   return children;
 }
 
+/** Кассир видит только зал, кассовый день и дашборд; остальные редирект на главную */
+function CashierAllowedRoute({ children }) {
+  const { user } = useAuthStore();
+  const allowed = user?.role === 'cashier' || user?.role === 'admin' || user?.role === 'owner';
+  if (!allowed) return <Navigate to="/" />;
+  return children;
+}
+
+function StatsRoute() {
+  const { user } = useAuthStore();
+  if (user?.role === 'cashier') return <Navigate to="/dashboard" replace />;
+  return <Stats />;
+}
+
 export default function App() {
   const checkAuth = useAuthStore((s) => s.checkAuth);
 
@@ -45,10 +61,11 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/accept-invite" element={<AcceptInvite />} />
-      <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+      <Route path="/" element={<ProtectedRoute><LayoutSwitch /></ProtectedRoute>}>
+        <Route path="superadmin" element={<SuperadminTenants />} />
         <Route index element={<HallMap readOnly />} />
         <Route path="pos" element={<Navigate to="/" replace />} />
-        <Route path="hall-map" element={<HallMap />} />
+        <Route path="hall-map" element={<AdminRoute><HallMap /></AdminRoute>} />
         <Route path="admin/categories" element={<AdminRoute><Categories /></AdminRoute>} />
         <Route path="admin/products" element={<AdminRoute><Products /></AdminRoute>} />
         <Route path="admin/ingredients" element={<AdminRoute><Ingredients /></AdminRoute>} />
@@ -59,8 +76,8 @@ export default function App() {
         <Route path="admin/inventory-check" element={<AdminRoute><InventoryCheck /></AdminRoute>} />
         <Route path="admin/settings" element={<OwnerRoute><TenantSettings /></OwnerRoute>} />
         <Route path="admin/team" element={<AdminRoute><TeamManagement /></AdminRoute>} />
-        <Route path="dashboard" element={<AdminRoute><Dashboard /></AdminRoute>} />
-        <Route path="stats" element={<Stats />} />
+        <Route path="dashboard" element={<CashierAllowedRoute><Dashboard /></CashierAllowedRoute>} />
+        <Route path="stats" element={<StatsRoute />} />
       </Route>
     </Routes>
   );

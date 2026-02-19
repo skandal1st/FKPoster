@@ -1,17 +1,20 @@
 import { useState, useEffect } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { api } from '../api';
 import {
   ShoppingCart, Map, LayoutGrid, Package, Truck, Settings,
   CreditCard, Users, BarChart3, LogOut, Boxes, ClipboardList, LayoutDashboard,
-  Building2, UserCog, FlaskConical
+  Building2, UserCog, FlaskConical, LogIn
 } from 'lucide-react';
 
 export default function Layout() {
-  const { user, tenant, logout } = useAuthStore();
+  const { user, tenant, logout, exitImpersonation } = useAuthStore();
+  const navigate = useNavigate();
+  const [impersonating, setImpersonating] = useState(!!sessionStorage.getItem('superadmin_token'));
   const isAdmin = user?.role === 'admin' || user?.role === 'owner';
   const isOwner = user?.role === 'owner';
+  const isCashier = user?.role === 'cashier';
   const [lowStockCount, setLowStockCount] = useState(0);
 
   useEffect(() => {
@@ -20,8 +23,34 @@ export default function Layout() {
     }
   }, [isAdmin]);
 
+  const handleExitImpersonation = async () => {
+    await exitImpersonation();
+    navigate('/superadmin');
+  };
+
   return (
     <div className="app-layout">
+      {impersonating && tenant && (
+        <div style={{
+          background: 'linear-gradient(90deg, var(--accent), #6366f1)',
+          color: '#fff',
+          padding: '8px 16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          fontSize: 14,
+        }}>
+          <span>Вы вошли как суперадмин: <strong>{tenant.name}</strong></span>
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.5)' }}
+            onClick={handleExitImpersonation}
+          >
+            <LogIn size={14} /> Выйти из заведения
+          </button>
+        </div>
+      )}
       <aside className="sidebar">
         <div className="sidebar-logo" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {tenant?.logo_url ? (
@@ -84,14 +113,16 @@ export default function Layout() {
 
           <div className="sidebar-section">
             <div className="sidebar-section-title">Аналитика</div>
-            {isAdmin && (
+            {(isAdmin || isCashier) && (
               <NavLink to="/dashboard" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
                 <LayoutDashboard /> Дашборд
               </NavLink>
             )}
-            <NavLink to="/stats" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
-              <BarChart3 /> Статистика
-            </NavLink>
+            {!isCashier && (
+              <NavLink to="/stats" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
+                <BarChart3 /> Статистика
+              </NavLink>
+            )}
           </div>
 
           {isOwner && (

@@ -19,7 +19,13 @@ async function authMiddleware(req, res, next) {
       return res.status(401).json({ error: 'Пользователь не найден' });
     }
     req.user = user;
-    req.tenantId = user.tenant_id;
+    // Суперадмин может работать «от имени» заведения (имперсонация)
+    if (payload.superadmin_impersonating && payload.tenant_id && user.role === 'superadmin') {
+      req.user = { ...user, tenant_id: payload.tenant_id, role: 'owner' };
+      req.tenantId = payload.tenant_id;
+    } else {
+      req.tenantId = user.tenant_id;
+    }
     next();
   } catch {
     return res.status(401).json({ error: 'Неверный токен' });
@@ -40,4 +46,11 @@ function ownerOnly(req, res, next) {
   next();
 }
 
-module.exports = { authMiddleware, adminOnly, ownerOnly };
+function superadminOnly(req, res, next) {
+  if (req.user.role !== 'superadmin') {
+    return res.status(403).json({ error: 'Доступ только для суперадмина' });
+  }
+  next();
+}
+
+module.exports = { authMiddleware, adminOnly, ownerOnly, superadminOnly };

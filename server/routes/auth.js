@@ -29,10 +29,13 @@ router.post('/login', async (req, res) => {
     { expiresIn: '24h' }
   );
 
-  const tenant = await get(
-    'SELECT id, name, slug, logo_url, accent_color FROM tenants WHERE id = $1',
-    [user.tenant_id]
-  );
+  let tenant = null;
+  if (user.tenant_id) {
+    tenant = await get(
+      'SELECT id, name, slug, logo_url, accent_color FROM tenants WHERE id = $1',
+      [user.tenant_id]
+    );
+  }
 
   res.json({
     token,
@@ -149,10 +152,13 @@ router.post('/accept-invite', async (req, res) => {
 });
 
 router.get('/me', authMiddleware, async (req, res) => {
-  const tenant = await get(
-    'SELECT id, name, slug, logo_url, accent_color FROM tenants WHERE id = $1',
-    [req.user.tenant_id]
-  );
+  let tenant = null;
+  if (req.user.tenant_id) {
+    tenant = await get(
+      'SELECT id, name, slug, logo_url, accent_color FROM tenants WHERE id = $1',
+      [req.user.tenant_id]
+    );
+  }
   res.json({
     user: { id: req.user.id, email: req.user.email, name: req.user.name, role: req.user.role, tenant_id: req.user.tenant_id },
     tenant,

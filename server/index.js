@@ -21,6 +21,7 @@ const statsRoutes = require('./routes/stats');
 const inventoryRoutes = require('./routes/inventories');
 const tenantRoutes = require('./routes/tenants');
 const subscriptionRoutes = require('./routes/subscriptions');
+const superadminRoutes = require('./routes/superadmin');
 
 const app = express();
 
@@ -63,6 +64,7 @@ app.use('/api/stats', statsRoutes);
 app.use('/api/inventories', inventoryRoutes);
 app.use('/api/tenant', tenantRoutes);
 app.use('/api/subscription', subscriptionRoutes);
+app.use('/api/superadmin', superadminRoutes);
 
 // Production: serve React build
 if (config.NODE_ENV === 'production') {

@@ -7,6 +7,7 @@ async function runMigrations() {
     require('./001_initial_schema'),
     require('./002_multi_tenant'),
     require('./003_add_ingredients'),
+    require('./004_superadmin'),
   ];
 
   for (const migration of migrations) {

@@ -147,7 +147,7 @@ router.get('/inventory', adminOnly, async (req, res) => {
   res.json({ items, total_value, categories });
 });
 
-router.get('/dashboard', adminOnly, async (req, res) => {
+router.get('/dashboard', async (req, res) => {
   const today = new Date().toISOString().split('T')[0];
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 

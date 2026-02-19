@@ -3,13 +3,14 @@ import { Navigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 
 export default function Login() {
-  const { user, login } = useAuthStore();
+  const { user, tenant, login } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  if (user) return <Navigate to="/" />;
+  if (user && !(user.role === 'superadmin' && !tenant)) return <Navigate to="/" />;
+  if (user?.role === 'superadmin' && !tenant) return <Navigate to="/superadmin" />;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
