@@ -15,6 +15,8 @@ export default function POS({ embedded = false, onClose }) {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [showReceipt, setShowReceipt] = useState(null);
   const [showTablePicker, setShowTablePicker] = useState(false);
+  /** Способ оплаты для подтверждения закрытия стола: 'cash' | 'card' | null */
+  const [paymentConfirm, setPaymentConfirm] = useState(null);
 
   useEffect(() => {
     loadCategories();
@@ -50,7 +52,14 @@ export default function POS({ embedded = false, onClose }) {
     }
   };
 
-  const handlePay = async (method) => {
+  const handlePayClick = (method) => {
+    setPaymentConfirm(method);
+  };
+
+  const handlePayConfirm = async () => {
+    if (!paymentConfirm) return;
+    const method = paymentConfirm;
+    setPaymentConfirm(null);
     try {
       const order = await closeOrder(method);
       setShowReceipt(order);
@@ -191,10 +200,10 @@ export default function POS({ embedded = false, onClose }) {
               <span>{currentOrder.total} ₽</span>
             </div>
             <div className="pos-pay-buttons">
-              <button className="btn btn-success pos-pay-btn" onClick={() => handlePay('cash')}>
+              <button className="btn btn-success pos-pay-btn" onClick={() => handlePayClick('cash')}>
                 <Banknote size={18} /> Наличные
               </button>
-              <button className="btn btn-primary pos-pay-btn" onClick={() => handlePay('card')}>
+              <button className="btn btn-primary pos-pay-btn" onClick={() => handlePayClick('card')}>
                 <CreditCard size={18} /> Карта
               </button>
             </div>
@@ -269,6 +278,40 @@ export default function POS({ embedded = false, onClose }) {
             <div style={{ marginTop: 12 }}>
               <button className="btn btn-ghost" onClick={() => handleNewOrder(null)} style={{ width: '100%' }}>
                 Без столика
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Подтверждение закрытия стола при выборе оплаты */}
+      {paymentConfirm && currentOrder && (
+        <div className="modal-overlay" onClick={() => setPaymentConfirm(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title">Закрыть стол?</h3>
+              <button type="button" className="btn-icon" onClick={() => setPaymentConfirm(null)} aria-label="Отмена">
+                <X size={18} />
+              </button>
+            </div>
+            <p className="modal-body">
+              Оформить оплату <strong>{paymentConfirm === 'cash' ? 'наличными' : 'картой'}</strong> и закрыть стол?
+              <br />
+              <span style={{ fontSize: 18, fontWeight: 600, marginTop: 8, display: 'block' }}>
+                Итого: {currentOrder.total} ₽
+              </span>
+            </p>
+            <div className="modal-footer" style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button type="button" className="btn btn-ghost" onClick={() => setPaymentConfirm(null)}>
+                Отмена
+              </button>
+              <button
+                type="button"
+                className={paymentConfirm === 'cash' ? 'btn btn-success' : 'btn btn-primary'}
+                onClick={handlePayConfirm}
+              >
+                {paymentConfirm === 'cash' ? <Banknote size={18} /> : <CreditCard size={18} />}
+                {' '}Закрыть стол
               </button>
             </div>
           </div>

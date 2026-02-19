@@ -106,8 +106,8 @@ export default function HallMap({ readOnly = false }) {
     if (!tableNumber) return;
     try {
       const num = Number(tableNumber);
-      const w = tableShape === 'rectangle' ? 120 : 96;
-      const h = tableShape === 'rectangle' ? 90 : 96;
+      const w = tableShape === 'rectangle' ? 180 : 140;
+      const h = tableShape === 'rectangle' ? 140 : 140;
       await api.post(`/halls/${selectedHall}/tables`, {
         number: num,
         seats: tableSeats,
@@ -240,8 +240,8 @@ export default function HallMap({ readOnly = false }) {
       >
         {tables.map((table) => {
           const order = openOrders.find((o) => o.table_id === table.id);
-          const w = table.width ?? 96;
-          const h = table.height ?? 96;
+          const w = table.width ?? 140;
+          const h = table.height ?? 140;
           const shape = table.shape ?? 'square';
 
           return (
