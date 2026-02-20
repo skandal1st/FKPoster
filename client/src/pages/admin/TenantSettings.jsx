@@ -10,7 +10,6 @@ export default function TenantSettings() {
   const [accentColor, setAccentColor] = useState('#6366f1');
   const [saving, setSaving] = useState(false);
   const [subscription, setSubscription] = useState(null);
-  const [plans, setPlans] = useState([]);
   const [usage, setUsage] = useState(null);
 
   useEffect(() => {
@@ -21,9 +20,7 @@ export default function TenantSettings() {
     }
     api.get('/subscription').then((d) => {
       setSubscription(d.subscription);
-      setPlans(d.plans);
     }).catch(() => {});
-    // Load usage stats
     Promise.all([
       api.get('/users').then(d => d.length).catch(() => 0),
       api.get('/halls').then(d => d.length).catch(() => 0),
@@ -44,17 +41,6 @@ export default function TenantSettings() {
       toast.error(err.message);
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleChangePlan = async (planId) => {
-    try {
-      await api.post('/subscription/change-plan', { plan_id: planId });
-      const d = await api.get('/subscription');
-      setSubscription(d.subscription);
-      toast.success('План изменён');
-    } catch (err) {
-      toast.error(err.message);
     }
   };
 
@@ -95,55 +81,48 @@ export default function TenantSettings() {
         </div>
 
         <div className="card">
-          <h3 style={{ marginBottom: 16 }}>Подписка</h3>
-          {subscription && (
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ marginBottom: 8 }}>
-                <span className="badge badge-success">{subscription.plan_name}</span>
-                <span style={{ marginLeft: 8, color: 'var(--text-secondary)', fontSize: 13 }}>
-                  {subscription.status === 'trialing' ? 'Пробный период' : subscription.status === 'active' ? 'Активна' : subscription.status}
-                </span>
-              </div>
-              {subscription.current_period_end && (
-                <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-                  До {new Date(subscription.current_period_end).toLocaleDateString('ru')}
-                </p>
-              )}
-            </div>
-          )}
-
-          {usage && subscription && (
-            <div style={{ marginBottom: 16, fontSize: 13 }}>
-              <p>Пользователи: {usage.users} / {subscription.max_users}</p>
-              <p>Залы: {usage.halls} / {subscription.max_halls}</p>
-              <p>Товары: {usage.products} / {subscription.max_products}</p>
-            </div>
-          )}
-
-          <h4 style={{ marginBottom: 8, fontSize: 14 }}>Доступные планы</h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {plans.map((plan) => (
-              <div key={plan.id} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '10px 12px', background: 'var(--bg-hover)', borderRadius: 'var(--radius-sm)'
-              }}>
-                <div>
-                  <strong>{plan.name}</strong>
+          <h3 style={{ marginBottom: 16 }}>Тариф</h3>
+          {subscription ? (
+            <>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ marginBottom: 8 }}>
+                  <span className="badge badge-success">{subscription.plan_name}</span>
                   <span style={{ marginLeft: 8, color: 'var(--text-secondary)', fontSize: 13 }}>
-                    {plan.price > 0 ? `${plan.price} ₽/мес` : 'Бесплатно'}
+                    {subscription.status === 'trialing' ? 'Пробный период' : subscription.status === 'active' ? 'Активна' : subscription.status}
                   </span>
-                  <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-                    {plan.max_users} юзеров, {plan.max_halls} залов, {plan.max_products} товаров
-                  </p>
                 </div>
-                {subscription?.plan_id !== plan.id && (
-                  <button className="btn btn-sm btn-ghost" onClick={() => handleChangePlan(plan.id)}>
-                    Выбрать
-                  </button>
+                {subscription.current_period_end && (
+                  <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                    Действует до {new Date(subscription.current_period_end).toLocaleDateString('ru', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </p>
                 )}
               </div>
-            ))}
-          </div>
+
+              <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12 }}>
+                <strong style={{ color: 'var(--text-primary)' }}>В тариф входит:</strong>
+              </div>
+              <ul style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 16px 20px', padding: 0 }}>
+                <li>Пользователей: до {subscription.max_users}</li>
+                <li>Залы: до {subscription.max_halls}</li>
+                <li>Товары: до {subscription.max_products}</li>
+                {subscription.features && (
+                  <li>{subscription.features}</li>
+                )}
+              </ul>
+
+              {usage && (
+                <div style={{ paddingTop: 12, borderTop: '1px solid var(--border-color)', fontSize: 13, color: 'var(--text-muted)' }}>
+                  Использовано: {usage.users} пользователей, {usage.halls} залов, {usage.products} товаров
+                </div>
+              )}
+
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 16 }}>
+                Смена тарифа — только через суперадминистратора.
+              </p>
+            </>
+          ) : (
+            <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Нет активной подписки</p>
+          )}
         </div>
       </div>
     </div>
