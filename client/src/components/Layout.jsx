@@ -114,7 +114,7 @@ export default function Layout() {
             )}
           </div>
 
-          {isOwner && (
+          {(isAdmin || isOwner) && (
             <div className="sidebar-section">
               <div className="sidebar-section-title">Компания</div>
               <NavLink to="/admin/settings" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>

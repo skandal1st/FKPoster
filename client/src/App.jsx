@@ -19,7 +19,6 @@ import Inventory from './pages/admin/Inventory';
 import InventoryCheck from './pages/admin/InventoryCheck';
 import Dashboard from './pages/Dashboard';
 import TenantSettings from './pages/admin/TenantSettings';
-import OwnerRoute from './components/OwnerRoute';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuthStore();
@@ -73,7 +72,7 @@ export default function App() {
         <Route path="admin/users" element={<AdminRoute><Users /></AdminRoute>} />
         <Route path="admin/inventory" element={<AdminRoute><Inventory /></AdminRoute>} />
         <Route path="admin/inventory-check" element={<AdminRoute><InventoryCheck /></AdminRoute>} />
-        <Route path="admin/settings" element={<OwnerRoute><TenantSettings /></OwnerRoute>} />
+        <Route path="admin/settings" element={<AdminRoute><TenantSettings /></AdminRoute>} />
         <Route path="dashboard" element={<CashierAllowedRoute><Dashboard /></CashierAllowedRoute>} />
         <Route path="stats" element={<StatsRoute />} />
       </Route>
