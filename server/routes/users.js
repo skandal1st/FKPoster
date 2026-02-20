@@ -17,20 +17,25 @@ router.get('/', async (req, res) => {
 
 router.post('/', checkLimit('users'), async (req, res) => {
   const { email, username, password, name, role } = req.body;
-  const login = email || username; // клиент может отправлять username (Логин)
-  if (!login || !password || !name) {
-    return res.status(400).json({ error: 'Заполните все поля' });
-  }
-  const exists = await get('SELECT id FROM users WHERE email = $1', [login]);
+  const login = [email, username].find(Boolean);
+  const loginStr = typeof login === 'string' ? login.trim() : '';
+  const nameStr = typeof name === 'string' ? name.trim() : '';
+  const passStr = typeof password === 'string' ? password : '';
+
+  if (!loginStr) return res.status(400).json({ error: 'Укажите логин (email)' });
+  if (!passStr) return res.status(400).json({ error: 'Укажите пароль' });
+  if (!nameStr) return res.status(400).json({ error: 'Укажите имя' });
+
+  const exists = await get('SELECT id FROM users WHERE email = $1', [loginStr]);
   if (exists) {
     return res.status(400).json({ error: 'Пользователь с таким email уже существует' });
   }
-  const hash = await bcrypt.hash(password, 10);
+  const hash = await bcrypt.hash(passStr, 10);
   const result = await run(
     'INSERT INTO users (email, username, password, name, role, tenant_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
-    [login, login, hash, name, role || 'cashier', req.tenantId]
+    [loginStr, loginStr, hash, nameStr, role || 'cashier', req.tenantId]
   );
-  res.json({ id: result.id, email: login, name, role: role || 'cashier' });
+  res.json({ id: result.id, email: loginStr, name: nameStr, role: role || 'cashier' });
 });
 
 router.put('/:id', async (req, res) => {

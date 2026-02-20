@@ -35,7 +35,14 @@ export default function Users() {
         await api.put(`/users/${editing.id}`, data);
         toast.success('Пользователь обновлён');
       } else {
-        await api.post('/users', form);
+        const login = (form.username || '').trim();
+        const name = (form.name || '').trim();
+        const password = form.password || '';
+        if (!login) { toast.error('Укажите логин'); return; }
+        if (!password) { toast.error('Укажите пароль'); return; }
+        if (!name) { toast.error('Укажите имя'); return; }
+        const payload = { email: login, username: login, password, name, role: form.role };
+        await api.post('/users', payload);
         toast.success('Пользователь создан');
       }
       setShowModal(false);
