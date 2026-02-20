@@ -105,9 +105,14 @@ export default function TenantSettings() {
                 <li>Пользователей: до {subscription.max_users}</li>
                 <li>Залы: до {subscription.max_halls}</li>
                 <li>Товары: до {subscription.max_products}</li>
-                {subscription.features && (
-                  <li>{subscription.features}</li>
-                )}
+                {(() => {
+                  const f = subscription.features;
+                  if (f == null) return null;
+                  const text = typeof f === 'string' ? f : (typeof f === 'object' && Object.keys(f).length > 0
+                    ? Object.entries(f).filter(([, v]) => v).map(([k]) => k).join(', ')
+                    : '');
+                  return text ? <li>{text}</li> : null;
+                })()}
               </ul>
 
               {usage && (
