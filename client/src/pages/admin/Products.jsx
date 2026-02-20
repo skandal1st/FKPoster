@@ -49,13 +49,15 @@ export default function Products() {
     try {
       const data = { ...form, price: Number(form.price), cost_price: Number(form.cost_price), quantity: Number(form.quantity), min_quantity: Number(form.min_quantity) || 0 };
       if (editing) {
-        await api.put(`/products/${editing.id}`, data);
+        const updated = await api.put(`/products/${editing.id}`, data);
         toast.success('Товар обновлён');
+        setProducts((prev) => prev.map((p) => (p.id === editing.id ? { ...p, ...updated } : p)));
       } else {
         await api.post('/products', data);
         toast.success('Товар создан');
       }
       setShowModal(false);
+      if (editing) return;
       load();
     } catch (err) {
       toast.error(err.message);

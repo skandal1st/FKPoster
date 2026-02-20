@@ -64,19 +64,21 @@ router.put('/:id', adminOnly, async (req, res) => {
   const { category_id, name, price, cost_price, quantity, unit, track_inventory, is_composite, output_amount, recipe_description, min_quantity } = req.body;
   const p = await get('SELECT * FROM products WHERE id = $1 AND tenant_id = $2', [req.params.id, req.tenantId]);
   if (!p) return res.status(404).json({ error: 'Товар не найден' });
+  const costPriceNum = cost_price !== undefined && cost_price !== null ? Number(cost_price) : Number(p.cost_price);
   await run(
     `UPDATE products SET category_id=$1, name=$2, price=$3, cost_price=$4, quantity=$5, unit=$6,
      track_inventory=$7, is_composite=$8, output_amount=$9, recipe_description=$10, min_quantity=$11
      WHERE id=$12 AND tenant_id=$13`,
     [
-      category_id ?? p.category_id, name ?? p.name, price ?? p.price, cost_price ?? p.cost_price,
+      category_id ?? p.category_id, name ?? p.name, price ?? p.price, costPriceNum,
       quantity ?? p.quantity, unit ?? p.unit, track_inventory ?? p.track_inventory, is_composite ?? p.is_composite,
       output_amount ?? p.output_amount, recipe_description ?? p.recipe_description,
       min_quantity ?? p.min_quantity,
       req.params.id, req.tenantId
     ]
   );
-  res.json({ success: true });
+  const updated = await get('SELECT id, name, price, cost_price, quantity, unit, category_id, track_inventory, is_composite, output_amount, recipe_description, min_quantity FROM products WHERE id = $1 AND tenant_id = $2', [req.params.id, req.tenantId]);
+  res.json(updated);
 });
 
 router.put('/:id/ingredients', adminOnly, async (req, res) => {
