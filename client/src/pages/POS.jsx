@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { usePosStore } from '../store/posStore';
 import toast from 'react-hot-toast';
-import { Plus, Minus, X, Banknote, CreditCard, Trash2, Receipt } from 'lucide-react';
+import { Plus, Minus, X, Banknote, CreditCard, Trash2, Receipt, Info } from 'lucide-react';
 import ReceiptModal from '../components/ReceiptModal';
+import TechCardPopover from '../components/TechCardPopover';
 import './POS.css';
 
 export default function POS({ embedded = false, onClose }) {
@@ -15,6 +16,8 @@ export default function POS({ embedded = false, onClose }) {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [showReceipt, setShowReceipt] = useState(null);
   const [showTablePicker, setShowTablePicker] = useState(false);
+  /** Товар, для которого открыт попап с техкартой (описание + граммовки) */
+  const [techCardPopoverProduct, setTechCardPopoverProduct] = useState(null);
   /** Способ оплаты для подтверждения закрытия стола: 'cash' | 'card' | null */
   const [paymentConfirm, setPaymentConfirm] = useState(null);
 
@@ -125,22 +128,37 @@ export default function POS({ embedded = false, onClose }) {
 
         {/* Products grid */}
         <div className="pos-products">
-          {filteredProducts.map((product) => (
-            <button
-              key={product.id}
-              className="pos-product-card"
-              onClick={() => handleAddProduct(product)}
-              style={{ '--cat-color': product.category_color }}
-            >
-              <div className="pos-product-name">{product.name}</div>
-              <div className="pos-product-price">{product.price} ₽</div>
-              {product.track_inventory ? (
-                <div className="pos-product-stock">
-                  Ост: {product.quantity} {product.unit}
-                </div>
-              ) : null}
-            </button>
-          ))}
+          {filteredProducts.map((product) => {
+            const hasTechCard = (product.ingredients?.length > 0) || (product.recipe_description?.trim?.());
+            return (
+              <button
+                key={product.id}
+                className="pos-product-card"
+                onClick={() => handleAddProduct(product)}
+                style={{ '--cat-color': product.category_color }}
+              >
+                {hasTechCard && (
+                  <span
+                    className="pos-product-info-icon"
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setTechCardPopoverProduct(product); }}
+                    title="Техкарта: описание и граммовки"
+                    aria-label="Техкарта"
+                  >
+                    <Info size={14} />
+                  </span>
+                )}
+                <div className="pos-product-name">{product.name}</div>
+                <div className="pos-product-price">{product.price} ₽</div>
+                {product.track_inventory ? (
+                  <div className="pos-product-stock">
+                    Ост: {product.is_composite && product.available_from_ingredients != null
+                      ? `${product.available_from_ingredients} ${product.unit}`
+                      : `${product.quantity} ${product.unit}`}
+                  </div>
+                ) : null}
+              </button>
+            );
+          })}
           {filteredProducts.length === 0 && (
             <div style={{ color: 'var(--text-muted)', padding: 20 }}>Нет товаров</div>
           )}
@@ -325,6 +343,13 @@ export default function POS({ embedded = false, onClose }) {
             setShowReceipt(null);
             if (embedded && onClose) onClose();
           }}
+        />
+      )}
+
+      {techCardPopoverProduct && (
+        <TechCardPopover
+          product={techCardPopoverProduct}
+          onClose={() => setTechCardPopoverProduct(null)}
         />
       )}
     </div>
