@@ -29,17 +29,9 @@ export default function Layout() {
   };
 
   return (
-    <div className="app-layout">
+    <div className={`app-layout${impersonating && tenant ? ' app-layout-with-banner' : ''}`}>
       {impersonating && tenant && (
-        <div style={{
-          background: 'linear-gradient(90deg, var(--accent), #6366f1)',
-          color: '#fff',
-          padding: '8px 16px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          fontSize: 14,
-        }}>
+        <div className="impersonation-banner">
           <span>Вы вошли как суперадмин: <strong>{tenant.name}</strong></span>
           <button
             type="button"
