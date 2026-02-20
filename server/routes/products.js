@@ -16,11 +16,24 @@ router.get('/', async (req, res) => {
   `, [req.tenantId]);
   for (const p of products) {
     p.ingredients = await all(`
-      SELECT pi.*, pr.name as ingredient_name, pr.unit as ingredient_unit, pr.cost_price as ingredient_cost
+      SELECT pi.*, pr.name as ingredient_name, pr.unit as ingredient_unit, pr.cost_price as ingredient_cost, pr.quantity as ingredient_quantity
       FROM product_ingredients pi
       JOIN products pr ON pi.ingredient_id = pr.id
       WHERE pi.product_id = $1
     `, [p.id]);
+    // Остаток составного товара = минимум по ингредиентам: (остаток ингредиента / расход на порцию)
+    if (p.is_composite && p.ingredients && p.ingredients.length > 0) {
+      const outAmt = Number(p.output_amount) || 1;
+      let minPortions = Infinity;
+      for (const ing of p.ingredients) {
+        const stock = Number(ing.ingredient_quantity) || 0;
+        const amount = Number(ing.amount) || 0;
+        if (amount <= 0) continue;
+        const portions = Math.floor((stock * outAmt) / amount);
+        if (portions < minPortions) minPortions = portions;
+      }
+      p.available_from_ingredients = minPortions === Infinity ? 0 : minPortions;
+    }
   }
   res.json(products);
 });
@@ -40,11 +53,23 @@ router.get('/:id', async (req, res) => {
   const product = await get('SELECT * FROM products WHERE id = $1 AND active = true AND is_ingredient = false AND tenant_id = $2', [req.params.id, req.tenantId]);
   if (!product) return res.status(404).json({ error: 'Товар не найден' });
   product.ingredients = await all(`
-    SELECT pi.*, pr.name as ingredient_name, pr.unit as ingredient_unit, pr.cost_price as ingredient_cost
+    SELECT pi.*, pr.name as ingredient_name, pr.unit as ingredient_unit, pr.cost_price as ingredient_cost, pr.quantity as ingredient_quantity
     FROM product_ingredients pi
     JOIN products pr ON pi.ingredient_id = pr.id
     WHERE pi.product_id = $1
   `, [product.id]);
+  if (product.is_composite && product.ingredients && product.ingredients.length > 0) {
+    const outAmt = Number(product.output_amount) || 1;
+    let minPortions = Infinity;
+    for (const ing of product.ingredients) {
+      const stock = Number(ing.ingredient_quantity) || 0;
+      const amount = Number(ing.amount) || 0;
+      if (amount <= 0) continue;
+      const portions = Math.floor((stock * outAmt) / amount);
+      if (portions < minPortions) minPortions = portions;
+    }
+    product.available_from_ingredients = minPortions === Infinity ? 0 : minPortions;
+  }
   res.json(product);
 });
 

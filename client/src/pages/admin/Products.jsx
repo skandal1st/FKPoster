@@ -106,10 +106,21 @@ export default function Products() {
                 <td>
                   {p.track_inventory ? (
                     <>
-                      {p.min_quantity > 0 && p.quantity <= p.min_quantity && (
-                        <AlertTriangle size={13} style={{ color: 'var(--danger)', marginRight: 4, verticalAlign: 'middle' }} />
+                      {p.is_composite && p.available_from_ingredients != null ? (
+                        <>
+                          {p.min_quantity > 0 && p.available_from_ingredients <= p.min_quantity && (
+                            <AlertTriangle size={13} style={{ color: 'var(--danger)', marginRight: 4, verticalAlign: 'middle' }} />
+                          )}
+                          {p.available_from_ingredients} {p.unit}
+                        </>
+                      ) : (
+                        <>
+                          {p.min_quantity > 0 && p.quantity <= p.min_quantity && (
+                            <AlertTriangle size={13} style={{ color: 'var(--danger)', marginRight: 4, verticalAlign: 'middle' }} />
+                          )}
+                          {p.quantity} {p.unit}
+                        </>
                       )}
-                      {p.quantity} {p.unit}
                     </>
                   ) : '—'}
                 </td>
