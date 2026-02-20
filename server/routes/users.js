@@ -16,20 +16,21 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/', checkLimit('users'), async (req, res) => {
-  const { email, password, name, role } = req.body;
-  if (!email || !password || !name) {
+  const { email, username, password, name, role } = req.body;
+  const login = email || username; // клиент может отправлять username (Логин)
+  if (!login || !password || !name) {
     return res.status(400).json({ error: 'Заполните все поля' });
   }
-  const exists = await get('SELECT id FROM users WHERE email = $1', [email]);
+  const exists = await get('SELECT id FROM users WHERE email = $1', [login]);
   if (exists) {
     return res.status(400).json({ error: 'Пользователь с таким email уже существует' });
   }
   const hash = await bcrypt.hash(password, 10);
   const result = await run(
     'INSERT INTO users (email, username, password, name, role, tenant_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
-    [email, email, hash, name, role || 'cashier', req.tenantId]
+    [login, login, hash, name, role || 'cashier', req.tenantId]
   );
-  res.json({ id: result.id, email, name, role: role || 'cashier' });
+  res.json({ id: result.id, email: login, name, role: role || 'cashier' });
 });
 
 router.put('/:id', async (req, res) => {

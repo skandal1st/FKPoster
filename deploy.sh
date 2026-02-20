@@ -25,6 +25,30 @@ log()   { echo -e "${GREEN}[*]${NC} $1"; }
 warn()  { echo -e "${YELLOW}[!]${NC} $1"; }
 err()   { echo -e "${RED}[x]${NC} $1"; }
 
+# ============== 0. Обновление из репозитория ==============
+log "Проверка и обновление из репозитория..."
+if [ -d .git ]; then
+  if ! command -v git &>/dev/null; then
+    warn "Git не установлен. Пропуск обновления кода."
+  else
+    BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "?")
+    log "Текущая ветка: $BRANCH"
+    git fetch origin 2>/dev/null || true
+    if git pull origin "$BRANCH" --no-edit 2>/dev/null; then
+      log "Проект обновлён из origin/$BRANCH"
+    else
+      warn "Не удалось выполнить git pull (конфликты или нет доступа?). Продолжаем с текущим кодом."
+      read -p "Продолжить деплой? (y/N) " -n 1 -r; echo
+      if [[ ! $REPLY =~ ^[yY]$ ]]; then
+        err "Деплой отменён."
+        exit 1
+      fi
+    fi
+  fi
+else
+  log "Каталог не является git-репозиторием. Пропуск обновления."
+fi
+
 # ============== 1. Проверка зависимостей ==============
 log "Проверка Docker и Docker Compose..."
 if ! command -v docker &>/dev/null; then
