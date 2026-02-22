@@ -5,13 +5,25 @@ import { api } from '../api';
 import {
   ShoppingCart, Map, LayoutGrid, Package, Truck, Settings,
   CreditCard, Users, BarChart3, LogOut, Boxes, ClipboardList, LayoutDashboard,
-  Building2, FlaskConical, LogIn, ScanBarcode, Wine, Tag, UserCircle, FolderOpen, Warehouse
+  Building2, FlaskConical, LogIn, ScanBarcode, Wine, Tag, UserCircle, FolderOpen, Warehouse,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
+
+const SIDEBAR_COLLAPSED_KEY = 'sidebarCollapsed';
 
 export default function Layout() {
   const { user, tenant, logout, exitImpersonation } = useAuthStore();
   const navigate = useNavigate();
   const [impersonating, setImpersonating] = useState(!!sessionStorage.getItem('superadmin_token'));
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true');
+
+  const toggleSidebar = () => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(next));
+      return next;
+    });
+  };
   const isAdmin = user?.role === 'admin' || user?.role === 'owner';
   const isOwner = user?.role === 'owner';
   const isCashier = user?.role === 'cashier';
@@ -33,7 +45,7 @@ export default function Layout() {
   };
 
   return (
-    <div className={`app-layout${impersonating && tenant ? ' app-layout-with-banner' : ''}`}>
+    <div className={`app-layout${impersonating && tenant ? ' app-layout-with-banner' : ''}${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
       {impersonating && tenant && (
         <div className="impersonation-banner">
           <span>Вы вошли как суперадмин: <strong>{tenant.name}</strong></span>
@@ -59,58 +71,58 @@ export default function Layout() {
         <nav className="sidebar-nav">
           <div className="sidebar-section">
             <div className="sidebar-section-title">Работа</div>
-            <NavLink to="/" end className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
-              <Map /> Зал
+            <NavLink to="/" end className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Зал">
+              <Map /><span className="sidebar-link-text">Зал</span>
             </NavLink>
             {isAdmin && (
-              <NavLink to="/hall-map" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
-                <Settings /> Редактировать карту
+              <NavLink to="/hall-map" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Редактировать карту">
+                <Settings /><span className="sidebar-link-text">Редактировать карту</span>
               </NavLink>
             )}
-            <NavLink to="/admin/register" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
-              <CreditCard /> Кассовый день
+            <NavLink to="/admin/register" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Кассовый день">
+              <CreditCard /><span className="sidebar-link-text">Кассовый день</span>
             </NavLink>
           </div>
 
           {isAdmin && (
             <div className="sidebar-section">
               <div className="sidebar-section-title">Админ</div>
-              <NavLink to="/admin/categories" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
-                <LayoutGrid /> Категории
+              <NavLink to="/admin/categories" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Категории">
+                <LayoutGrid /><span className="sidebar-link-text">Категории</span>
               </NavLink>
-              <NavLink to="/admin/workshops" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
-                <Warehouse /> Цеха
+              <NavLink to="/admin/workshops" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Цеха">
+                <Warehouse /><span className="sidebar-link-text">Цеха</span>
               </NavLink>
-              <NavLink to="/admin/products" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
-                <Package /> Товары
+              <NavLink to="/admin/products" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Товары">
+                <Package /><span className="sidebar-link-text">Товары</span>
                 {lowStockCount > 0 && (
-                  <span style={{
+                  <span className="sidebar-link-badge" style={{
                     marginLeft: 'auto', background: 'var(--danger)', color: '#fff',
                     borderRadius: '50%', width: 20, height: 20, display: 'inline-flex',
                     alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700
                   }}>{lowStockCount}</span>
                 )}
               </NavLink>
-              <NavLink to="/admin/ingredients" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
-                <FlaskConical /> Ингредиенты
+              <NavLink to="/admin/ingredients" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Ингредиенты">
+                <FlaskConical /><span className="sidebar-link-text">Ингредиенты</span>
               </NavLink>
-              <NavLink to="/admin/ingredient-groups" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
-                <FolderOpen /> Группы ингредиентов
+              <NavLink to="/admin/ingredient-groups" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Группы ингредиентов">
+                <FolderOpen /><span className="sidebar-link-text">Группы ингредиентов</span>
               </NavLink>
-              <NavLink to="/admin/inventory" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
-                <Boxes /> Остатки
+              <NavLink to="/admin/inventory" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Остатки">
+                <Boxes /><span className="sidebar-link-text">Остатки</span>
               </NavLink>
-              <NavLink to="/admin/supplies" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
-                <Truck /> Поставки
+              <NavLink to="/admin/supplies" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Поставки">
+                <Truck /><span className="sidebar-link-text">Поставки</span>
               </NavLink>
-              <NavLink to="/admin/inventory-check" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
-                <ClipboardList /> Инвентаризация
+              <NavLink to="/admin/inventory-check" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Инвентаризация">
+                <ClipboardList /><span className="sidebar-link-text">Инвентаризация</span>
               </NavLink>
-              <NavLink to="/admin/users" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
-                <Users /> Пользователи
+              <NavLink to="/admin/users" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Пользователи">
+                <Users /><span className="sidebar-link-text">Пользователи</span>
               </NavLink>
-              <NavLink to="/admin/guests" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
-                <UserCircle /> Гости и скидки
+              <NavLink to="/admin/guests" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Гости и скидки">
+                <UserCircle /><span className="sidebar-link-text">Гости и скидки</span>
               </NavLink>
             </div>
           )}
@@ -119,16 +131,16 @@ export default function Layout() {
             <div className="sidebar-section">
               <div className="sidebar-section-title">Маркировка</div>
               {integrations.egais_enabled && (
-                <NavLink to="/admin/egais" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
-                  <Wine /> ЕГАИС
+                <NavLink to="/admin/egais" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="ЕГАИС">
+                  <Wine /><span className="sidebar-link-text">ЕГАИС</span>
                 </NavLink>
               )}
-              <NavLink to="/admin/marked-items" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
-                <Tag /> Маркированные товары
+              <NavLink to="/admin/marked-items" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Маркированные товары">
+                <Tag /><span className="sidebar-link-text">Маркированные товары</span>
               </NavLink>
               {isOwner && (
-                <NavLink to="/admin/integrations" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
-                  <ScanBarcode /> Настройки интеграций
+                <NavLink to="/admin/integrations" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Настройки интеграций">
+                  <ScanBarcode /><span className="sidebar-link-text">Настройки интеграций</span>
                 </NavLink>
               )}
             </div>
@@ -137,13 +149,13 @@ export default function Layout() {
           <div className="sidebar-section">
             <div className="sidebar-section-title">Аналитика</div>
             {(isAdmin || isCashier) && (
-              <NavLink to="/dashboard" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
-                <LayoutDashboard /> Дашборд
+              <NavLink to="/dashboard" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Дашборд">
+                <LayoutDashboard /><span className="sidebar-link-text">Дашборд</span>
               </NavLink>
             )}
             {!isCashier && (
-              <NavLink to="/stats" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
-                <BarChart3 /> Статистика
+              <NavLink to="/stats" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Статистика">
+                <BarChart3 /><span className="sidebar-link-text">Статистика</span>
               </NavLink>
             )}
           </div>
@@ -151,12 +163,12 @@ export default function Layout() {
           {(isAdmin || isOwner) && (
             <div className="sidebar-section">
               <div className="sidebar-section-title">Компания</div>
-              <NavLink to="/admin/settings" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
-                <Building2 /> Настройки
+              <NavLink to="/admin/settings" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Настройки">
+                <Building2 /><span className="sidebar-link-text">Настройки</span>
               </NavLink>
               {isOwner && !hasMarking && (
-                <NavLink to="/admin/integrations" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
-                  <ScanBarcode /> Интеграции
+                <NavLink to="/admin/integrations" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Интеграции">
+                  <ScanBarcode /><span className="sidebar-link-text">Интеграции</span>
                 </NavLink>
               )}
             </div>
@@ -164,6 +176,15 @@ export default function Layout() {
         </nav>
 
         <div className="sidebar-footer">
+          <button
+            type="button"
+            className="btn btn-ghost sidebar-toggle-btn"
+            onClick={toggleSidebar}
+            title={sidebarCollapsed ? 'Развернуть меню' : 'Свернуть меню'}
+          >
+            {sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+            <span className="sidebar-toggle-text">{sidebarCollapsed ? 'Развернуть' : 'Свернуть'}</span>
+          </button>
           <div className="sidebar-user">
             <span>{user?.name}</span>
             <button className="btn-icon" onClick={logout} title="Выход">

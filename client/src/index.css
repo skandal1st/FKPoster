@@ -115,10 +115,85 @@ select.form-input {
   left: 0;
   bottom: 0;
   z-index: 100;
+  transition: width 0.3s ease;
 }
 
 .app-layout-with-banner .sidebar {
   top: 48px;
+}
+
+/* Свёрнутый сайдбар */
+.app-layout.sidebar-collapsed .sidebar {
+  width: 72px;
+}
+
+.app-layout.sidebar-collapsed .main-content {
+  margin-left: 72px;
+}
+
+.app-layout.sidebar-collapsed .sidebar-logo {
+  justify-content: center;
+  padding: 0 8px;
+}
+
+.app-layout.sidebar-collapsed .sidebar-logo > span:not(.sidebar-logo-icon) {
+  display: none;
+}
+
+.app-layout.sidebar-collapsed .sidebar-section-title {
+  display: none;
+}
+
+.app-layout.sidebar-collapsed .sidebar-link {
+  justify-content: center;
+  padding: 0;
+}
+
+.app-layout.sidebar-collapsed .sidebar-link-text {
+  display: none;
+}
+
+.app-layout.sidebar-collapsed .sidebar-user > span {
+  display: none;
+}
+
+.app-layout.sidebar-collapsed .sidebar-footer {
+  padding: 12px 8px;
+}
+
+.app-layout.sidebar-collapsed .sidebar-toggle-text {
+  display: none;
+}
+
+.app-layout.sidebar-collapsed .sidebar-user {
+  justify-content: center;
+}
+
+.app-layout.sidebar-collapsed .pos-bottom-bar {
+  left: 72px;
+}
+
+.sidebar-toggle-btn {
+  width: 100%;
+  justify-content: flex-start;
+  min-height: 42px;
+  border-radius: var(--radius-xl);
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.sidebar-toggle-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.app-layout.sidebar-collapsed .sidebar-toggle-btn {
+  justify-content: center;
+  padding: 0;
+}
+
+.app-layout.sidebar-collapsed .sidebar-link-badge {
+  display: none !important;
 }
 
 .sidebar-logo {
@@ -229,6 +304,7 @@ select.form-input {
   min-height: 100vh;
   overflow-y: auto;
   background: var(--bg-primary);
+  transition: margin-left 0.3s ease;
 }
 
 /* Page */
