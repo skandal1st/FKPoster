@@ -28,8 +28,13 @@ export default function Login() {
   return (
     <div className="login-page">
       <form className="login-card" onSubmit={handleSubmit}>
-        <h1 className="login-title">HookahPOS</h1>
-        <p className="login-subtitle">Вход в систему</p>
+        <div className="login-logo-wrap">
+          <div className="login-logo-icon" aria-hidden>H</div>
+          <div>
+            <h1 className="login-title">HookahPOS</h1>
+            <p className="login-subtitle">Вход в систему</p>
+          </div>
+        </div>
 
         {error && <div className="login-error">{error}</div>}
 

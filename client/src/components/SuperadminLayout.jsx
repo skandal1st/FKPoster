@@ -7,8 +7,9 @@ export default function SuperadminLayout() {
 
   return (
     <div className="app-layout">
-      <aside className="sidebar">
-        <div className="sidebar-logo" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <aside className="sidebar glass-sidebar">
+        <div className="sidebar-logo">
+          <div className="sidebar-logo-icon" aria-hidden>S</div>
           <span>Суперадмин</span>
         </div>
         <nav className="sidebar-nav">

@@ -30,10 +30,12 @@ export default function Dashboard() {
   return (
     <div className="page">
       <div className="page-header">
-        <h1 className="page-title">Дашборд</h1>
-        <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>
-          {new Date().toLocaleDateString('ru', { weekday: 'long', day: 'numeric', month: 'long' })}
-        </span>
+        <div>
+          <h1 className="page-title">Дашборд</h1>
+          <p className="page-subtitle">
+            {new Date().toLocaleDateString('ru', { weekday: 'long', day: 'numeric', month: 'long' })}
+          </p>
+        </div>
       </div>
 
       {/* KPI cards */}
@@ -69,7 +71,7 @@ export default function Dashboard() {
       {/* Charts */}
       <div className="grid-2" style={{ marginBottom: 24 }}>
         <div className="card">
-          <h3 style={{ marginBottom: 16 }}>Выручка за 7 дней</h3>
+          <h3 className="card-title" style={{ marginBottom: 16 }}>Выручка за 7 дней</h3>
           <ResponsiveContainer width="100%" height={280}>
             <LineChart data={data.trend}>
               <CartesianGrid stroke="var(--border-color)" />
@@ -90,7 +92,7 @@ export default function Dashboard() {
         </div>
 
         <div className="card">
-          <h3 style={{ marginBottom: 16 }}>Продажи по категориям сегодня</h3>
+          <h3 className="card-title" style={{ marginBottom: 16 }}>Продажи по категориям сегодня</h3>
           {data.category_sales.length > 0 ? (
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
@@ -120,7 +122,7 @@ export default function Dashboard() {
 
       {/* Top products */}
       <div className="card">
-        <h3 style={{ marginBottom: 16 }}>Топ-5 товаров сегодня</h3>
+        <h3 className="card-title" style={{ marginBottom: 16 }}>Топ-5 товаров сегодня</h3>
         <table className="data-table">
           <thead>
             <tr>

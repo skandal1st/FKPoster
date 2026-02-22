@@ -2,10 +2,13 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { api } from '../api';
 import { usePosStore } from '../store/posStore';
 import toast from 'react-hot-toast';
-import { Plus, Trash2, X } from 'lucide-react';
+import { Plus, Trash2, X, GripVertical, Users } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import POS from './POS';
 import './HallMap.css';
+
+const CELL_SIZE = 130;
+const GAP = 8;
 
 const SHAPE_OPTIONS = [
   { value: 'square', label: 'Квадрат' },
@@ -13,6 +16,13 @@ const SHAPE_OPTIONS = [
   { value: 'round', label: 'Круглый' },
   { value: 'corner', label: 'Угловой' },
 ];
+
+function getGridPixel(gridX, gridY) {
+  return {
+    x: gridX * (CELL_SIZE + GAP),
+    y: gridY * (CELL_SIZE + GAP),
+  };
+}
 
 export default function HallMap({ readOnly = false }) {
   const {
@@ -31,9 +41,9 @@ export default function HallMap({ readOnly = false }) {
   const { user } = useAuthStore();
   const [selectedHall, setSelectedHall] = useState(null);
   const [tables, setTables] = useState([]);
-  const [dragging, setDragging] = useState(null);
-  const [resizing, setResizing] = useState(null);
-  const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, w: 0, h: 0 });
+  const [draggingId, setDraggingId] = useState(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [dragPos, setDragPos] = useState({ x: 0, y: 0 });
   const [showAddHall, setShowAddHall] = useState(false);
   const [hallName, setHallName] = useState('');
   const [showAddTable, setShowAddTable] = useState(false);
@@ -41,8 +51,12 @@ export default function HallMap({ readOnly = false }) {
   const [tableSeats, setTableSeats] = useState(4);
   const [tableShape, setTableShape] = useState('square');
   const [showPosPanel, setShowPosPanel] = useState(false);
-  const mapRef = useRef(null);
+  const gridRef = useRef(null);
   const isAdmin = user?.role === 'admin' || user?.role === 'owner';
+
+  const currentHall = halls.find((h) => h.id === selectedHall) || null;
+  const cols = currentHall ? (currentHall.grid_cols ?? 6) : 6;
+  const rows = currentHall ? (currentHall.grid_rows ?? 4) : 4;
 
   useEffect(() => {
     loadHalls();
@@ -68,6 +82,23 @@ export default function HallMap({ readOnly = false }) {
     const data = await api.get(`/halls/${selectedHall}/tables`);
     setTables(data);
   };
+
+  const getTableGrid = (table) => {
+    const gx = table.grid_x ?? Math.min(cols - 1, Math.floor(((table.x ?? 10) / 100) * cols));
+    const gy = table.grid_y ?? Math.min(rows - 1, Math.floor(((table.y ?? 10) / 100) * rows));
+    return { gridX: Math.max(0, gx), gridY: Math.max(0, gy) };
+  };
+
+  const isCellOccupied = (gridX, gridY, excludeId) =>
+    tables.some((t) => {
+      const { gridX: tx, gridY: ty } = getTableGrid(t);
+      return tx === gridX && ty === gridY && t.id !== excludeId;
+    });
+
+  const snapToGrid = (pixelX, pixelY) => ({
+    gridX: Math.max(0, Math.min(cols - 1, Math.round(pixelX / (CELL_SIZE + GAP)))),
+    gridY: Math.max(0, Math.min(rows - 1, Math.round(pixelY / (CELL_SIZE + GAP)))),
+  });
 
   const handleTableClick = async (table) => {
     if (!readOnly) return;
@@ -102,18 +133,26 @@ export default function HallMap({ readOnly = false }) {
     }
   };
 
+  const findFirstFreeCell = () => {
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        if (!isCellOccupied(col, row)) return { grid_x: col, grid_y: row };
+      }
+    }
+    return { grid_x: 0, grid_y: 0 };
+  };
+
   const addTable = async () => {
     if (!tableNumber) return;
     try {
       const num = Number(tableNumber);
-      const w = tableShape === 'rectangle' ? 180 : 140;
-      const h = tableShape === 'rectangle' ? 140 : 140;
+      const { grid_x, grid_y } = findFirstFreeCell();
       await api.post(`/halls/${selectedHall}/tables`, {
         number: num,
         seats: tableSeats,
         shape: tableShape,
-        width: w,
-        height: h,
+        grid_x,
+        grid_y,
       });
       loadTables();
       setShowAddTable(false);
@@ -146,81 +185,72 @@ export default function HallMap({ readOnly = false }) {
     }
   };
 
-  const handlePointerDown = (e, table) => {
-    if (!isAdmin) return;
-    if (e.target.closest('.hall-table-resize-handle')) return;
-    e.preventDefault();
-    setDragging(table.id);
-  };
-
-  const handleResizeStart = (e, table) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setResizing(table.id);
-    setResizeStart({
-      x: e.clientX,
-      y: e.clientY,
-      w: table.width,
-      h: table.height,
-    });
-  };
+  const handlePointerDown = useCallback(
+    (e, table) => {
+      if (!isAdmin || readOnly) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const rect = gridRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const { gridX, gridY } = getTableGrid(table);
+      const pos = getGridPixel(gridX, gridY);
+      setDraggingId(table.id);
+      setDragOffset({
+        x: e.clientX - rect.left - pos.x,
+        y: e.clientY - rect.top - pos.y,
+      });
+      setDragPos(pos);
+      e.target.setPointerCapture?.(e.pointerId);
+    },
+    [isAdmin, readOnly]
+  );
 
   const handlePointerMove = useCallback(
     (e) => {
-      if (resizing) {
-        const dx = e.clientX - resizeStart.x;
-        const dy = e.clientY - resizeStart.y;
-        const newW = Math.round(Math.max(64, Math.min(250, resizeStart.w + dx)));
-        const newH = Math.round(Math.max(64, Math.min(250, resizeStart.h + dy)));
-        setTables((prev) =>
-          prev.map((t) =>
-            t.id === resizing ? { ...t, width: newW, height: newH } : t
-          )
-        );
-        return;
-      }
-      if (!dragging || !mapRef.current) return;
-      const rect = mapRef.current.getBoundingClientRect();
-      const x = ((e.clientX - rect.left) / rect.width) * 100;
-      const y = ((e.clientY - rect.top) / rect.height) * 100;
-      const clampedX = Math.max(2, Math.min(95, x));
-      const clampedY = Math.max(2, Math.min(95, y));
-      setTables((prev) =>
-        prev.map((t) => (t.id === dragging ? { ...t, x: clampedX, y: clampedY } : t))
-      );
+      if (!draggingId || !gridRef.current) return;
+      const rect = gridRef.current.getBoundingClientRect();
+      setDragPos({
+        x: e.clientX - rect.left - dragOffset.x,
+        y: e.clientY - rect.top - dragOffset.y,
+      });
     },
-    [dragging, resizing, resizeStart]
+    [draggingId, dragOffset]
   );
 
   const handlePointerUp = useCallback(async () => {
-    if (resizing) {
-      const table = tables.find((t) => t.id === resizing);
-      if (table) {
-        try {
-          await api.patch(`/tables/${table.id}`, { width: table.width, height: table.height });
-          toast.success('Размер сохранён');
-        } catch (err) {
-          toast.error(err.message);
-        }
+    if (!draggingId) return;
+    const snapped = snapToGrid(dragPos.x, dragPos.y);
+    if (!isCellOccupied(snapped.gridX, snapped.gridY, draggingId)) {
+      try {
+        await api.put(`/tables/${draggingId}/position`, {
+          grid_x: snapped.gridX,
+          grid_y: snapped.gridY,
+        });
+        setTables((prev) =>
+          prev.map((t) =>
+            t.id === draggingId ? { ...t, grid_x: snapped.gridX, grid_y: snapped.gridY } : t
+          )
+        );
+        toast.success('Позиция сохранена');
+      } catch (err) {
+        toast.error(err.message);
+        loadTables();
       }
-      setResizing(null);
-      return;
+    } else {
+      loadTables();
     }
-    if (dragging) {
-      const table = tables.find((t) => t.id === dragging);
-      if (table) {
-        await api.put(`/tables/${table.id}/position`, { x: table.x, y: table.y });
-      }
-      setDragging(null);
-    }
-  }, [dragging, resizing, tables]);
+    setDraggingId(null);
+  }, [draggingId, dragPos]);
+
+  const countFree = tables.filter((t) => !openOrders.find((o) => o.table_id === t.id)).length;
+  const countOccupied = tables.length - countFree;
 
   return (
     <div className="page">
       <div className="page-header">
         <h1 className="page-title">{readOnly ? 'Зал' : 'Карта зала'}</h1>
         {!readOnly && isAdmin && (
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div className="hall-header-actions">
             <button className="btn btn-ghost" onClick={() => setShowAddTable(true)}>
               <Plus size={16} /> Столик
             </button>
@@ -258,73 +288,122 @@ export default function HallMap({ readOnly = false }) {
         ))}
       </div>
 
-      <div
-        className={`hall-map ${readOnly ? 'hall-map--readonly' : ''}`}
-        ref={mapRef}
-        onPointerMove={readOnly ? undefined : handlePointerMove}
-        onPointerUp={readOnly ? undefined : handlePointerUp}
-        onPointerLeave={readOnly ? undefined : handlePointerUp}
-        onPointerCancel={readOnly ? undefined : handlePointerUp}
-      >
-        {tables.map((table) => {
-          const order = openOrders.find((o) => o.table_id === table.id);
-          const w = table.width ?? 140;
-          const h = table.height ?? 140;
-          const shape = table.shape ?? 'square';
+      {/* Легенда как в дизайне */}
+      <div className="hall-legend">
+        <div className="hall-legend-item">
+          <span className="hall-legend-dot hall-legend-dot--free" />
+          <span className="hall-legend-text">Свободен ({countFree})</span>
+        </div>
+        <div className="hall-legend-item">
+          <span className="hall-legend-dot hall-legend-dot--occupied" />
+          <span className="hall-legend-text">Занят ({countOccupied})</span>
+        </div>
+        {!readOnly && isAdmin && (
+          <div className="hall-legend-hint">
+            <GripVertical size={12} />
+            <span>Перетаскивайте столики по сетке</span>
+          </div>
+        )}
+      </div>
 
-          return (
-            <div
-              key={table.id}
-              role={readOnly ? 'button' : undefined}
-              className={`hall-table hall-table--${shape} ${order ? 'occupied' : 'free'} ${dragging === table.id ? 'dragging' : ''} ${resizing === table.id ? 'resizing' : ''} ${readOnly ? 'hall-table--clickable' : ''}`}
-              style={{
-                left: `${table.x}%`,
-                top: `${table.y}%`,
-                width: w,
-                height: h,
-              }}
-              onPointerDown={readOnly ? undefined : (e) => handlePointerDown(e, table)}
-              onClick={readOnly ? () => handleTableClick(table) : undefined}
-            >
-              <div className="hall-table-number">{table.number}</div>
-              {order && <div className="hall-table-sum">{order.total} ₽</div>}
-              {!readOnly && isAdmin && !order && (
-                <button
-                  className="hall-table-delete"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteTable(table.id);
-                  }}
-                >
-                  <Trash2 size={10} />
-                </button>
-              )}
-              {!readOnly && isAdmin && (
+      <div
+        className={`hall-map hall-map--grid ${readOnly ? 'hall-map--readonly' : ''}`}
+        style={{
+          '--cell-size': `${CELL_SIZE}px`,
+          '--grid-gap': `${GAP}px`,
+        }}
+      >
+        <div
+          ref={gridRef}
+          className="hall-grid-wrap"
+          style={{
+            width: cols * CELL_SIZE + (cols - 1) * GAP,
+            height: rows * CELL_SIZE + (rows - 1) * GAP,
+            minWidth: cols * CELL_SIZE + (cols - 1) * GAP,
+          }}
+          onPointerMove={readOnly ? undefined : handlePointerMove}
+          onPointerUp={readOnly ? undefined : handlePointerUp}
+          onPointerLeave={readOnly ? undefined : handlePointerUp}
+          onPointerCancel={readOnly ? undefined : handlePointerUp}
+        >
+          {/* Фон сетки — пустые ячейки */}
+          {Array.from({ length: rows }).map((_, row) =>
+            Array.from({ length: cols }).map((_, col) => {
+              const occupied = isCellOccupied(col, row);
+              const pos = getGridPixel(col, row);
+              return (
                 <div
-                  className="hall-table-resize-handle"
-                  onPointerDown={(e) => handleResizeStart(e, table)}
-                  title="Тяните для изменения размера"
+                  key={`cell-${row}-${col}`}
+                  className={`hall-grid-cell ${occupied ? 'hall-grid-cell--taken' : ''}`}
+                  style={{
+                    left: pos.x,
+                    top: pos.y,
+                    width: CELL_SIZE,
+                    height: CELL_SIZE,
+                  }}
                 />
-              )}
-            </div>
-          );
-        })}
+              );
+            })
+          )}
+
+          {/* Столики */}
+          {tables.map((table) => {
+            const order = openOrders.find((o) => o.table_id === table.id);
+            const { gridX, gridY } = getTableGrid(table);
+            const isDragging = draggingId === table.id;
+            const pos = isDragging ? dragPos : getGridPixel(gridX, gridY);
+
+            return (
+              <div
+                key={table.id}
+                role={readOnly ? 'button' : undefined}
+                className={`hall-table hall-table--grid ${order ? 'occupied' : 'free'} ${isDragging ? 'dragging' : ''} ${readOnly ? 'hall-table--clickable' : ''}`}
+                style={{
+                  left: pos.x,
+                  top: pos.y,
+                  width: CELL_SIZE,
+                  height: CELL_SIZE,
+                }}
+                onPointerDown={readOnly ? undefined : (e) => handlePointerDown(e, table)}
+                onClick={readOnly ? () => handleTableClick(table) : undefined}
+              >
+                {!readOnly && isAdmin && (
+                  <GripVertical className="hall-table-grip" aria-hidden />
+                )}
+                <span className="hall-table-dot" data-status={order ? 'occupied' : 'free'} />
+                <span className="hall-table-number">{table.number}</span>
+                <div className="hall-table-meta">
+                  <Users size={12} />
+                  <span>{table.seats ?? 4} мест</span>
+                </div>
+                {order && (
+                  <div className="hall-table-sum">{Number(order.total).toFixed(0)} ₽</div>
+                )}
+                {!readOnly && isAdmin && !order && (
+                  <button
+                    type="button"
+                    className="hall-table-delete"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteTable(table.id);
+                    }}
+                    title="Удалить столик"
+                  >
+                    <Trash2 size={10} />
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
         {tables.length === 0 && (
-          <div
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%,-50%)',
-              color: 'var(--text-muted)',
-            }}
-          >
+          <div className="hall-map-empty">
             {halls.length === 0 ? 'Создайте зал' : 'Добавьте столики'}
           </div>
         )}
       </div>
 
-      {/* POS-панель при клике на столик (только в режиме зала) */}
       {readOnly && showPosPanel && (
         <div
           className="hall-pos-overlay"
@@ -353,7 +432,7 @@ export default function HallMap({ readOnly = false }) {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="modal-title">Новый зал</h3>
-              <button className="btn-icon" onClick={() => setShowAddHall(false)}>
+              <button type="button" className="btn-icon" onClick={() => setShowAddHall(false)}>
                 <X size={18} />
               </button>
             </div>
@@ -367,10 +446,10 @@ export default function HallMap({ readOnly = false }) {
               />
             </div>
             <div className="modal-actions">
-              <button className="btn btn-ghost" onClick={() => setShowAddHall(false)}>
+              <button type="button" className="btn btn-ghost" onClick={() => setShowAddHall(false)}>
                 Отмена
               </button>
-              <button className="btn btn-primary" onClick={addHall}>
+              <button type="button" className="btn btn-primary" onClick={addHall}>
                 Создать
               </button>
             </div>
@@ -383,7 +462,7 @@ export default function HallMap({ readOnly = false }) {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="modal-title">Новый столик</h3>
-              <button className="btn-icon" onClick={() => setShowAddTable(false)}>
+              <button type="button" className="btn-icon" onClick={() => setShowAddTable(false)}>
                 <X size={18} />
               </button>
             </div>
@@ -424,10 +503,10 @@ export default function HallMap({ readOnly = false }) {
               </select>
             </div>
             <div className="modal-actions">
-              <button className="btn btn-ghost" onClick={() => setShowAddTable(false)}>
+              <button type="button" className="btn btn-ghost" onClick={() => setShowAddTable(false)}>
                 Отмена
               </button>
-              <button className="btn btn-primary" onClick={addTable}>
+              <button type="button" className="btn btn-primary" onClick={addTable}>
                 Добавить
               </button>
             </div>

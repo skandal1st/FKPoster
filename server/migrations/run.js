@@ -12,6 +12,7 @@ async function runMigrations() {
     require('./006_guests_loyalty'),
     require('./007_ingredient_groups'),
     require('./008_workshops'),
+    require('./009_hall_grid'),
   ];
 
   for (const migration of migrations) {

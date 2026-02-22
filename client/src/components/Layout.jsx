@@ -47,11 +47,13 @@ export default function Layout() {
           </button>
         </div>
       )}
-      <aside className="sidebar">
-        <div className="sidebar-logo" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <aside className="sidebar glass-sidebar">
+        <div className="sidebar-logo">
           {tenant?.logo_url ? (
-            <img src={tenant.logo_url} alt="" style={{ width: 24, height: 24, borderRadius: 4, objectFit: 'cover' }} />
-          ) : null}
+            <img src={tenant.logo_url} alt="" className="sidebar-logo-icon" style={{ objectFit: 'cover' }} />
+          ) : (
+            <div className="sidebar-logo-icon" aria-hidden>{tenant?.name?.charAt(0) || 'H'}</div>
+          )}
           <span>{tenant?.name || 'HookahPOS'}</span>
         </div>
         <nav className="sidebar-nav">
