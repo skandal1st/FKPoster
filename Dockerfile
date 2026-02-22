@@ -4,6 +4,8 @@ WORKDIR /app/client
 COPY client/package.json client/package-lock.json ./
 RUN npm ci
 COPY client/ ./
+ARG VITE_BASE_DOMAIN=lvh.me
+ENV VITE_BASE_DOMAIN=$VITE_BASE_DOMAIN
 RUN npm run build
 
 # Stage 2: Production server

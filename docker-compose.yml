@@ -12,7 +12,10 @@ services:
       - "5432:5432"
 
   app:
-    build: .
+    build:
+      context: .
+      args:
+        VITE_BASE_DOMAIN: ${BASE_DOMAIN:-lvh.me}
     restart: unless-stopped
     depends_on:
       - db
