@@ -15,9 +15,11 @@ router.get('/', async (req, res) => {
     ORDER BY s.id DESC LIMIT 1
   `, [req.tenantId]);
 
-  const plans = await all('SELECT * FROM plans WHERE active = true ORDER BY price');
-
-  res.json({ subscription, plans });
+  const plans = await all(`
+    SELECT DISTINCT ON (name) * FROM plans WHERE active = true ORDER BY name, id
+  `);
+  const plansSorted = plans.sort((a, b) => (parseFloat(a.price) || 0) - (parseFloat(b.price) || 0));
+  res.json({ subscription, plans: plansSorted });
 });
 
 router.post('/change-plan', ownerOnly, async (req, res) => {

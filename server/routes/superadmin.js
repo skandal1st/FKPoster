@@ -128,8 +128,11 @@ router.put('/tenants/:id/subscription', async (req, res) => {
 
 /** Список планов для выбора при управлении подпиской */
 router.get('/plans', async (req, res) => {
-  const plans = await all('SELECT id, name, price, max_users, max_halls, max_products FROM plans WHERE active = true ORDER BY price');
-  res.json(plans);
+  const plans = await all(`
+    SELECT DISTINCT ON (name) id, name, price, max_users, max_halls, max_products
+    FROM plans WHERE active = true ORDER BY name, id
+  `);
+  res.json(plans.sort((a, b) => (parseFloat(a.price) || 0) - (parseFloat(b.price) || 0)));
 });
 
 module.exports = router;
