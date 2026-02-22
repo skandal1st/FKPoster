@@ -8,13 +8,22 @@ export default function TechCardModal({ product, allIngredients, onClose, onSave
   const [outputAmount, setOutputAmount] = useState(1);
   const [recipeDescription, setRecipeDescription] = useState('');
   const [saving, setSaving] = useState(false);
+  const [groups, setGroups] = useState([]);
 
   const safeIngredients = allIngredients || [];
 
   useEffect(() => {
+    api.get('/ingredient-groups').then(setGroups).catch(() => {});
+  }, []);
+
+  useEffect(() => {
     if (product) {
       const raw = product.ingredients || [];
-      setIngredients(raw.map((i) => ({ ingredient_id: i.ingredient_id ?? '', amount: Number(i.amount) || 0 })));
+      setIngredients(raw.map((i) => ({
+        ingredient_id: i.ingredient_id ?? '',
+        ingredient_group_id: i.ingredient_group_id ?? '',
+        amount: Number(i.amount) || 0
+      })));
       setOutputAmount(Number(product.output_amount) || 1);
       setRecipeDescription(product.recipe_description || '');
     }
@@ -35,13 +44,48 @@ export default function TechCardModal({ product, allIngredients, onClose, onSave
     return map;
   }, [safeIngredients]);
 
+  // Build group map with avg cost and total stock
+  const groupMap = useMemo(() => {
+    const map = {};
+    for (const g of groups) {
+      // Средневзвешенная себестоимость из членов группы
+      const members = safeIngredients.filter((i) => i.ingredient_group_id === g.id);
+      let totalQty = 0, totalCostQty = 0;
+      for (const m of members) {
+        const qty = Number(m.quantity) || 0;
+        const cost = Number(m.cost_price) || 0;
+        totalQty += qty;
+        totalCostQty += qty * cost;
+      }
+      map[g.id] = {
+        ...g,
+        avg_cost: totalQty > 0 ? totalCostQty / totalQty : 0,
+        total_stock: totalQty
+      };
+    }
+    return map;
+  }, [groups, safeIngredients]);
+
   const addIngredient = () => {
-    setIngredients([...ingredients, { ingredient_id: '', amount: 1 }]);
+    setIngredients([...ingredients, { ingredient_id: '', ingredient_group_id: '', amount: 1 }]);
   };
 
-  const updateIngredient = (idx, field, value) => {
+  // value format: "ing:123" for ingredient, "grp:456" for group
+  const handleSelectChange = (idx, value) => {
     const updated = [...ingredients];
-    updated[idx] = { ...updated[idx], [field]: field === 'amount' ? Number(value) : Number(value) };
+    if (value.startsWith('grp:')) {
+      updated[idx] = { ...updated[idx], ingredient_id: '', ingredient_group_id: Number(value.slice(4)) };
+    } else if (value.startsWith('ing:')) {
+      updated[idx] = { ...updated[idx], ingredient_id: Number(value.slice(4)), ingredient_group_id: '' };
+    } else {
+      updated[idx] = { ...updated[idx], ingredient_id: '', ingredient_group_id: '' };
+    }
+    setIngredients(updated);
+  };
+
+  const updateAmount = (idx, value) => {
+    const updated = [...ingredients];
+    updated[idx] = { ...updated[idx], amount: Number(value) };
     setIngredients(updated);
   };
 
@@ -49,14 +93,33 @@ export default function TechCardModal({ product, allIngredients, onClose, onSave
     setIngredients(ingredients.filter((_, i) => i !== idx));
   };
 
+  // Get select value for a row
+  const getSelectValue = (ing) => {
+    if (ing.ingredient_group_id) return `grp:${ing.ingredient_group_id}`;
+    if (ing.ingredient_id) return `ing:${ing.ingredient_id}`;
+    return '';
+  };
+
+  // Get info for a row (cost, unit)
+  const getRowInfo = (ing) => {
+    if (ing.ingredient_group_id) {
+      const g = groupMap[ing.ingredient_group_id];
+      return g ? { unit: g.unit, cost: g.avg_cost, name: g.name } : null;
+    }
+    if (ing.ingredient_id) {
+      const p = ingredientMap[ing.ingredient_id];
+      return p ? { unit: p.unit, cost: Number(p.cost_price) || 0, name: p.name } : null;
+    }
+    return null;
+  };
+
   // Calculate total cost of ingredients
   const totalIngredientCost = useMemo(() => {
     return ingredients.reduce((sum, ing) => {
-      const ingProduct = ingredientMap[ing.ingredient_id];
-      const cost = ingProduct ? (Number(ingProduct.cost_price) || 0) * (Number(ing.amount) || 0) : 0;
-      return sum + cost;
+      const info = getRowInfo(ing);
+      return sum + (info ? info.cost * (Number(ing.amount) || 0) : 0);
     }, 0);
-  }, [ingredients, ingredientMap]);
+  }, [ingredients, ingredientMap, groupMap]);
 
   // Cost per unit of output
   const costPerUnit = outputAmount > 0 ? totalIngredientCost / outputAmount : totalIngredientCost;
@@ -70,7 +133,7 @@ export default function TechCardModal({ product, allIngredients, onClose, onSave
     setSaving(true);
     try {
       await api.put(`/products/${product.id}/ingredients`, {
-        ingredients: ingredients.filter((i) => i.ingredient_id),
+        ingredients: ingredients.filter((i) => i.ingredient_id || i.ingredient_group_id),
         output_amount: outputAmount,
         recipe_description: recipeDescription
       });
@@ -108,7 +171,7 @@ export default function TechCardModal({ product, allIngredients, onClose, onSave
             <table className="data-table" style={{ marginBottom: 8 }}>
               <thead>
                 <tr>
-                  <th>Ингредиент</th>
+                  <th>Ингредиент / Группа</th>
                   <th style={{ width: 90 }}>Кол-во на 1 шт</th>
                   <th style={{ width: 50 }}>Ед.</th>
                   <th style={{ width: 90 }}>Цена за ед.</th>
@@ -118,21 +181,32 @@ export default function TechCardModal({ product, allIngredients, onClose, onSave
               </thead>
               <tbody>
                 {ingredients.map((ing, idx) => {
-                  const ingProduct = ingredientMap[ing.ingredient_id];
-                  const lineCost = ingProduct ? (Number(ingProduct.cost_price) || 0) * (Number(ing.amount) || 0) : 0;
+                  const info = getRowInfo(ing);
+                  const lineCost = info ? info.cost * (Number(ing.amount) || 0) : 0;
                   return (
                     <tr key={idx}>
                       <td>
                         <select
                           className="form-input"
-                          value={ing.ingredient_id}
-                          onChange={(e) => updateIngredient(idx, 'ingredient_id', e.target.value)}
+                          value={getSelectValue(ing)}
+                          onChange={(e) => handleSelectChange(idx, e.target.value)}
                           style={{ padding: '5px 8px', fontSize: 13 }}
                         >
-                          <option value="">Выберите ингредиент</option>
-                          {availableIngredients.map((ingItem) => (
-                            <option key={ingItem.id} value={ingItem.id}>{ingItem.name}</option>
-                          ))}
+                          <option value="">Выберите...</option>
+                          {groups.length > 0 && (
+                            <optgroup label="Группы">
+                              {groups.map((g) => (
+                                <option key={`grp-${g.id}`} value={`grp:${g.id}`}>
+                                  {g.name} (группа, {Number(g.total_stock).toFixed(0)} {g.unit})
+                                </option>
+                              ))}
+                            </optgroup>
+                          )}
+                          <optgroup label="Ингредиенты">
+                            {availableIngredients.map((ingItem) => (
+                              <option key={`ing-${ingItem.id}`} value={`ing:${ingItem.id}`}>{ingItem.name}</option>
+                            ))}
+                          </optgroup>
                         </select>
                       </td>
                       <td>
@@ -142,15 +216,16 @@ export default function TechCardModal({ product, allIngredients, onClose, onSave
                           step="0.01"
                           min="0"
                           value={ing.amount}
-                          onChange={(e) => updateIngredient(idx, 'amount', e.target.value)}
+                          onChange={(e) => updateAmount(idx, e.target.value)}
                           style={{ padding: '5px 8px', fontSize: 13 }}
                         />
                       </td>
                       <td style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-                        {ingProduct ? ingProduct.unit : '—'}
+                        {info ? info.unit : '—'}
                       </td>
                       <td style={{ fontSize: 13 }}>
-                        {ingProduct ? (Number(ingProduct.cost_price) || 0).toFixed(2) : '—'} ₽
+                        {info ? info.cost.toFixed(2) : '—'} ₽
+                        {ing.ingredient_group_id ? <span style={{ fontSize: 10, color: 'var(--text-muted)', display: 'block' }}>средн.</span> : null}
                       </td>
                       <td style={{ fontSize: 13, fontWeight: 500 }}>
                         {lineCost.toFixed(2)} ₽

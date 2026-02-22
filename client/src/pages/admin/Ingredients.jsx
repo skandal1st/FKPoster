@@ -6,24 +6,30 @@ import { Plus, Pencil, Trash2, X, AlertTriangle } from 'lucide-react';
 export default function Ingredients() {
   const [ingredients, setIngredients] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [groups, setGroups] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({
     category_id: '', name: '', cost_price: '', quantity: '',
-    unit: 'г', track_inventory: 1, min_quantity: ''
+    unit: 'г', track_inventory: 1, min_quantity: '', ingredient_group_id: ''
   });
 
   useEffect(() => { load(); }, []);
 
   const load = async () => {
-    const [ings, cats] = await Promise.all([api.get('/ingredients'), api.get('/categories')]);
+    const [ings, cats, grps] = await Promise.all([
+      api.get('/ingredients'),
+      api.get('/categories'),
+      api.get('/ingredient-groups')
+    ]);
     setIngredients(ings);
     setCategories(cats);
+    setGroups(grps);
   };
 
   const openNew = () => {
     setEditing(null);
-    setForm({ category_id: categories[0]?.id || '', name: '', cost_price: '', quantity: '', unit: 'г', track_inventory: 1, min_quantity: '' });
+    setForm({ category_id: categories[0]?.id || '', name: '', cost_price: '', quantity: '', unit: 'г', track_inventory: 1, min_quantity: '', ingredient_group_id: '' });
     setShowModal(true);
   };
 
@@ -32,14 +38,20 @@ export default function Ingredients() {
     setForm({
       category_id: ing.category_id, name: ing.name, cost_price: ing.cost_price,
       quantity: ing.quantity, unit: ing.unit, track_inventory: ing.track_inventory,
-      min_quantity: ing.min_quantity || ''
+      min_quantity: ing.min_quantity || '', ingredient_group_id: ing.ingredient_group_id || ''
     });
     setShowModal(true);
   };
 
   const save = async () => {
     try {
-      const data = { ...form, cost_price: Number(form.cost_price), quantity: Number(form.quantity), min_quantity: Number(form.min_quantity) || 0 };
+      const data = {
+        ...form,
+        cost_price: Number(form.cost_price),
+        quantity: Number(form.quantity),
+        min_quantity: Number(form.min_quantity) || 0,
+        ingredient_group_id: form.ingredient_group_id ? Number(form.ingredient_group_id) : null
+      };
       if (editing) {
         await api.put(`/ingredients/${editing.id}`, data);
         toast.success('Ингредиент обновлён');
@@ -79,6 +91,7 @@ export default function Ingredients() {
             <tr>
               <th>Название</th>
               <th>Категория</th>
+              <th>Группа</th>
               <th>Себестоимость</th>
               <th>Остаток</th>
               <th></th>
@@ -91,6 +104,9 @@ export default function Ingredients() {
                 <td>
                   <span className="color-dot" style={{ background: ing.category_color, marginRight: 6 }} />
                   {ing.category_name}
+                </td>
+                <td style={{ color: ing.group_name ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                  {ing.group_name || '—'}
                 </td>
                 <td>{ing.cost_price} ₽</td>
                 <td>
@@ -130,6 +146,13 @@ export default function Ingredients() {
               <label className="form-label">Категория</label>
               <select className="form-input" value={form.category_id} onChange={(e) => setForm({ ...form, category_id: Number(e.target.value) })}>
                 {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Группа</label>
+              <select className="form-input" value={form.ingredient_group_id} onChange={(e) => setForm({ ...form, ingredient_group_id: e.target.value })}>
+                <option value="">Без группы</option>
+                {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
               </select>
             </div>
             <div className="form-row">

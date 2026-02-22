@@ -23,6 +23,7 @@ import IntegrationSettings from './pages/admin/IntegrationSettings';
 import EgaisDocuments from './pages/admin/EgaisDocuments';
 import MarkedItems from './pages/admin/MarkedItems';
 import Guests from './pages/admin/Guests';
+import IngredientGroups from './pages/admin/IngredientGroups';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuthStore();
@@ -71,6 +72,7 @@ export default function App() {
         <Route path="admin/categories" element={<AdminRoute><Categories /></AdminRoute>} />
         <Route path="admin/products" element={<AdminRoute><Products /></AdminRoute>} />
         <Route path="admin/ingredients" element={<AdminRoute><Ingredients /></AdminRoute>} />
+        <Route path="admin/ingredient-groups" element={<AdminRoute><IngredientGroups /></AdminRoute>} />
         <Route path="admin/supplies" element={<AdminRoute><Supplies /></AdminRoute>} />
         <Route path="admin/register" element={<Register />} />
         <Route path="admin/users" element={<AdminRoute><Users /></AdminRoute>} />

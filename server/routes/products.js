@@ -16,9 +16,12 @@ router.get('/', async (req, res) => {
   `, [req.tenantId]);
   for (const p of products) {
     p.ingredients = await all(`
-      SELECT pi.*, pr.name as ingredient_name, pr.unit as ingredient_unit, pr.cost_price as ingredient_cost, pr.quantity as ingredient_quantity
+      SELECT pi.*, pr.name as ingredient_name, pr.unit as ingredient_unit,
+        pr.cost_price as ingredient_cost, pr.quantity as ingredient_quantity,
+        ig.name as group_name, ig.unit as group_unit
       FROM product_ingredients pi
-      JOIN products pr ON pi.ingredient_id = pr.id
+      LEFT JOIN products pr ON pi.ingredient_id = pr.id
+      LEFT JOIN ingredient_groups ig ON pi.ingredient_group_id = ig.id
       WHERE pi.product_id = $1
     `, [p.id]);
     // Остаток составного товара = минимум по ингредиентам: (остаток ингредиента / расход на порцию)
@@ -26,7 +29,16 @@ router.get('/', async (req, res) => {
       const outAmt = Number(p.output_amount) || 1;
       let minPortions = Infinity;
       for (const ing of p.ingredients) {
-        const stock = Number(ing.ingredient_quantity) || 0;
+        let stock;
+        if (ing.ingredient_group_id) {
+          const groupStock = await get(
+            'SELECT COALESCE(SUM(quantity), 0) as total FROM products WHERE ingredient_group_id = $1 AND active = true',
+            [ing.ingredient_group_id]
+          );
+          stock = parseFloat(groupStock.total) || 0;
+        } else {
+          stock = Number(ing.ingredient_quantity) || 0;
+        }
         const amount = Number(ing.amount) || 0;
         if (amount <= 0) continue;
         const portions = Math.floor((stock * outAmt) / amount);
@@ -53,16 +65,28 @@ router.get('/:id', async (req, res) => {
   const product = await get('SELECT * FROM products WHERE id = $1 AND active = true AND is_ingredient = false AND tenant_id = $2', [req.params.id, req.tenantId]);
   if (!product) return res.status(404).json({ error: 'Товар не найден' });
   product.ingredients = await all(`
-    SELECT pi.*, pr.name as ingredient_name, pr.unit as ingredient_unit, pr.cost_price as ingredient_cost, pr.quantity as ingredient_quantity
+    SELECT pi.*, pr.name as ingredient_name, pr.unit as ingredient_unit,
+      pr.cost_price as ingredient_cost, pr.quantity as ingredient_quantity,
+      ig.name as group_name, ig.unit as group_unit
     FROM product_ingredients pi
-    JOIN products pr ON pi.ingredient_id = pr.id
+    LEFT JOIN products pr ON pi.ingredient_id = pr.id
+    LEFT JOIN ingredient_groups ig ON pi.ingredient_group_id = ig.id
     WHERE pi.product_id = $1
   `, [product.id]);
   if (product.is_composite && product.ingredients && product.ingredients.length > 0) {
     const outAmt = Number(product.output_amount) || 1;
     let minPortions = Infinity;
     for (const ing of product.ingredients) {
-      const stock = Number(ing.ingredient_quantity) || 0;
+      let stock;
+      if (ing.ingredient_group_id) {
+        const groupStock = await get(
+          'SELECT COALESCE(SUM(quantity), 0) as total FROM products WHERE ingredient_group_id = $1 AND active = true',
+          [ing.ingredient_group_id]
+        );
+        stock = parseFloat(groupStock.total) || 0;
+      } else {
+        stock = Number(ing.ingredient_quantity) || 0;
+      }
       const amount = Number(ing.amount) || 0;
       if (amount <= 0) continue;
       const portions = Math.floor((stock * outAmt) / amount);
@@ -124,16 +148,27 @@ router.put('/:id/ingredients', adminOnly, async (req, res) => {
   if (hasIngredients) {
     for (const ing of ingredients) {
       await run(
-        'INSERT INTO product_ingredients (product_id, ingredient_id, amount) VALUES ($1, $2, $3)',
-        [req.params.id, ing.ingredient_id, ing.amount]
+        'INSERT INTO product_ingredients (product_id, ingredient_id, ingredient_group_id, amount) VALUES ($1, $2, $3, $4)',
+        [req.params.id, ing.ingredient_id || null, ing.ingredient_group_id || null, ing.amount]
       );
     }
   }
   let totalCost = 0;
   if (hasIngredients) {
     for (const ing of ingredients) {
-      const ingProduct = await get('SELECT cost_price FROM products WHERE id = $1', [ing.ingredient_id]);
-      totalCost += ingProduct ? ingProduct.cost_price * ing.amount : 0;
+      if (ing.ingredient_group_id) {
+        // Средневзвешенная себестоимость группы
+        const avgCost = await get(
+          `SELECT CASE WHEN SUM(quantity) > 0
+             THEN SUM(quantity * cost_price) / SUM(quantity) ELSE 0 END as avg_cost
+           FROM products WHERE ingredient_group_id = $1 AND active = true`,
+          [ing.ingredient_group_id]
+        );
+        totalCost += parseFloat(avgCost.avg_cost) * ing.amount;
+      } else if (ing.ingredient_id) {
+        const ingProduct = await get('SELECT cost_price FROM products WHERE id = $1', [ing.ingredient_id]);
+        totalCost += ingProduct ? parseFloat(ingProduct.cost_price) * ing.amount : 0;
+      }
     }
   }
   const outAmt = (output_amount && output_amount > 0) ? output_amount : 1;

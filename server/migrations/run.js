@@ -10,6 +10,7 @@ async function runMigrations() {
     require('./004_superadmin'),
     require('./005_marking_egais'),
     require('./006_guests_loyalty'),
+    require('./007_ingredient_groups'),
   ];
 
   for (const migration of migrations) {

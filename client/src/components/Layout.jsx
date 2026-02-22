@@ -5,7 +5,7 @@ import { api } from '../api';
 import {
   ShoppingCart, Map, LayoutGrid, Package, Truck, Settings,
   CreditCard, Users, BarChart3, LogOut, Boxes, ClipboardList, LayoutDashboard,
-  Building2, FlaskConical, LogIn, ScanBarcode, Wine, Tag, UserCircle
+  Building2, FlaskConical, LogIn, ScanBarcode, Wine, Tag, UserCircle, FolderOpen
 } from 'lucide-react';
 
 export default function Layout() {
@@ -88,6 +88,9 @@ export default function Layout() {
               </NavLink>
               <NavLink to="/admin/ingredients" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
                 <FlaskConical /> Ингредиенты
+              </NavLink>
+              <NavLink to="/admin/ingredient-groups" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
+                <FolderOpen /> Группы ингредиентов
               </NavLink>
               <NavLink to="/admin/inventory" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
                 <Boxes /> Остатки

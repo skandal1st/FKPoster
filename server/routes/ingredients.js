@@ -9,9 +9,11 @@ router.use(authMiddleware, checkSubscription);
 // Get all ingredients (is_ingredient = true)
 router.get('/', async (req, res) => {
   const ingredients = await all(`
-    SELECT p.*, c.name as category_name, c.color as category_color
+    SELECT p.*, c.name as category_name, c.color as category_color,
+      ig.name as group_name
     FROM products p
     JOIN categories c ON p.category_id = c.id
+    LEFT JOIN ingredient_groups ig ON p.ingredient_group_id = ig.id
     WHERE p.active = true AND p.is_ingredient = true AND p.tenant_id = $1
     ORDER BY c.sort_order, p.name
   `, [req.tenantId]);
@@ -28,11 +30,11 @@ router.get('/:id', async (req, res) => {
 });
 
 router.post('/', adminOnly, checkLimit('products'), async (req, res) => {
-  const { category_id, name, cost_price, quantity, unit, track_inventory, min_quantity } = req.body;
+  const { category_id, name, cost_price, quantity, unit, track_inventory, min_quantity, ingredient_group_id } = req.body;
   if (!name || !category_id) return res.status(400).json({ error: 'Заполните обязательные поля' });
   const result = await run(
-    `INSERT INTO products (category_id, name, price, cost_price, quantity, unit, track_inventory, is_ingredient, min_quantity, tenant_id)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
+    `INSERT INTO products (category_id, name, price, cost_price, quantity, unit, track_inventory, is_ingredient, min_quantity, tenant_id, ingredient_group_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
     [
       category_id,
       name,
@@ -43,22 +45,23 @@ router.post('/', adminOnly, checkLimit('products'), async (req, res) => {
       track_inventory ?? true,
       true, // is_ingredient = true
       min_quantity || 0,
-      req.tenantId
+      req.tenantId,
+      ingredient_group_id || null
     ]
   );
   res.json({ id: result.id, name });
 });
 
 router.put('/:id', adminOnly, async (req, res) => {
-  const { category_id, name, cost_price, quantity, unit, track_inventory, min_quantity } = req.body;
+  const { category_id, name, cost_price, quantity, unit, track_inventory, min_quantity, ingredient_group_id } = req.body;
   const ing = await get('SELECT * FROM products WHERE id = $1 AND tenant_id = $2', [req.params.id, req.tenantId]);
   if (!ing) return res.status(404).json({ error: 'Ингредиент не найден' });
   if (!ing.is_ingredient) return res.status(400).json({ error: 'Это не ингредиент' });
-  
+
   await run(
     `UPDATE products SET category_id=$1, name=$2, cost_price=$3, quantity=$4, unit=$5,
-     track_inventory=$6, min_quantity=$7
-     WHERE id=$8 AND tenant_id=$9`,
+     track_inventory=$6, min_quantity=$7, ingredient_group_id=$8
+     WHERE id=$9 AND tenant_id=$10`,
     [
       category_id ?? ing.category_id,
       name ?? ing.name,
@@ -67,6 +70,7 @@ router.put('/:id', adminOnly, async (req, res) => {
       unit ?? ing.unit,
       track_inventory ?? ing.track_inventory,
       min_quantity ?? ing.min_quantity,
+      ingredient_group_id !== undefined ? (ingredient_group_id || null) : ing.ingredient_group_id,
       req.params.id,
       req.tenantId
     ]

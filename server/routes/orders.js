@@ -95,10 +95,23 @@ router.post('/:id/items', async (req, res) => {
     let costPrice = parseFloat(product.cost_price);
     if (product.is_composite) {
       const ingredients = await all(
-        'SELECT pi.amount, p.cost_price FROM product_ingredients pi JOIN products p ON pi.ingredient_id = p.id WHERE pi.product_id = $1',
+        'SELECT pi.amount, pi.ingredient_id, pi.ingredient_group_id, p.cost_price FROM product_ingredients pi LEFT JOIN products p ON pi.ingredient_id = p.id WHERE pi.product_id = $1',
         [product.id]
       );
-      costPrice = ingredients.reduce((sum, i) => sum + parseFloat(i.amount) * parseFloat(i.cost_price), 0);
+      costPrice = 0;
+      for (const i of ingredients) {
+        if (i.ingredient_group_id) {
+          const avgCost = await get(
+            `SELECT CASE WHEN SUM(quantity) > 0
+               THEN SUM(quantity * cost_price) / SUM(quantity) ELSE 0 END as avg_cost
+             FROM products WHERE ingredient_group_id = $1 AND active = true`,
+            [i.ingredient_group_id]
+          );
+          costPrice += parseFloat(i.amount) * (parseFloat(avgCost.avg_cost) || 0);
+        } else if (i.cost_price) {
+          costPrice += parseFloat(i.amount) * parseFloat(i.cost_price);
+        }
+      }
     }
 
     const markingType = product.marking_type || 'none';
@@ -202,10 +215,28 @@ router.post('/:id/close', async (req, res) => {
       if (product.is_composite) {
         const ingredients = await tx.all('SELECT * FROM product_ingredients WHERE product_id = $1', [product.id]);
         for (const ing of ingredients) {
-          const ingProduct = await tx.get('SELECT * FROM products WHERE id = $1', [ing.ingredient_id]);
-          if (ingProduct && ingProduct.track_inventory) {
-            await tx.run('UPDATE products SET quantity = quantity - $1 WHERE id = $2',
-              [parseFloat(ing.amount) * item.quantity, ing.ingredient_id]);
+          if (ing.ingredient_group_id) {
+            // Пропорциональное списание из группы
+            const members = await tx.all(
+              'SELECT id, quantity FROM products WHERE ingredient_group_id = $1 AND active = true AND quantity > 0',
+              [ing.ingredient_group_id]
+            );
+            const totalStock = members.reduce((s, m) => s + parseFloat(m.quantity), 0);
+            const toDeduct = parseFloat(ing.amount) * item.quantity;
+            if (totalStock > 0) {
+              for (const member of members) {
+                const share = (parseFloat(member.quantity) / totalStock) * toDeduct;
+                if (share > 0) {
+                  await tx.run('UPDATE products SET quantity = quantity - $1 WHERE id = $2', [share, member.id]);
+                }
+              }
+            }
+          } else if (ing.ingredient_id) {
+            const ingProduct = await tx.get('SELECT * FROM products WHERE id = $1', [ing.ingredient_id]);
+            if (ingProduct && ingProduct.track_inventory) {
+              await tx.run('UPDATE products SET quantity = quantity - $1 WHERE id = $2',
+                [parseFloat(ing.amount) * item.quantity, ing.ingredient_id]);
+            }
           }
         }
       } else if (product.track_inventory) {
