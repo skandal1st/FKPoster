@@ -32,6 +32,9 @@ const workshopRoutes = require('./routes/workshops');
 
 const app = express();
 
+// За nginx — использовать реальный IP клиента из X-Forwarded-For
+app.set('trust proxy', 1);
+
 // Security
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(morgan(config.NODE_ENV === 'production' ? 'combined' : 'dev'));
