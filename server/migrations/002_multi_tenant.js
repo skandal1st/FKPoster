@@ -63,9 +63,9 @@ async function up() {
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS tenant_id INTEGER REFERENCES tenants(id);
     ALTER TABLE inventories ADD COLUMN IF NOT EXISTS tenant_id INTEGER REFERENCES tenants(id);
 
-    -- Update users role constraint to include 'owner'
+    -- Update users role constraint to include 'owner' (и 'superadmin' на случай повторного запуска после 004)
     ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
-    ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('owner','admin','cashier'));
+    ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('owner','admin','cashier','superadmin'));
 
     -- Indexes for tenant_id
     CREATE INDEX IF NOT EXISTS idx_users_tenant ON users(tenant_id);
