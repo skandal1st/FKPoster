@@ -20,6 +20,9 @@ export default function ReceiptModal({ order, onClose }) {
           <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
             Заказ #{order.id} | {order.closed_at ? new Date(order.closed_at).toLocaleString('ru') : ''}
           </div>
+          {order.guest_name && (
+            <div style={{ fontSize: 12, color: 'var(--accent)', marginTop: 4 }}>Гость: {order.guest_name}</div>
+          )}
         </div>
 
         <div style={{ borderTop: '1px dashed var(--border-color)', padding: '12px 0' }}>
@@ -30,6 +33,13 @@ export default function ReceiptModal({ order, onClose }) {
             </div>
           ))}
         </div>
+
+        {order.discount_amount > 0 && (
+          <div style={{ padding: '8px 0', display: 'flex', justifyContent: 'space-between', fontSize: 14, color: 'var(--accent)' }}>
+            <span>Скидка</span>
+            <span>−{Number(order.discount_amount).toFixed(2)} ₽</span>
+          </div>
+        )}
 
         <div style={{ borderTop: '1px dashed var(--border-color)', padding: '12px 0', display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 18 }}>
           <span>ИТОГО:</span>

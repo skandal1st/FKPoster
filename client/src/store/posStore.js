@@ -9,6 +9,12 @@ export const usePosStore = create((set, get) => ({
   currentOrder: null,
   openOrders: [],
   registerDay: null,
+  guests: [],
+
+  loadGuests: async () => {
+    const guests = await api.get('/guests');
+    set({ guests });
+  },
 
   loadCategories: async () => {
     const categories = await api.get('/categories');
@@ -73,11 +79,13 @@ export const usePosStore = create((set, get) => ({
     set({ currentOrder: order });
   },
 
-  closeOrder: async (paymentMethod) => {
+  closeOrder: async (paymentMethod, guestId = null) => {
     const { currentOrder } = get();
     if (!currentOrder) return;
     try {
-      const order = await api.post(`/orders/${currentOrder.id}/close`, { payment_method: paymentMethod });
+      const body = { payment_method: paymentMethod };
+      if (guestId) body.guest_id = guestId;
+      const order = await api.post(`/orders/${currentOrder.id}/close`, body);
       set({ currentOrder: null });
       get().loadOpenOrders();
       get().loadRegisterDay();

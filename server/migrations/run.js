@@ -9,6 +9,7 @@ async function runMigrations() {
     require('./003_add_ingredients'),
     require('./004_superadmin'),
     require('./005_marking_egais'),
+    require('./006_guests_loyalty'),
   ];
 
   for (const migration of migrations) {

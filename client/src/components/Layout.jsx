@@ -5,7 +5,7 @@ import { api } from '../api';
 import {
   ShoppingCart, Map, LayoutGrid, Package, Truck, Settings,
   CreditCard, Users, BarChart3, LogOut, Boxes, ClipboardList, LayoutDashboard,
-  Building2, FlaskConical, LogIn, ScanBarcode, Wine, Tag
+  Building2, FlaskConical, LogIn, ScanBarcode, Wine, Tag, UserCircle
 } from 'lucide-react';
 
 export default function Layout() {
@@ -100,6 +100,9 @@ export default function Layout() {
               </NavLink>
               <NavLink to="/admin/users" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
                 <Users /> Пользователи
+              </NavLink>
+              <NavLink to="/admin/guests" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
+                <UserCircle /> Гости и скидки
               </NavLink>
             </div>
           )}

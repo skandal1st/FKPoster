@@ -25,6 +25,7 @@ const superadminRoutes = require('./routes/superadmin');
 const integrationRoutes = require('./routes/integrations');
 const egaisRoutes = require('./routes/egais');
 const markingRoutes = require('./routes/marking');
+const guestRoutes = require('./routes/guests');
 
 const app = express();
 
@@ -71,6 +72,7 @@ app.use('/api/superadmin', superadminRoutes);
 app.use('/api/integrations', integrationRoutes);
 app.use('/api/egais', egaisRoutes);
 app.use('/api/marking', markingRoutes);
+app.use('/api/guests', guestRoutes);
 
 // Production: serve React build
 if (config.NODE_ENV === 'production') {

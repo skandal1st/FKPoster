@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { usePosStore } from '../store/posStore';
 import toast from 'react-hot-toast';
-import { Plus, Minus, X, Banknote, CreditCard, Trash2, Receipt, Info } from 'lucide-react';
+import { Plus, Minus, X, Banknote, CreditCard, Trash2, Receipt, Info, User } from 'lucide-react';
 import ReceiptModal from '../components/ReceiptModal';
 import TechCardPopover from '../components/TechCardPopover';
 import MarkingScanner from '../components/MarkingScanner';
@@ -9,8 +9,8 @@ import './POS.css';
 
 export default function POS({ embedded = false, onClose }) {
   const {
-    categories, products, tables, openOrders, currentOrder, registerDay,
-    loadCategories, loadProducts, loadTables, loadOpenOrders, loadRegisterDay,
+    categories, products, tables, openOrders, currentOrder, registerDay, guests,
+    loadCategories, loadProducts, loadTables, loadOpenOrders, loadRegisterDay, loadGuests,
     createOrder, selectOrder, addItem, removeItem, closeOrder, cancelOrder, clearCurrentOrder,
   } = usePosStore();
 
@@ -25,6 +25,8 @@ export default function POS({ embedded = false, onClose }) {
   const [showMarkingScanner, setShowMarkingScanner] = useState(false);
   /** Метод оплаты, отложенный до завершения скана */
   const [pendingPayment, setPendingPayment] = useState(null);
+  /** Выбранный гость для скидки */
+  const [selectedGuest, setSelectedGuest] = useState(null);
 
   useEffect(() => {
     loadCategories();
@@ -32,11 +34,25 @@ export default function POS({ embedded = false, onClose }) {
     loadTables();
     loadOpenOrders();
     loadRegisterDay();
+    loadGuests();
   }, []);
 
   const filteredProducts = selectedCategory
     ? products.filter((p) => p.category_id === selectedCategory)
     : products;
+
+  const totalBeforeDiscount = currentOrder?.total ?? 0;
+  const discountAmount = (() => {
+    if (!selectedGuest || !currentOrder) return 0;
+    const total = parseFloat(currentOrder.total) || 0;
+    if (selectedGuest.discount_type === 'percent') {
+      const pct = Math.min(100, Math.max(0, parseFloat(selectedGuest.discount_value) || 0));
+      return Math.round((total * pct / 100) * 100) / 100;
+    }
+    return Math.min(total, Math.max(0, parseFloat(selectedGuest.discount_value) || 0));
+  })();
+  const totalToPay = Math.max(0, totalBeforeDiscount - discountAmount);
+  const activeGuests = guests.filter((g) => g.active !== false);
 
   const handleNewOrder = async (tableId) => {
     try {
@@ -69,8 +85,9 @@ export default function POS({ embedded = false, onClose }) {
     const method = paymentConfirm;
     setPaymentConfirm(null);
     try {
-      const order = await closeOrder(method);
+      const order = await closeOrder(method, selectedGuest?.id ?? null);
       setShowReceipt(order);
+      setSelectedGuest(null);
       toast.success('Заказ оплачен');
       if (embedded) {
         // Панель закроется после закрытия чека в ReceiptModal onClose
@@ -91,8 +108,9 @@ export default function POS({ embedded = false, onClose }) {
       const method = pendingPayment;
       setPendingPayment(null);
       try {
-        const order = await closeOrder(method);
+        const order = await closeOrder(method, selectedGuest?.id ?? null);
         setShowReceipt(order);
+        setSelectedGuest(null);
         toast.success('Заказ оплачен');
       } catch (err) {
         toast.error(err.message);
@@ -206,6 +224,31 @@ export default function POS({ embedded = false, onClose }) {
           )}
         </div>
 
+        {currentOrder && (
+          <div className="pos-guest-row" style={{ marginBottom: 8 }}>
+            <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
+              <User size={12} style={{ verticalAlign: 'middle', marginRight: 4 }} /> Гость (скидка)
+            </label>
+            <select
+              className="form-input"
+              value={selectedGuest?.id ?? ''}
+              onChange={(e) => {
+                const id = e.target.value ? Number(e.target.value) : null;
+                setSelectedGuest(id ? activeGuests.find((g) => g.id === id) ?? null : null);
+              }}
+              style={{ width: '100%', padding: '6px 8px', fontSize: 13 }}
+            >
+              <option value="">Без гостя</option>
+              {activeGuests.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.name}
+                  {g.discount_type === 'percent' ? ` (−${g.discount_value}%)` : ` (−${g.discount_value} ₽)`}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {!registerDay && (
           <div className="pos-notice">Откройте кассовый день для начала работы</div>
         )}
@@ -238,9 +281,21 @@ export default function POS({ embedded = false, onClose }) {
         {/* Total & pay */}
         {currentOrder && (
           <div className="pos-order-footer">
+            {selectedGuest && discountAmount > 0 ? (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--text-muted)' }}>
+                  <span>Без скидки:</span>
+                  <span>{totalBeforeDiscount} ₽</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--accent)' }}>
+                  <span>Скидка ({selectedGuest.name}):</span>
+                  <span>−{discountAmount} ₽</span>
+                </div>
+              </>
+            ) : null}
             <div className="pos-order-total">
-              <span>Итого:</span>
-              <span>{currentOrder.total} ₽</span>
+              <span>К оплате:</span>
+              <span>{selectedGuest && discountAmount > 0 ? totalToPay : currentOrder.total} ₽</span>
             </div>
             <div className="pos-pay-buttons">
               <button className="btn btn-success pos-pay-btn" onClick={() => handlePayClick('cash')}>
@@ -341,7 +396,7 @@ export default function POS({ embedded = false, onClose }) {
               Оформить оплату <strong>{paymentConfirm === 'cash' ? 'наличными' : 'картой'}</strong> и закрыть стол?
               <br />
               <span style={{ fontSize: 18, fontWeight: 600, marginTop: 8, display: 'block' }}>
-                Итого: {currentOrder.total} ₽
+                К оплате: {selectedGuest && discountAmount > 0 ? totalToPay : currentOrder.total} ₽
               </span>
             </p>
             <div className="modal-footer" style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>

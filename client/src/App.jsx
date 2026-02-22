@@ -22,6 +22,7 @@ import TenantSettings from './pages/admin/TenantSettings';
 import IntegrationSettings from './pages/admin/IntegrationSettings';
 import EgaisDocuments from './pages/admin/EgaisDocuments';
 import MarkedItems from './pages/admin/MarkedItems';
+import Guests from './pages/admin/Guests';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuthStore();
@@ -79,6 +80,7 @@ export default function App() {
         <Route path="admin/integrations" element={<AdminRoute><IntegrationSettings /></AdminRoute>} />
         <Route path="admin/egais" element={<AdminRoute><EgaisDocuments /></AdminRoute>} />
         <Route path="admin/marked-items" element={<AdminRoute><MarkedItems /></AdminRoute>} />
+        <Route path="admin/guests" element={<AdminRoute><Guests /></AdminRoute>} />
         <Route path="dashboard" element={<CashierAllowedRoute><Dashboard /></CashierAllowedRoute>} />
         <Route path="stats" element={<StatsRoute />} />
       </Route>

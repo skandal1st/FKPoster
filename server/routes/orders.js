@@ -10,11 +10,12 @@ router.use(authMiddleware, checkSubscription, loadIntegrations);
 router.get('/', async (req, res) => {
   const { status } = req.query;
   let sql = `
-    SELECT o.*, t.number as table_number, h.name as hall_name, u.name as user_name
+    SELECT o.*, t.number as table_number, h.name as hall_name, u.name as user_name, g.name as guest_name
     FROM orders o
     LEFT JOIN tables t ON o.table_id = t.id
     LEFT JOIN halls h ON t.hall_id = h.id
     LEFT JOIN users u ON o.user_id = u.id
+    LEFT JOIN guests g ON o.guest_id = g.id
     WHERE o.tenant_id = $1
   `;
   const params = [req.tenantId];
@@ -29,10 +30,12 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
   const order = await get(`
-    SELECT o.*, t.number as table_number, h.name as hall_name
+    SELECT o.*, t.number as table_number, h.name as hall_name,
+           g.name as guest_name, g.discount_type as guest_discount_type, g.discount_value as guest_discount_value
     FROM orders o
     LEFT JOIN tables t ON o.table_id = t.id
     LEFT JOIN halls h ON t.hall_id = h.id
+    LEFT JOIN guests g ON o.guest_id = g.id
     WHERE o.id = $1 AND o.tenant_id = $2
   `, [req.params.id, req.tenantId]);
   if (!order) return res.status(404).json({ error: 'Заказ не найден' });
@@ -148,7 +151,7 @@ router.delete('/:id/items/:itemId', async (req, res) => {
 });
 
 router.post('/:id/close', async (req, res) => {
-  const { payment_method } = req.body;
+  const { payment_method, guest_id } = req.body;
   const order = await get("SELECT * FROM orders WHERE id = $1 AND status = 'open' AND tenant_id = $2", [req.params.id, req.tenantId]);
   if (!order) return res.status(400).json({ error: 'Заказ не найден или уже закрыт' });
 
@@ -156,6 +159,25 @@ router.post('/:id/close', async (req, res) => {
 
   const items = await all('SELECT * FROM order_items WHERE order_id = $1', [order.id]);
   if (items.length === 0) return res.status(400).json({ error: 'Заказ пуст' });
+
+  const totalBeforeDiscount = items.reduce((sum, i) => sum + parseFloat(i.total || 0), 0);
+  let discountAmount = 0;
+  let finalGuestId = null;
+
+  if (guest_id) {
+    const guest = await get('SELECT * FROM guests WHERE id = $1 AND tenant_id = $2 AND active = true', [guest_id, req.tenantId]);
+    if (guest) {
+      finalGuestId = guest.id;
+      if (guest.discount_type === 'percent') {
+        const pct = Math.min(100, Math.max(0, parseFloat(guest.discount_value) || 0));
+        discountAmount = Math.round((totalBeforeDiscount * pct / 100) * 100) / 100;
+      } else {
+        discountAmount = Math.min(totalBeforeDiscount, Math.max(0, parseFloat(guest.discount_value) || 0));
+      }
+    }
+  }
+
+  const totalToPay = Math.max(0, totalBeforeDiscount - discountAmount);
 
   // Проверка маркировки: если интеграция включена и есть маркированные позиции
   const hasIntegration = req.integrations && (req.integrations.egais_enabled || req.integrations.chestniy_znak_enabled);
@@ -192,30 +214,39 @@ router.post('/:id/close', async (req, res) => {
       }
     }
 
-    // Update order
+    // Update order: итог к оплате, скидка, гость
     await tx.run(
-      "UPDATE orders SET status = 'closed', payment_method = $1, closed_at = NOW() WHERE id = $2",
-      [payment_method, order.id]
+      `UPDATE orders SET status = 'closed', payment_method = $1, closed_at = NOW(),
+       total = $2, discount_amount = $3, total_before_discount = $4, guest_id = $5 WHERE id = $6`,
+      [payment_method, totalToPay, discountAmount, totalBeforeDiscount, finalGuestId, order.id]
     );
 
-    // Update register day totals
+    // Update register day totals (учитываем фактическую сумму к оплате)
     const day = await tx.get('SELECT * FROM register_days WHERE id = $1', [order.register_day_id]);
     if (day) {
       if (payment_method === 'cash') {
         await tx.run(
           'UPDATE register_days SET total_cash = total_cash + $1, expected_cash = expected_cash + $2, total_sales = total_sales + $3 WHERE id = $4',
-          [order.total, order.total, order.total, day.id]
+          [totalToPay, totalToPay, totalToPay, day.id]
         );
       } else {
         await tx.run(
           'UPDATE register_days SET total_card = total_card + $1, total_sales = total_sales + $2 WHERE id = $3',
-          [order.total, order.total, day.id]
+          [totalToPay, totalToPay, day.id]
         );
       }
     }
   });
 
-  const updated = await get('SELECT * FROM orders WHERE id = $1', [order.id]);
+  const updated = await get(`
+    SELECT o.*, t.number as table_number, h.name as hall_name,
+           g.name as guest_name, g.discount_type as guest_discount_type, g.discount_value as guest_discount_value
+    FROM orders o
+    LEFT JOIN tables t ON o.table_id = t.id
+    LEFT JOIN halls h ON t.hall_id = h.id
+    LEFT JOIN guests g ON o.guest_id = g.id
+    WHERE o.id = $1
+  `, [order.id]);
   updated.items = items;
   res.json(updated);
 });
