@@ -290,4 +290,67 @@ router.post('/:id/cancel', async (req, res) => {
   res.json({ success: true });
 });
 
+/**
+ * Изменить способ оплаты у закрытого заказа.
+ * Пересчитывает итоги кассового дня (total_cash / total_card).
+ */
+router.patch('/:id/payment-method', async (req, res) => {
+  const { payment_method } = req.body;
+  if (!payment_method || !['cash', 'card'].includes(payment_method)) {
+    return res.status(400).json({ error: 'Укажите способ оплаты: cash или card' });
+  }
+
+  const order = await get(
+    "SELECT * FROM orders WHERE id = $1 AND status = 'closed' AND tenant_id = $2",
+    [req.params.id, req.tenantId]
+  );
+  if (!order) return res.status(404).json({ error: 'Заказ не найден или не закрыт' });
+
+  const total = parseFloat(order.total) || 0;
+  const oldMethod = order.payment_method;
+  if (oldMethod === payment_method) {
+    return res.json(order);
+  }
+
+  await transaction(async (tx) => {
+    await tx.run(
+      'UPDATE orders SET payment_method = $1 WHERE id = $2',
+      [payment_method, order.id]
+    );
+
+    const day = await tx.get('SELECT * FROM register_days WHERE id = $1', [order.register_day_id]);
+    if (!day) return;
+
+    if (oldMethod === 'cash') {
+      await tx.run(
+        'UPDATE register_days SET total_cash = GREATEST(0, total_cash - $1), expected_cash = GREATEST(0, expected_cash - $2) WHERE id = $3',
+        [total, total, day.id]
+      );
+    } else {
+      await tx.run(
+        'UPDATE register_days SET total_card = GREATEST(0, total_card - $1) WHERE id = $2',
+        [total, day.id]
+      );
+    }
+
+    if (payment_method === 'cash') {
+      await tx.run(
+        'UPDATE register_days SET total_cash = total_cash + $1, expected_cash = expected_cash + $2 WHERE id = $3',
+        [total, total, day.id]
+      );
+    } else {
+      await tx.run(
+        'UPDATE register_days SET total_card = total_card + $1 WHERE id = $2',
+        [total, day.id]
+      );
+    }
+  });
+
+  const updated = await get(
+    'SELECT o.*, t.number as table_number, h.name as hall_name FROM orders o LEFT JOIN tables t ON o.table_id = t.id LEFT JOIN halls h ON t.hall_id = h.id WHERE o.id = $1',
+    [order.id]
+  );
+  res.json(updated);
+});
+
 module.exports = router;

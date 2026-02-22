@@ -1,18 +1,38 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { X } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 export default function ShiftReportModal({ shiftId, onClose }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [updatingId, setUpdatingId] = useState(null);
 
-  useEffect(() => {
-    api.get(`/stats/shift/${shiftId}`).then((d) => {
+  const fetchShift = () => {
+    return api.get(`/stats/shift/${shiftId}`).then((d) => {
       setData(d);
       setLoading(false);
     });
+  };
+
+  useEffect(() => {
+    fetchShift();
   }, [shiftId]);
+
+  const handlePaymentMethodChange = async (orderId, newMethod) => {
+    if (updatingId) return;
+    setUpdatingId(orderId);
+    try {
+      await api.patch(`/orders/${orderId}/payment-method`, { payment_method: newMethod });
+      await fetchShift();
+      toast.success('Способ оплаты изменён');
+    } catch (err) {
+      toast.error(err.message || 'Не удалось изменить способ оплаты');
+    } finally {
+      setUpdatingId(null);
+    }
+  };
 
   if (loading) return (
     <div className="modal-overlay" onClick={onClose}>
@@ -129,13 +149,27 @@ export default function ShiftReportModal({ shiftId, onClose }) {
                 <td>{o.closed_at ? new Date(o.closed_at).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' }) : '—'}</td>
                 <td>{o.table_number ? `Стол ${o.table_number}` : '—'}</td>
                 <td>{o.total} ₽</td>
-                <td>{o.payment_method === 'cash' ? 'Наличные' : 'Карта'}</td>
+                <td>
+                  <select
+                    className="form-input payment-method-select"
+                    value={o.payment_method || 'cash'}
+                    onChange={(e) => handlePaymentMethodChange(o.id, e.target.value)}
+                    disabled={!!updatingId}
+                    title="Изменить способ оплаты"
+                  >
+                    <option value="cash">Наличные</option>
+                    <option value="card">Карта</option>
+                  </select>
+                </td>
                 <td>{o.cashier_name || '—'}</td>
               </tr>
             ))}
           </tbody>
         </table>
         {data.orders.length === 0 && <div style={{ padding: 20, color: 'var(--text-muted)', textAlign: 'center' }}>Нет заказов</div>}
+        <p style={{ marginTop: 12, fontSize: 12, color: 'var(--text-muted)' }}>
+          Способ оплаты можно изменить в колонке «Оплата» — пересчитаются итоги смены по наличным и карте.
+        </p>
       </div>
     </div>
   );
