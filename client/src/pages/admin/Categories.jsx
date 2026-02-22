@@ -5,25 +5,28 @@ import { Plus, Pencil, Trash2, X } from 'lucide-react';
 
 export default function Categories() {
   const [categories, setCategories] = useState([]);
+  const [workshops, setWorkshops] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ name: '', color: '#6366f1', sort_order: 0 });
+  const [form, setForm] = useState({ name: '', color: '#6366f1', sort_order: 0, workshop_id: '' });
 
   useEffect(() => { load(); }, []);
 
   const load = async () => {
-    setCategories(await api.get('/categories'));
+    const [cats, ws] = await Promise.all([api.get('/categories'), api.get('/workshops')]);
+    setCategories(cats);
+    setWorkshops(ws);
   };
 
   const openNew = () => {
     setEditing(null);
-    setForm({ name: '', color: '#6366f1', sort_order: 0 });
+    setForm({ name: '', color: '#6366f1', sort_order: 0, workshop_id: '' });
     setShowModal(true);
   };
 
   const openEdit = (cat) => {
     setEditing(cat);
-    setForm({ name: cat.name, color: cat.color, sort_order: cat.sort_order });
+    setForm({ name: cat.name, color: cat.color, sort_order: cat.sort_order, workshop_id: cat.workshop_id || '' });
     setShowModal(true);
   };
 
@@ -65,6 +68,7 @@ export default function Categories() {
             <tr>
               <th>Цвет</th>
               <th>Название</th>
+              <th>Цех</th>
               <th>Порядок</th>
               <th></th>
             </tr>
@@ -74,6 +78,7 @@ export default function Categories() {
               <tr key={cat.id}>
                 <td><span className="color-dot" style={{ background: cat.color }} /></td>
                 <td>{cat.name}</td>
+                <td style={{ color: cat.workshop_name ? 'inherit' : 'var(--text-muted)' }}>{cat.workshop_name || 'Без цеха'}</td>
                 <td>{cat.sort_order}</td>
                 <td style={{ textAlign: 'right' }}>
                   <button className="btn-icon" onClick={() => openEdit(cat)}><Pencil size={15} /></button>
@@ -96,6 +101,15 @@ export default function Categories() {
             <div className="form-group">
               <label className="form-label">Название</label>
               <input className="form-input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} autoFocus />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Цех</label>
+              <select className="form-input" value={form.workshop_id} onChange={(e) => setForm({ ...form, workshop_id: e.target.value ? Number(e.target.value) : '' })}>
+                <option value="">Без цеха</option>
+                {workshops.map((ws) => (
+                  <option key={ws.id} value={ws.id}>{ws.name}</option>
+                ))}
+              </select>
             </div>
             <div className="form-row">
               <div className="form-group">

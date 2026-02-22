@@ -24,6 +24,7 @@ import EgaisDocuments from './pages/admin/EgaisDocuments';
 import MarkedItems from './pages/admin/MarkedItems';
 import Guests from './pages/admin/Guests';
 import IngredientGroups from './pages/admin/IngredientGroups';
+import Workshops from './pages/admin/Workshops';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuthStore();
@@ -70,6 +71,7 @@ export default function App() {
         <Route path="pos" element={<Navigate to="/" replace />} />
         <Route path="hall-map" element={<AdminRoute><HallMap /></AdminRoute>} />
         <Route path="admin/categories" element={<AdminRoute><Categories /></AdminRoute>} />
+        <Route path="admin/workshops" element={<AdminRoute><Workshops /></AdminRoute>} />
         <Route path="admin/products" element={<AdminRoute><Products /></AdminRoute>} />
         <Route path="admin/ingredients" element={<AdminRoute><Ingredients /></AdminRoute>} />
         <Route path="admin/ingredient-groups" element={<AdminRoute><IngredientGroups /></AdminRoute>} />

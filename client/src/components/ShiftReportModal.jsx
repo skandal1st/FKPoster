@@ -95,6 +95,28 @@ export default function ShiftReportModal({ shiftId, onClose }) {
           </div>
         )}
 
+        {/* Workshop totals */}
+        {data.workshop_totals && data.workshop_totals.length > 0 && (
+          <div style={{ marginBottom: 20 }}>
+            <h4 style={{ marginBottom: 12 }}>По цехам</h4>
+            <table className="data-table">
+              <thead>
+                <tr><th>Цех</th><th>Выручка</th><th>Наличные</th><th>Карта</th></tr>
+              </thead>
+              <tbody>
+                {data.workshop_totals.map((wt, idx) => (
+                  <tr key={wt.id || `no-ws-${idx}`}>
+                    <td>{wt.name || 'Без цеха'}</td>
+                    <td>{wt.revenue.toLocaleString()} ₽</td>
+                    <td>{wt.cash.toLocaleString()} ₽</td>
+                    <td>{wt.card.toLocaleString()} ₽</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
         {/* Orders list */}
         <h4 style={{ marginBottom: 12 }}>Заказы</h4>
         <table className="data-table">

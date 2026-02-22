@@ -273,6 +273,27 @@ router.get('/shift/:id', async (req, res) => {
     ORDER BY hour
   `, [req.params.id]);
 
+  const workshopTotals = await all(`
+    SELECT w.id, w.name,
+      COALESCE(SUM(oi.total), 0) as revenue,
+      COALESCE(SUM(CASE WHEN o.payment_method = 'cash' THEN oi.total ELSE 0 END), 0) as cash,
+      COALESCE(SUM(CASE WHEN o.payment_method = 'card' THEN oi.total ELSE 0 END), 0) as card
+    FROM order_items oi
+    JOIN orders o ON oi.order_id = o.id
+    JOIN products p ON oi.product_id = p.id
+    JOIN categories c ON p.category_id = c.id
+    LEFT JOIN workshops w ON c.workshop_id = w.id
+    WHERE o.register_day_id = $1 AND o.status = 'closed' AND o.tenant_id = $2
+    GROUP BY w.id, w.name
+    ORDER BY revenue DESC
+  `, [req.params.id, req.tenantId]);
+
+  for (const r of workshopTotals) {
+    r.revenue = parseFloat(r.revenue);
+    r.cash = parseFloat(r.cash);
+    r.card = parseFloat(r.card);
+  }
+
   const revenue = orders.reduce((s, o) => s + parseFloat(o.total), 0);
   const profit = revenue - parseFloat(costData.total_cost || 0);
   const avgCheck = orders.length > 0 ? Math.round(revenue / orders.length) : 0;
@@ -285,7 +306,8 @@ router.get('/shift/:id', async (req, res) => {
     avg_check: avgCheck,
     orders,
     top_products: topProducts,
-    hourly
+    hourly,
+    workshop_totals: workshopTotals
   });
 });
 

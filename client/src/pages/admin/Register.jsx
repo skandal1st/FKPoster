@@ -11,6 +11,7 @@ export default function Register() {
   const [actualCash, setActualCash] = useState('');
   const [loading, setLoading] = useState(true);
   const [selectedShiftId, setSelectedShiftId] = useState(null);
+  const [workshopTotals, setWorkshopTotals] = useState([]);
 
   useEffect(() => { load(); }, []);
 
@@ -19,6 +20,11 @@ export default function Register() {
     const [d, h] = await Promise.all([api.get('/register/current'), api.get('/register/history')]);
     setDay(d);
     setHistory(h);
+    if (d) {
+      api.get('/register/current/workshops').then(setWorkshopTotals).catch(() => {});
+    } else {
+      setWorkshopTotals([]);
+    }
     setLoading(false);
   };
 
@@ -89,6 +95,32 @@ export default function Register() {
               <div className="stat-value">{day.total_card} ₽</div>
             </div>
           </div>
+
+          {workshopTotals.length > 0 && (
+            <div className="card" style={{ marginBottom: 24 }}>
+              <h3 style={{ marginBottom: 16 }}>По цехам</h3>
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Цех</th>
+                    <th>Выручка</th>
+                    <th>Наличные</th>
+                    <th>Карта</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {workshopTotals.map((wt, idx) => (
+                    <tr key={wt.id || `no-ws-${idx}`}>
+                      <td>{wt.name || 'Без цеха'}</td>
+                      <td>{wt.revenue.toLocaleString()} ₽</td>
+                      <td>{wt.cash.toLocaleString()} ₽</td>
+                      <td>{wt.card.toLocaleString()} ₽</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
 
           <div className="card" style={{ maxWidth: 400 }}>
             <h3 style={{ marginBottom: 16 }}>Закрыть кассовый день</h3>

@@ -34,6 +34,33 @@ router.post('/open', async (req, res) => {
   res.json(day);
 });
 
+router.get('/current/workshops', async (req, res) => {
+  const day = await get("SELECT * FROM register_days WHERE status = 'open' AND tenant_id = $1 ORDER BY id DESC LIMIT 1", [req.tenantId]);
+  if (!day) return res.json([]);
+
+  const rows = await all(`
+    SELECT w.id, w.name,
+      COALESCE(SUM(oi.total), 0) as revenue,
+      COALESCE(SUM(CASE WHEN o.payment_method = 'cash' THEN oi.total ELSE 0 END), 0) as cash,
+      COALESCE(SUM(CASE WHEN o.payment_method = 'card' THEN oi.total ELSE 0 END), 0) as card
+    FROM order_items oi
+    JOIN orders o ON oi.order_id = o.id
+    JOIN products p ON oi.product_id = p.id
+    JOIN categories c ON p.category_id = c.id
+    LEFT JOIN workshops w ON c.workshop_id = w.id
+    WHERE o.register_day_id = $1 AND o.status = 'closed' AND o.tenant_id = $2
+    GROUP BY w.id, w.name
+    ORDER BY revenue DESC
+  `, [day.id, req.tenantId]);
+
+  for (const r of rows) {
+    r.revenue = parseFloat(r.revenue);
+    r.cash = parseFloat(r.cash);
+    r.card = parseFloat(r.card);
+  }
+  res.json(rows);
+});
+
 router.post('/close', async (req, res) => {
   const day = await get("SELECT * FROM register_days WHERE status = 'open' AND tenant_id = $1", [req.tenantId]);
   if (!day) {

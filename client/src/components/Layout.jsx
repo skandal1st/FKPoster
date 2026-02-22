@@ -5,7 +5,7 @@ import { api } from '../api';
 import {
   ShoppingCart, Map, LayoutGrid, Package, Truck, Settings,
   CreditCard, Users, BarChart3, LogOut, Boxes, ClipboardList, LayoutDashboard,
-  Building2, FlaskConical, LogIn, ScanBarcode, Wine, Tag, UserCircle, FolderOpen
+  Building2, FlaskConical, LogIn, ScanBarcode, Wine, Tag, UserCircle, FolderOpen, Warehouse
 } from 'lucide-react';
 
 export default function Layout() {
@@ -75,6 +75,9 @@ export default function Layout() {
               <div className="sidebar-section-title">Админ</div>
               <NavLink to="/admin/categories" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
                 <LayoutGrid /> Категории
+              </NavLink>
+              <NavLink to="/admin/workshops" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
+                <Warehouse /> Цеха
               </NavLink>
               <NavLink to="/admin/products" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
                 <Package /> Товары

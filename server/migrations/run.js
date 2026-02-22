@@ -11,6 +11,7 @@ async function runMigrations() {
     require('./005_marking_egais'),
     require('./006_guests_loyalty'),
     require('./007_ingredient_groups'),
+    require('./008_workshops'),
   ];
 
   for (const migration of migrations) {
