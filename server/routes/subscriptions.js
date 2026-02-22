@@ -35,10 +35,18 @@ router.post('/change-plan', ownerOnly, async (req, res) => {
 
   if (existing) {
     await run(
+      "UPDATE subscriptions SET status = 'expired' WHERE tenant_id = $1 AND id != $2 AND status IN ('active','trialing')",
+      [req.tenantId, existing.id]
+    );
+    await run(
       "UPDATE subscriptions SET plan_id = $1, status = 'active', current_period_start = NOW(), current_period_end = NOW() + INTERVAL '30 days' WHERE id = $2",
       [plan_id, existing.id]
     );
   } else {
+    await run(
+      "UPDATE subscriptions SET status = 'expired' WHERE tenant_id = $1 AND status IN ('active','trialing')",
+      [req.tenantId]
+    );
     await run(
       "INSERT INTO subscriptions (tenant_id, plan_id, status, current_period_end) VALUES ($1, $2, 'active', NOW() + INTERVAL '30 days')",
       [req.tenantId, plan_id]

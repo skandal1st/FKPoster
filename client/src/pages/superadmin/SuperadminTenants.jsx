@@ -4,11 +4,18 @@ import toast from 'react-hot-toast';
 import { LogIn, CreditCard, X, Building2 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 
+function defaultPeriodEnd() {
+  const d = new Date();
+  d.setDate(d.getDate() + 30);
+  return d.toISOString().slice(0, 10);
+}
+
 export default function SuperadminTenants() {
   const [tenants, setTenants] = useState([]);
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [subscriptionModal, setSubscriptionModal] = useState(null);
+  const [subscriptionPeriodEnd, setSubscriptionPeriodEnd] = useState('');
 
   useEffect(() => {
     load();
@@ -36,9 +43,11 @@ export default function SuperadminTenants() {
     }
   };
 
-  const handleChangePlan = async (tenantId, planId) => {
+  const handleChangePlan = async (tenantId, planId, periodEnd) => {
     try {
-      await api.put(`/superadmin/tenants/${tenantId}/subscription`, { plan_id: planId });
+      const body = { plan_id: planId };
+      if (periodEnd) body.current_period_end = periodEnd;
+      await api.put(`/superadmin/tenants/${tenantId}/subscription`, body);
       toast.success('Подписка обновлена');
       setSubscriptionModal(null);
       load();
@@ -104,7 +113,7 @@ export default function SuperadminTenants() {
                     <button
                       type="button"
                       className="btn btn-ghost btn-sm"
-                      onClick={() => setSubscriptionModal(t)}
+                      onClick={() => { setSubscriptionModal(t); setSubscriptionPeriodEnd(''); }}
                     >
                       <CreditCard size={14} /> Подписка
                     </button>
@@ -123,7 +132,7 @@ export default function SuperadminTenants() {
 
       {subscriptionModal && (
         <div className="modal-overlay" onClick={() => setSubscriptionModal(null)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 400 }}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420 }}>
             <div className="modal-header">
               <h3 className="modal-title">Подписка: {subscriptionModal.name}</h3>
               <button type="button" className="btn-icon" onClick={() => setSubscriptionModal(null)}>
@@ -134,19 +143,32 @@ export default function SuperadminTenants() {
               <p style={{ marginBottom: 12, fontSize: 14, color: 'var(--text-secondary)' }}>
                 Выберите план
               </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
                 {plans.map((p) => (
                   <button
                     key={p.id}
                     type="button"
                     className="btn btn-ghost"
                     style={{ justifyContent: 'space-between', textAlign: 'left' }}
-                    onClick={() => handleChangePlan(subscriptionModal.id, p.id)}
+                    onClick={() => handleChangePlan(subscriptionModal.id, p.id, subscriptionPeriodEnd || null)}
                   >
                     <span>{p.name}</span>
                     <span>{p.price ? `${p.price} ₽` : 'Бесплатно'}</span>
                   </button>
                 ))}
+              </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">Действует до (необязательно)</label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={subscriptionPeriodEnd || (subscriptionModal.current_period_end ? new Date(subscriptionModal.current_period_end).toISOString().slice(0, 10) : defaultPeriodEnd())}
+                  onChange={(e) => setSubscriptionPeriodEnd(e.target.value)}
+                  min={new Date().toISOString().slice(0, 10)}
+                />
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>
+                  Если не указать — подписка продлится на 30 дней от текущей даты
+                </p>
               </div>
             </div>
           </div>
