@@ -83,11 +83,13 @@ if (config.NODE_ENV === 'production') {
   });
 }
 
-// Error handler
+// Error handler (в т.ч. необработанные ошибки из async-роутов — чтобы не ронять процесс и не отдавать 502)
 app.use((err, req, res, next) => {
   console.error('Server error:', err.message);
   if (!res.headersSent) {
-    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    const code = err.code || '';
+    const msg = code === '42P01' ? 'Ошибка БД: таблица не найдена. Выполните миграции: docker compose exec app node migrations/run.js' : 'Внутренняя ошибка сервера';
+    res.status(500).json({ error: msg });
   }
 });
 

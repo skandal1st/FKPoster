@@ -6,8 +6,15 @@ const { checkSubscription } = require('../middleware/subscription');
 const router = express.Router();
 router.use(authMiddleware, checkSubscription);
 
+/** Оборачивает async-обработчик: при ошибке передаёт в next(), чтобы не ронять процесс */
+function wrap(fn) {
+  return (req, res, next) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
+}
+
 /** Список гостей (для админки и для выбора в POS) */
-router.get('/', async (req, res) => {
+router.get('/', wrap(async (req, res) => {
   const { search } = req.query;
   let sql = `
     SELECT id, name, phone, discount_type, discount_value, bonus_balance, active, created_at
@@ -22,20 +29,20 @@ router.get('/', async (req, res) => {
   sql += ' ORDER BY name';
   const guests = await all(sql, params);
   res.json(guests);
-});
+}));
 
 /** Один гость */
-router.get('/:id', async (req, res) => {
+router.get('/:id', wrap(async (req, res) => {
   const guest = await get(
     'SELECT * FROM guests WHERE id = $1 AND tenant_id = $2',
     [req.params.id, req.tenantId]
   );
   if (!guest) return res.status(404).json({ error: 'Гость не найден' });
   res.json(guest);
-});
+}));
 
 /** Статистика по гостю за период: заказы, сумма заказов, сумма скидки */
-router.get('/:id/stats', async (req, res) => {
+router.get('/:id/stats', wrap(async (req, res) => {
   const guest = await get('SELECT id FROM guests WHERE id = $1 AND tenant_id = $2', [req.params.id, req.tenantId]);
   if (!guest) return res.status(404).json({ error: 'Гость не найден' });
 
@@ -70,10 +77,10 @@ router.get('/:id/stats', async (req, res) => {
     total_discount: totalDiscount,
     total_paid: totalPaid,
   });
-});
+}));
 
 /** Создать гостя — только админ */
-router.post('/', adminOnly, async (req, res) => {
+router.post('/', adminOnly, wrap(async (req, res) => {
   const { name, phone, discount_type, discount_value, bonus_balance } = req.body;
   const nameStr = typeof name === 'string' ? name.trim() : '';
   if (!nameStr) return res.status(400).json({ error: 'Укажите имя гостя' });
@@ -89,10 +96,10 @@ router.post('/', adminOnly, async (req, res) => {
   );
   const guest = await get('SELECT * FROM guests WHERE id = $1', [result.id]);
   res.status(201).json(guest);
-});
+}));
 
 /** Обновить гостя — только админ */
-router.put('/:id', adminOnly, async (req, res) => {
+router.put('/:id', adminOnly, wrap(async (req, res) => {
   const { name, phone, discount_type, discount_value, bonus_balance, active } = req.body;
   const guest = await get('SELECT id FROM guests WHERE id = $1 AND tenant_id = $2', [req.params.id, req.tenantId]);
   if (!guest) return res.status(404).json({ error: 'Гость не найден' });
@@ -141,13 +148,13 @@ router.put('/:id', adminOnly, async (req, res) => {
   );
   const updated = await get('SELECT * FROM guests WHERE id = $1', [req.params.id]);
   res.json(updated);
-});
+}));
 
 /** Удалить (деактивировать) гостя — только админ */
-router.delete('/:id', adminOnly, async (req, res) => {
+router.delete('/:id', adminOnly, wrap(async (req, res) => {
   const r = await run('UPDATE guests SET active = false WHERE id = $1 AND tenant_id = $2', [req.params.id, req.tenantId]);
   if (r.rowCount === 0) return res.status(404).json({ error: 'Гость не найден' });
   res.json({ success: true });
-});
+}));
 
 module.exports = router;

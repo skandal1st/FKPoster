@@ -222,13 +222,20 @@ log "Сборка и запуск контейнеров ($PROJECT_NAME)..."
 docker compose up -d --build
 
 # ============== 8. Миграции БД ==============
-log "Ожидание готовности БД..."
-sleep 5
-if docker compose -p "$PROJECT_NAME" exec -T app node migrations/run.js 2>/dev/null; then
-  log "Миграции выполнены."
-else
-  warn "Миграции уже применены или ошибка (проверьте логи: docker compose logs app)."
-fi
+log "Ожидание готовности БД и выполнение миграций..."
+for i in 1 2 3 4 5 6 7 8 9 10; do
+  if docker compose -p "$PROJECT_NAME" exec -T app node migrations/run.js 2>&1; then
+    log "Миграции выполнены."
+    break
+  else
+    if [ "$i" -eq 10 ]; then
+      err "Не удалось выполнить миграции после 10 попыток. Проверьте: docker compose -p $PROJECT_NAME logs app"
+      exit 1
+    fi
+    warn "Миграции не прошли (попытка $i/10), ждём 3 сек..."
+    sleep 3
+  fi
+done
 
 # ============== Готово ==============
 log "Деплой завершён."
