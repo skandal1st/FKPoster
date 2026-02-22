@@ -19,6 +19,9 @@ import Inventory from './pages/admin/Inventory';
 import InventoryCheck from './pages/admin/InventoryCheck';
 import Dashboard from './pages/Dashboard';
 import TenantSettings from './pages/admin/TenantSettings';
+import IntegrationSettings from './pages/admin/IntegrationSettings';
+import EgaisDocuments from './pages/admin/EgaisDocuments';
+import MarkedItems from './pages/admin/MarkedItems';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuthStore();
@@ -73,6 +76,9 @@ export default function App() {
         <Route path="admin/inventory" element={<AdminRoute><Inventory /></AdminRoute>} />
         <Route path="admin/inventory-check" element={<AdminRoute><InventoryCheck /></AdminRoute>} />
         <Route path="admin/settings" element={<AdminRoute><TenantSettings /></AdminRoute>} />
+        <Route path="admin/integrations" element={<AdminRoute><IntegrationSettings /></AdminRoute>} />
+        <Route path="admin/egais" element={<AdminRoute><EgaisDocuments /></AdminRoute>} />
+        <Route path="admin/marked-items" element={<AdminRoute><MarkedItems /></AdminRoute>} />
         <Route path="dashboard" element={<CashierAllowedRoute><Dashboard /></CashierAllowedRoute>} />
         <Route path="stats" element={<StatsRoute />} />
       </Route>

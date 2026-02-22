@@ -5,7 +5,7 @@ import { api } from '../api';
 import {
   ShoppingCart, Map, LayoutGrid, Package, Truck, Settings,
   CreditCard, Users, BarChart3, LogOut, Boxes, ClipboardList, LayoutDashboard,
-  Building2, FlaskConical, LogIn
+  Building2, FlaskConical, LogIn, ScanBarcode, Wine, Tag
 } from 'lucide-react';
 
 export default function Layout() {
@@ -16,12 +16,16 @@ export default function Layout() {
   const isOwner = user?.role === 'owner';
   const isCashier = user?.role === 'cashier';
   const [lowStockCount, setLowStockCount] = useState(0);
+  const [integrations, setIntegrations] = useState(null);
 
   useEffect(() => {
     if (isAdmin) {
       api.get('/products/low-stock').then((d) => setLowStockCount(d.count)).catch(() => {});
+      api.get('/integrations').then(setIntegrations).catch(() => {});
     }
   }, [isAdmin]);
+
+  const hasMarking = integrations && (integrations.egais_enabled || integrations.chestniy_znak_enabled);
 
   const handleExitImpersonation = async () => {
     await exitImpersonation();
@@ -100,6 +104,25 @@ export default function Layout() {
             </div>
           )}
 
+          {isAdmin && hasMarking && (
+            <div className="sidebar-section">
+              <div className="sidebar-section-title">Маркировка</div>
+              {integrations.egais_enabled && (
+                <NavLink to="/admin/egais" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
+                  <Wine /> ЕГАИС
+                </NavLink>
+              )}
+              <NavLink to="/admin/marked-items" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
+                <Tag /> Маркированные товары
+              </NavLink>
+              {isOwner && (
+                <NavLink to="/admin/integrations" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
+                  <ScanBarcode /> Настройки интеграций
+                </NavLink>
+              )}
+            </div>
+          )}
+
           <div className="sidebar-section">
             <div className="sidebar-section-title">Аналитика</div>
             {(isAdmin || isCashier) && (
@@ -120,6 +143,11 @@ export default function Layout() {
               <NavLink to="/admin/settings" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
                 <Building2 /> Настройки
               </NavLink>
+              {isOwner && !hasMarking && (
+                <NavLink to="/admin/integrations" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
+                  <ScanBarcode /> Интеграции
+                </NavLink>
+              )}
             </div>
           )}
         </nav>

@@ -4,7 +4,7 @@ async function checkSubscription(req, res, next) {
   if (!req.tenantId) return next();
 
   const sub = await get(`
-    SELECT s.*, p.max_users, p.max_halls, p.max_products, p.name as plan_name
+    SELECT s.*, p.max_users, p.max_halls, p.max_products, p.name as plan_name, p.features as plan_features
     FROM subscriptions s
     JOIN plans p ON s.plan_id = p.id
     WHERE s.tenant_id = $1 AND s.status IN ('active', 'trialing')
@@ -52,4 +52,20 @@ function checkLimit(resource) {
   };
 }
 
-module.exports = { checkSubscription, checkLimit };
+function checkFeature(feature) {
+  return (req, res, next) => {
+    if (!req.plan) return next();
+
+    const features = req.plan.plan_features || {};
+    if (!features[feature]) {
+      return res.status(403).json({
+        error: `Функция "${feature}" недоступна на вашем тарифе. Обновите план.`,
+        feature,
+      });
+    }
+
+    next();
+  };
+}
+
+module.exports = { checkSubscription, checkLimit, checkFeature };

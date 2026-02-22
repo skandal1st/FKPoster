@@ -2,9 +2,10 @@ const express = require('express');
 const { all, get, run, transaction } = require('../db');
 const { authMiddleware } = require('../middleware/auth');
 const { checkSubscription } = require('../middleware/subscription');
+const { loadIntegrations } = require('../middleware/integration');
 
 const router = express.Router();
-router.use(authMiddleware, checkSubscription);
+router.use(authMiddleware, checkSubscription, loadIntegrations);
 
 router.get('/', async (req, res) => {
   const { status } = req.query;
@@ -97,9 +98,12 @@ router.post('/:id/items', async (req, res) => {
       costPrice = ingredients.reduce((sum, i) => sum + parseFloat(i.amount) * parseFloat(i.cost_price), 0);
     }
 
+    const markingType = product.marking_type || 'none';
+    const markedCodesRequired = markingType !== 'none' ? qty : 0;
+
     await run(
-      'INSERT INTO order_items (order_id, product_id, product_name, quantity, price, cost_price, total) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-      [order.id, product_id, product.name, qty, product.price, costPrice, qty * parseFloat(product.price)]
+      'INSERT INTO order_items (order_id, product_id, product_name, quantity, price, cost_price, total, marking_type, marked_codes_required) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+      [order.id, product_id, product.name, qty, product.price, costPrice, qty * parseFloat(product.price), markingType, markedCodesRequired]
     );
   }
 
@@ -152,6 +156,20 @@ router.post('/:id/close', async (req, res) => {
 
   const items = await all('SELECT * FROM order_items WHERE order_id = $1', [order.id]);
   if (items.length === 0) return res.status(400).json({ error: 'Заказ пуст' });
+
+  // Проверка маркировки: если интеграция включена и есть маркированные позиции
+  const hasIntegration = req.integrations && (req.integrations.egais_enabled || req.integrations.chestniy_znak_enabled);
+  if (hasIntegration) {
+    const markedItems = items.filter((i) => i.marking_type && i.marking_type !== 'none');
+    for (const mi of markedItems) {
+      if (mi.marked_codes_scanned < mi.marked_codes_required) {
+        return res.status(400).json({
+          error: `Не все коды маркировки отсканированы для "${mi.product_name}". Отсканировано: ${mi.marked_codes_scanned} из ${mi.marked_codes_required}`,
+          requires_marking: true,
+        });
+      }
+    }
+  }
 
   await transaction(async (tx) => {
     // Deduct inventory

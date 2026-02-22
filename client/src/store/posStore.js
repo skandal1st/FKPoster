@@ -76,12 +76,22 @@ export const usePosStore = create((set, get) => ({
   closeOrder: async (paymentMethod) => {
     const { currentOrder } = get();
     if (!currentOrder) return;
-    const order = await api.post(`/orders/${currentOrder.id}/close`, { payment_method: paymentMethod });
-    set({ currentOrder: null });
-    get().loadOpenOrders();
-    get().loadRegisterDay();
-    get().loadProducts();
-    return order;
+    try {
+      const order = await api.post(`/orders/${currentOrder.id}/close`, { payment_method: paymentMethod });
+      set({ currentOrder: null });
+      get().loadOpenOrders();
+      get().loadRegisterDay();
+      get().loadProducts();
+      return order;
+    } catch (err) {
+      // Пробрасываем спец. ошибку для маркировки
+      if (err.message && err.message.includes('маркировки')) {
+        const error = new Error(err.message);
+        error.requires_marking = true;
+        throw error;
+      }
+      throw err;
+    }
   },
 
   cancelOrder: async () => {

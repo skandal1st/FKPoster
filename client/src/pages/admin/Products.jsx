@@ -13,7 +13,8 @@ export default function Products() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({
     category_id: '', name: '', price: '', cost_price: '', quantity: '',
-    unit: 'шт', track_inventory: 1, is_composite: 0, min_quantity: ''
+    unit: 'шт', track_inventory: 1, is_composite: 0, min_quantity: '',
+    barcode: '', marking_type: 'none', egais_alcocode: '', tobacco_gtin: ''
   });
 
   useEffect(() => { load(); }, []);
@@ -31,7 +32,7 @@ export default function Products() {
 
   const openNew = () => {
     setEditing(null);
-    setForm({ category_id: categories[0]?.id || '', name: '', price: '', cost_price: '', quantity: '', unit: 'шт', track_inventory: 1, is_composite: 0, min_quantity: '' });
+    setForm({ category_id: categories[0]?.id || '', name: '', price: '', cost_price: '', quantity: '', unit: 'шт', track_inventory: 1, is_composite: 0, min_quantity: '', barcode: '', marking_type: 'none', egais_alcocode: '', tobacco_gtin: '' });
     setShowModal(true);
   };
 
@@ -40,7 +41,9 @@ export default function Products() {
     setForm({
       category_id: p.category_id, name: p.name, price: p.price, cost_price: p.cost_price,
       quantity: p.quantity, unit: p.unit, track_inventory: p.track_inventory, is_composite: p.is_composite,
-      min_quantity: p.min_quantity || ''
+      min_quantity: p.min_quantity || '',
+      barcode: p.barcode || '', marking_type: p.marking_type || 'none',
+      egais_alcocode: p.egais_alcocode || '', tobacco_gtin: p.tobacco_gtin || ''
     });
     setShowModal(true);
   };
@@ -126,6 +129,8 @@ export default function Products() {
                 </td>
                 <td>
                   {p.is_composite ? <span className="badge badge-warning">Составной</span> : <span className="badge badge-success">Простой</span>}
+                  {p.marking_type === 'egais' && <span className="badge badge-warning" style={{ marginLeft: 4, fontSize: 10 }}>ЕГАИС</span>}
+                  {p.marking_type === 'tobacco' && <span className="badge badge-warning" style={{ marginLeft: 4, fontSize: 10 }}>Табак</span>}
                 </td>
                 <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                   <button type="button" className="btn-icon" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setTechCardProduct(p); }} title="Техкарта">
@@ -188,6 +193,32 @@ export default function Products() {
               <label className="form-label">Мин. остаток (порог)</label>
               <input className="form-input" type="number" value={form.min_quantity} onChange={(e) => setForm({ ...form, min_quantity: e.target.value })} placeholder="0" />
             </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Штрихкод</label>
+                <input className="form-input" value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} placeholder="EAN-13 / EAN-8" />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Маркировка</label>
+                <select className="form-input" value={form.marking_type} onChange={(e) => setForm({ ...form, marking_type: e.target.value })}>
+                  <option value="none">Нет</option>
+                  <option value="egais">ЕГАИС (алкоголь)</option>
+                  <option value="tobacco">Табак (Честный знак)</option>
+                </select>
+              </div>
+            </div>
+            {form.marking_type === 'egais' && (
+              <div className="form-group">
+                <label className="form-label">Алкокод ЕГАИС</label>
+                <input className="form-input" value={form.egais_alcocode} onChange={(e) => setForm({ ...form, egais_alcocode: e.target.value })} placeholder="Код продукции в ЕГАИС" />
+              </div>
+            )}
+            {form.marking_type === 'tobacco' && (
+              <div className="form-group">
+                <label className="form-label">GTIN табака</label>
+                <input className="form-input" value={form.tobacco_gtin} onChange={(e) => setForm({ ...form, tobacco_gtin: e.target.value })} placeholder="14-значный GTIN" maxLength={14} />
+              </div>
+            )}
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">

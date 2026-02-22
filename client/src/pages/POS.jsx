@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { Plus, Minus, X, Banknote, CreditCard, Trash2, Receipt, Info } from 'lucide-react';
 import ReceiptModal from '../components/ReceiptModal';
 import TechCardPopover from '../components/TechCardPopover';
+import MarkingScanner from '../components/MarkingScanner';
 import './POS.css';
 
 export default function POS({ embedded = false, onClose }) {
@@ -20,6 +21,10 @@ export default function POS({ embedded = false, onClose }) {
   const [techCardPopoverProduct, setTechCardPopoverProduct] = useState(null);
   /** Способ оплаты для подтверждения закрытия стола: 'cash' | 'card' | null */
   const [paymentConfirm, setPaymentConfirm] = useState(null);
+  /** Показать сканер маркировки перед оплатой */
+  const [showMarkingScanner, setShowMarkingScanner] = useState(false);
+  /** Метод оплаты, отложенный до завершения скана */
+  const [pendingPayment, setPendingPayment] = useState(null);
 
   useEffect(() => {
     loadCategories();
@@ -71,7 +76,27 @@ export default function POS({ embedded = false, onClose }) {
         // Панель закроется после закрытия чека в ReceiptModal onClose
       }
     } catch (err) {
-      toast.error(err.message);
+      if (err.requires_marking) {
+        setPendingPayment(method);
+        setShowMarkingScanner(true);
+      } else {
+        toast.error(err.message);
+      }
+    }
+  };
+
+  const handleMarkingScanComplete = async () => {
+    setShowMarkingScanner(false);
+    if (pendingPayment) {
+      const method = pendingPayment;
+      setPendingPayment(null);
+      try {
+        const order = await closeOrder(method);
+        setShowReceipt(order);
+        toast.success('Заказ оплачен');
+      } catch (err) {
+        toast.error(err.message);
+      }
     }
   };
 
@@ -350,6 +375,21 @@ export default function POS({ embedded = false, onClose }) {
         <TechCardPopover
           product={techCardPopoverProduct}
           onClose={() => setTechCardPopoverProduct(null)}
+        />
+      )}
+
+      {showMarkingScanner && currentOrder && (
+        <MarkingScanner
+          context="order"
+          contextId={currentOrder.id}
+          items={(currentOrder.items || []).filter((i) => i.marking_type && i.marking_type !== 'none').map((i) => ({
+            product_id: i.product_id,
+            product_name: i.product_name,
+            marking_type: i.marking_type,
+            marked_codes_required: i.marked_codes_required || i.quantity,
+          }))}
+          onClose={() => { setShowMarkingScanner(false); setPendingPayment(null); }}
+          onComplete={handleMarkingScanComplete}
         />
       )}
     </div>

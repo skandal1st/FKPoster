@@ -1,8 +1,9 @@
 import { useEffect, useState, useMemo } from 'react';
 import { api } from '../../api';
 import toast from 'react-hot-toast';
-import { Plus, X, ChevronDown, ChevronRight, Download } from 'lucide-react';
+import { Plus, X, ChevronDown, ChevronRight, Download, ScanBarcode } from 'lucide-react';
 import { exportToCsv } from '../../utils/exportCsv';
+import MarkingScanner from '../../components/MarkingScanner';
 
 export default function Supplies() {
   const [supplies, setSupplies] = useState([]);
@@ -12,6 +13,7 @@ export default function Supplies() {
   const [expanded, setExpanded] = useState(null);
   const [form, setForm] = useState({ supplier: '', note: '', items: [] });
   const [openDropdownIdx, setOpenDropdownIdx] = useState(null);
+  const [scanSupply, setScanSupply] = useState(null);
 
   const supplyOptions = useMemo(() => {
     const prods = (products || []).map((p) => ({ ...p, _type: 'product' }));
@@ -159,12 +161,32 @@ export default function Supplies() {
                 {expanded === s.id && s.items?.map((item) => (
                   <tr key={`${s.id}-${item.id}`} style={{ background: 'var(--bg-tertiary)' }}>
                     <td></td>
-                    <td colSpan={2}>{item.product_name}</td>
+                    <td colSpan={2}>
+                      {item.product_name}
+                      {item.marking_type && item.marking_type !== 'none' && (
+                        <span className="badge badge-warning" style={{ marginLeft: 6, fontSize: 10 }}>
+                          {item.marking_type === 'egais' ? 'ЕГАИС' : 'Табак'}
+                        </span>
+                      )}
+                    </td>
                     <td>{item.quantity} {item.unit}</td>
                     <td>{item.unit_cost} ₽/ед</td>
                     <td>{(item.quantity * item.unit_cost).toFixed(0)} ₽</td>
                   </tr>
                 ))}
+                {expanded === s.id && s.items?.some((i) => i.marking_type && i.marking_type !== 'none') && (
+                  <tr key={`${s.id}-scan`} style={{ background: 'var(--bg-tertiary)' }}>
+                    <td colSpan={6} style={{ textAlign: 'center' }}>
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        onClick={(e) => { e.stopPropagation(); setScanSupply(s); }}
+                        style={{ color: 'var(--accent)' }}
+                      >
+                        <ScanBarcode size={14} /> Сканировать маркировку
+                      </button>
+                    </td>
+                  </tr>
+                )}
               </>
             ))}
           </tbody>
@@ -273,6 +295,21 @@ export default function Supplies() {
             </div>
           </div>
         </div>
+      )}
+
+      {scanSupply && (
+        <MarkingScanner
+          context="supply"
+          contextId={scanSupply.id}
+          items={(scanSupply.items || []).filter((i) => i.marking_type && i.marking_type !== 'none').map((i) => ({
+            product_id: i.product_id,
+            product_name: i.product_name,
+            marking_type: i.marking_type,
+            expected_marked_count: i.expected_marked_count || Math.ceil(i.quantity),
+          }))}
+          onClose={() => setScanSupply(null)}
+          onComplete={() => { setScanSupply(null); load(); }}
+        />
       )}
     </div>
   );

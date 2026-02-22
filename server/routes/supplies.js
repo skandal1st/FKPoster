@@ -40,9 +40,14 @@ router.post('/', async (req, res) => {
     const supplyId = supplyRes.id;
 
     for (const item of items) {
+      // Определяем тип маркировки товара
+      const productInfo = await tx.get('SELECT marking_type FROM products WHERE id = $1 AND tenant_id = $2', [item.product_id, req.tenantId]);
+      const markingType = productInfo?.marking_type || 'none';
+      const expectedMarkedCount = markingType !== 'none' ? Math.ceil(item.quantity) : 0;
+
       await tx.run(
-        'INSERT INTO supply_items (supply_id, product_id, quantity, unit_cost) VALUES ($1, $2, $3, $4)',
-        [supplyId, item.product_id, item.quantity, item.unit_cost]
+        'INSERT INTO supply_items (supply_id, product_id, quantity, unit_cost, marking_type, expected_marked_count) VALUES ($1, $2, $3, $4, $5, $6)',
+        [supplyId, item.product_id, item.quantity, item.unit_cost, markingType, expectedMarkedCount]
       );
 
       const product = await tx.get('SELECT quantity, cost_price FROM products WHERE id = $1 AND tenant_id = $2', [item.product_id, req.tenantId]);
