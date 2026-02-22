@@ -1,9 +1,10 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { get } = require('../db');
+const { get, all } = require('../db');
 const { authMiddleware } = require('../middleware/auth');
 const config = require('../config');
+const { generateUniqueSlug } = require('../utils/slugify');
 
 const router = express.Router();
 
@@ -15,6 +16,11 @@ router.post('/login', async (req, res) => {
 
   const user = await get('SELECT * FROM users WHERE email = $1 AND active = true', [email]);
   if (!user) {
+    return res.status(401).json({ error: 'Неверный email или пароль' });
+  }
+
+  // Если запрос с сабдомена — проверяем что user принадлежит этому tenant'у
+  if (req.subdomainTenant && user.tenant_id !== req.subdomainTenant.id && user.role !== 'superadmin') {
     return res.status(401).json({ error: 'Неверный email или пароль' });
   }
 
@@ -59,11 +65,12 @@ router.post('/register', async (req, res) => {
   }
 
   const { transaction } = require('../db');
+  const slug = await generateUniqueSlug(company_name);
+
   const result = await transaction(async (tx) => {
-    const slug = company_name.toLowerCase().replace(/[^a-zа-яё0-9]/gi, '-').replace(/-+/g, '-').substring(0, 100);
     const tenantRes = await tx.run(
       'INSERT INTO tenants (name, slug) VALUES ($1, $2) RETURNING id',
-      [company_name, slug + '-' + Date.now()]
+      [company_name, slug]
     );
     const tenantId = tenantRes.id;
 
@@ -149,6 +156,81 @@ router.post('/accept-invite', async (req, res) => {
   );
 
   res.json({ token: jwtToken, user, tenant });
+});
+
+// GET /auth/employees — список сотрудников для PIN-входа на сабдомене (публичный)
+router.get('/employees', async (req, res) => {
+  if (!req.subdomainTenant) {
+    return res.status(400).json({ error: 'Доступно только на сабдомене заведения' });
+  }
+
+  const employees = await all(
+    'SELECT id, name, role FROM users WHERE tenant_id = $1 AND active = true AND pin_hash IS NOT NULL ORDER BY name',
+    [req.subdomainTenant.id]
+  );
+
+  res.json({
+    employees,
+    tenant: {
+      name: req.subdomainTenant.name,
+      logo_url: req.subdomainTenant.logo_url,
+      accent_color: req.subdomainTenant.accent_color,
+    },
+  });
+});
+
+// POST /auth/pin-login — вход по PIN-коду (публичный)
+router.post('/pin-login', async (req, res) => {
+  const { user_id, pin } = req.body;
+  if (!user_id || !pin) {
+    return res.status(400).json({ error: 'Укажите пользователя и PIN-код' });
+  }
+  if (!req.subdomainTenant) {
+    return res.status(400).json({ error: 'Доступно только на сабдомене заведения' });
+  }
+
+  const user = await get(
+    'SELECT * FROM users WHERE id = $1 AND tenant_id = $2 AND active = true',
+    [user_id, req.subdomainTenant.id]
+  );
+  if (!user || !user.pin_hash) {
+    return res.status(401).json({ error: 'Неверный PIN-код' });
+  }
+
+  const valid = await bcrypt.compare(pin, user.pin_hash);
+  if (!valid) {
+    return res.status(401).json({ error: 'Неверный PIN-код' });
+  }
+
+  const token = jwt.sign(
+    { id: user.id, role: user.role, tenant_id: user.tenant_id },
+    config.JWT_SECRET,
+    { expiresIn: '24h' }
+  );
+
+  const tenant = await get(
+    'SELECT id, name, slug, logo_url, accent_color FROM tenants WHERE id = $1',
+    [user.tenant_id]
+  );
+
+  res.json({
+    token,
+    user: { id: user.id, email: user.email, name: user.name, role: user.role, tenant_id: user.tenant_id },
+    tenant,
+  });
+});
+
+// GET /auth/tenant-info — branding tenant'а для сабдомена (публичный)
+router.get('/tenant-info', async (req, res) => {
+  if (!req.subdomainTenant) {
+    return res.status(400).json({ error: 'Доступно только на сабдомене заведения' });
+  }
+  res.json({
+    name: req.subdomainTenant.name,
+    slug: req.subdomainTenant.slug,
+    logo_url: req.subdomainTenant.logo_url,
+    accent_color: req.subdomainTenant.accent_color,
+  });
 });
 
 router.get('/me', authMiddleware, async (req, res) => {

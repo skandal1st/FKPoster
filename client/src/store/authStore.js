@@ -20,6 +20,12 @@ export const useAuthStore = create((set) => ({
 
   register: async (company_name, name, email, password) => {
     const data = await api.post('/auth/register', { company_name, name, email, password });
+    // Не сохраняем токен на main domain — вернём data для редиректа на сабдомен
+    return data;
+  },
+
+  pinLogin: async (userId, pin) => {
+    const data = await api.post('/auth/pin-login', { user_id: userId, pin });
     localStorage.setItem('token', data.token);
     if (data.tenant) applyBranding(data.tenant);
     set({ user: data.user, tenant: data.tenant, token: data.token });

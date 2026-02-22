@@ -1,12 +1,14 @@
 import { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
+import { isSubdomain } from './utils/subdomain';
 import Layout from './components/Layout';
 import LayoutSwitch from './components/LayoutSwitch';
 import SuperadminTenants from './pages/superadmin/SuperadminTenants';
 import Login from './pages/Login';
 import RegisterPage from './pages/Register';
 import AcceptInvite from './pages/AcceptInvite';
+import PinLogin from './pages/PinLogin';
 import HallMap from './pages/HallMap';
 import Categories from './pages/admin/Categories';
 import Products from './pages/admin/Products';
@@ -53,7 +55,46 @@ function StatsRoute() {
   return <Stats />;
 }
 
-export default function App() {
+/** Приложение на сабдомене заведения */
+function SubdomainApp() {
+  const checkAuth = useAuthStore((s) => s.checkAuth);
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  return (
+    <Routes>
+      <Route path="/login" element={<PinLogin />} />
+      <Route path="/" element={<ProtectedRoute><LayoutSwitch /></ProtectedRoute>}>
+        <Route index element={<HallMap readOnly />} />
+        <Route path="pos" element={<Navigate to="/" replace />} />
+        <Route path="hall-map" element={<AdminRoute><HallMap /></AdminRoute>} />
+        <Route path="admin/categories" element={<AdminRoute><Categories /></AdminRoute>} />
+        <Route path="admin/workshops" element={<AdminRoute><Workshops /></AdminRoute>} />
+        <Route path="admin/products" element={<AdminRoute><Products /></AdminRoute>} />
+        <Route path="admin/ingredients" element={<AdminRoute><Ingredients /></AdminRoute>} />
+        <Route path="admin/ingredient-groups" element={<AdminRoute><IngredientGroups /></AdminRoute>} />
+        <Route path="admin/supplies" element={<AdminRoute><Supplies /></AdminRoute>} />
+        <Route path="admin/register" element={<Register />} />
+        <Route path="admin/users" element={<AdminRoute><Users /></AdminRoute>} />
+        <Route path="admin/inventory" element={<AdminRoute><Inventory /></AdminRoute>} />
+        <Route path="admin/inventory-check" element={<AdminRoute><InventoryCheck /></AdminRoute>} />
+        <Route path="admin/settings" element={<AdminRoute><TenantSettings /></AdminRoute>} />
+        <Route path="admin/integrations" element={<AdminRoute><IntegrationSettings /></AdminRoute>} />
+        <Route path="admin/egais" element={<AdminRoute><EgaisDocuments /></AdminRoute>} />
+        <Route path="admin/marked-items" element={<AdminRoute><MarkedItems /></AdminRoute>} />
+        <Route path="admin/guests" element={<AdminRoute><Guests /></AdminRoute>} />
+        <Route path="dashboard" element={<CashierAllowedRoute><Dashboard /></CashierAllowedRoute>} />
+        <Route path="stats" element={<StatsRoute />} />
+      </Route>
+      <Route path="*" element={<Navigate to="/login" replace />} />
+    </Routes>
+  );
+}
+
+/** Приложение на главном домене — регистрация, суперадмин, логин owner */
+function MainDomainApp() {
   const checkAuth = useAuthStore((s) => s.checkAuth);
 
   useEffect(() => {
@@ -90,4 +131,8 @@ export default function App() {
       </Route>
     </Routes>
   );
+}
+
+export default function App() {
+  return isSubdomain() ? <SubdomainApp /> : <MainDomainApp />;
 }

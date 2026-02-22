@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { buildSubdomainUrl } from '../utils/subdomain';
 
 export default function RegisterPage() {
   const { user, register } = useAuthStore();
@@ -10,6 +11,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [registered, setRegistered] = useState(null); // { token, tenant }
 
   if (user) return <Navigate to="/" />;
 
@@ -18,13 +20,35 @@ export default function RegisterPage() {
     setError('');
     setLoading(true);
     try {
-      await register(companyName, name, email, password);
+      const data = await register(companyName, name, email, password);
+      setRegistered(data);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
   };
+
+  // После успешной регистрации — показываем кнопку перехода на сабдомен
+  if (registered && registered.tenant?.slug) {
+    const subUrl = buildSubdomainUrl(registered.tenant.slug) + '/login?token=' + registered.token;
+    return (
+      <div className="login-page">
+        <div className="login-card" style={{ maxWidth: 420, textAlign: 'center' }}>
+          <h1 className="login-title">Компания создана!</h1>
+          <p style={{ color: 'var(--text-secondary)', marginTop: 12, marginBottom: 20, lineHeight: 1.5 }}>
+            Ваше заведение <strong>{registered.tenant.name}</strong> доступно по адресу:
+          </p>
+          <p style={{ fontSize: 16, fontWeight: 600, marginBottom: 20, color: 'var(--accent)' }}>
+            {registered.tenant.slug}.{import.meta.env.VITE_BASE_DOMAIN || 'lvh.me'}
+          </p>
+          <a href={subUrl} className="btn btn-primary login-btn" style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>
+            Перейти в систему
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="login-page">

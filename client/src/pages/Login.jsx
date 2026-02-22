@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { buildSubdomainUrl } from '../utils/subdomain';
 
 export default function Login() {
   const { user, tenant, login } = useAuthStore();
@@ -8,6 +9,14 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // После логина owner'а на главном домене — редирект на сабдомен
+  if (user && tenant?.slug && user.role !== 'superadmin') {
+    const token = localStorage.getItem('token');
+    const subUrl = buildSubdomainUrl(tenant.slug) + '/login?token=' + token;
+    window.location.href = subUrl;
+    return <div className="spinner" style={{ marginTop: '40vh' }} />;
+  }
 
   if (user && !(user.role === 'superadmin' && !tenant)) return <Navigate to="/" />;
   if (user?.role === 'superadmin' && !tenant) return <Navigate to="/superadmin" />;

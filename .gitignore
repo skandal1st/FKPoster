@@ -12,6 +12,7 @@ client/dist
 .env.production
 .env.*.local
 server/.env
+client/.env
 
 # DB (local/session)
 server/hookahpos.db

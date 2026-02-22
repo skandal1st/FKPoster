@@ -6,6 +6,7 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 const config = require('./config');
 const { getDb } = require('./db');
+const { subdomainMiddleware } = require('./middleware/subdomain');
 
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
@@ -34,8 +35,25 @@ const app = express();
 // Security
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(morgan(config.NODE_ENV === 'production' ? 'combined' : 'dev'));
-app.use(cors({ origin: config.CORS_ORIGIN, credentials: true }));
+
+// CORS — разрешить *.BASE_DOMAIN + localhost
+const baseDomain = config.BASE_DOMAIN;
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true); // allow non-browser (curl, etc)
+    const allowed =
+      origin.includes('localhost') ||
+      origin.includes('127.0.0.1') ||
+      origin.includes(baseDomain);
+    callback(null, allowed);
+  },
+  credentials: true,
+}));
+
 app.use(express.json());
+
+// Subdomain middleware — определяем tenant по сабдомену
+app.use(subdomainMiddleware);
 
 // Rate limiting
 const apiLimiter = rateLimit({
@@ -54,6 +72,7 @@ const authLimiter = rateLimit({
 });
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/pin-login', authLimiter);
 
 // Routes
 app.use('/api/auth', authRoutes);

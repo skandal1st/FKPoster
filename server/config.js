@@ -6,4 +6,5 @@ module.exports = {
   DATABASE_URL: process.env.DATABASE_URL || 'postgres://hookahpos:hookahpos@localhost:5432/hookahpos',
   JWT_SECRET: process.env.JWT_SECRET || 'hookahpos-secret-key-2024',
   CORS_ORIGIN: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  BASE_DOMAIN: process.env.BASE_DOMAIN || 'lvh.me',
 };

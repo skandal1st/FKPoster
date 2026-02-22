@@ -14,6 +14,7 @@ async function runMigrations() {
     require('./008_workshops'),
     require('./009_hall_grid'),
     require('./010_plans_dedupe'),
+    require('./011_subdomain_pin_auth'),
   ];
 
   for (const migration of migrations) {
