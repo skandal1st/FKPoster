@@ -133,6 +133,19 @@ export default function HallMap({ readOnly = false }) {
     toast.success('Столик удалён');
   };
 
+  const deleteHall = async (hallId, e) => {
+    if (e) e.stopPropagation();
+    if (!confirm('Удалить зал? Столики в нём больше не будут отображаться.')) return;
+    try {
+      await api.delete(`/halls/${hallId}`);
+      await loadHalls();
+      if (selectedHall === hallId) setSelectedHall(null);
+      toast.success('Зал удалён');
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
   const handlePointerDown = (e, table) => {
     if (!isAdmin) return;
     if (e.target.closest('.hall-table-resize-handle')) return;
@@ -220,13 +233,28 @@ export default function HallMap({ readOnly = false }) {
 
       <div className="hall-tabs">
         {halls.map((hall) => (
-          <button
+          <div
             key={hall.id}
             className={`hall-tab ${selectedHall === hall.id ? 'active' : ''}`}
-            onClick={() => setSelectedHall(hall.id)}
           >
-            {hall.name}
-          </button>
+            <button
+              type="button"
+              className="hall-tab-label"
+              onClick={() => setSelectedHall(hall.id)}
+            >
+              {hall.name}
+            </button>
+            {!readOnly && isAdmin && (
+              <button
+                type="button"
+                className="hall-tab-delete"
+                onClick={(e) => deleteHall(hall.id, e)}
+                title="Удалить зал"
+              >
+                <Trash2 size={14} />
+              </button>
+            )}
+          </div>
         ))}
       </div>
 
