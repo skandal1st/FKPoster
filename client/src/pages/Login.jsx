@@ -13,6 +13,9 @@ export default function Login() {
   // После логина owner'а на главном домене — редирект на сабдомен
   if (user && tenant?.slug && user.role !== 'superadmin') {
     const token = localStorage.getItem('token');
+    // Очищаем токен с основного домена, чтобы при следующем заходе
+    // на skandata.ru не было автоматического редиректа на сабдомен
+    localStorage.removeItem('token');
     const subUrl = buildSubdomainUrl(tenant.slug) + '/login?token=' + token;
     window.location.href = subUrl;
     return <div className="spinner" style={{ marginTop: '40vh' }} />;
