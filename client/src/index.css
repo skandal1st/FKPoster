@@ -964,6 +964,10 @@ select.form-input {
   text-transform: uppercase;
   letter-spacing: 0.18em;
   color: var(--text-muted);
+  position: sticky;
+  top: 24px;
+  height: calc(100vh - 80px);
+  align-self: start;
 }
 
 .landing-sidenav-logo {
@@ -1455,6 +1459,9 @@ select.form-input {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
+    position: static;
+    height: auto;
+    align-self: auto;
   }
 
   .landing-sidenav-divider {
