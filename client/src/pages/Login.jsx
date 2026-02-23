@@ -1,22 +1,28 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { buildSubdomainUrl } from '../utils/subdomain';
 
 export default function Login() {
-  const { user, tenant, login } = useAuthStore();
+  const { user, tenant, token: storeToken, login } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const redirectingRef = useRef(false);
 
   // После логина owner'а на главном домене — редирект на сабдомен
+  if (redirectingRef.current) {
+    return <div className="spinner" style={{ marginTop: '40vh' }} />;
+  }
+
   if (user && tenant?.slug && user.role !== 'superadmin') {
-    const token = localStorage.getItem('token');
+    redirectingRef.current = true;
     // Очищаем токен с основного домена, чтобы при следующем заходе
     // на skandata.ru не было автоматического редиректа на сабдомен
     localStorage.removeItem('token');
-    const subUrl = buildSubdomainUrl(tenant.slug) + '/login?token=' + token;
+    // Читаем токен из Zustand store (не из localStorage, который уже очищен)
+    const subUrl = buildSubdomainUrl(tenant.slug) + '/login?token=' + storeToken;
     window.location.href = subUrl;
     return <div className="spinner" style={{ marginTop: '40vh' }} />;
   }

@@ -13,7 +13,7 @@ const roleLabel = (r) => {
 
 export default function PinLogin() {
   const { user, login, pinLogin } = useAuthStore();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [employees, setEmployees] = useState([]);
   const [tenantInfo, setTenantInfo] = useState(null);
@@ -31,11 +31,13 @@ export default function PinLogin() {
   // Авто-логин по ?token=
   useEffect(() => {
     const tokenParam = searchParams.get('token');
-    if (tokenParam) {
+    if (tokenParam && tokenParam !== 'null' && tokenParam !== 'undefined') {
       localStorage.setItem('token', tokenParam);
+      // Убираем token из URL, чтобы не мешал при обновлении страницы
+      setSearchParams({}, { replace: true });
       useAuthStore.getState().checkAuth();
     }
-  }, [searchParams]);
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     api.get('/auth/employees').then((data) => {
