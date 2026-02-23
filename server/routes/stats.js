@@ -235,6 +235,199 @@ router.get('/dashboard', async (req, res) => {
   });
 });
 
+// Анализ себестоимости
+router.get('/cost-analysis', async (req, res) => {
+  const { from, to } = req.query;
+  const dateFrom = from || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const dateTo = to || new Date().toISOString().split('T')[0];
+
+  const products = await all(`
+    SELECT oi.product_name,
+           SUM(oi.quantity)::int as qty,
+           SUM(oi.total) as revenue,
+           SUM(oi.cost_price * oi.quantity) as cost,
+           SUM(oi.total) - SUM(oi.cost_price * oi.quantity) as profit,
+           CASE WHEN SUM(oi.total) > 0
+             THEN ROUND((SUM(oi.total) - SUM(oi.cost_price * oi.quantity)) / SUM(oi.total) * 100, 1)
+             ELSE 0 END as margin_pct
+    FROM order_items oi
+    JOIN orders o ON oi.order_id = o.id
+    WHERE o.status = 'closed' AND o.closed_at::date >= $1 AND o.closed_at::date <= $2 AND o.tenant_id = $3
+    GROUP BY oi.product_name
+    ORDER BY profit DESC
+  `, [dateFrom, dateTo, req.tenantId]);
+
+  const categories = await all(`
+    SELECT c.name, c.color,
+           SUM(oi.quantity)::int as qty,
+           SUM(oi.total) as revenue,
+           SUM(oi.cost_price * oi.quantity) as cost,
+           SUM(oi.total) - SUM(oi.cost_price * oi.quantity) as profit,
+           CASE WHEN SUM(oi.total) > 0
+             THEN ROUND((SUM(oi.total) - SUM(oi.cost_price * oi.quantity)) / SUM(oi.total) * 100, 1)
+             ELSE 0 END as margin_pct
+    FROM order_items oi
+    JOIN orders o ON oi.order_id = o.id
+    JOIN products p ON oi.product_id = p.id
+    JOIN categories c ON p.category_id = c.id
+    WHERE o.status = 'closed' AND o.closed_at::date >= $1 AND o.closed_at::date <= $2 AND o.tenant_id = $3
+    GROUP BY c.id, c.name, c.color
+    ORDER BY profit DESC
+  `, [dateFrom, dateTo, req.tenantId]);
+
+  for (const p of products) {
+    p.revenue = parseFloat(p.revenue || 0);
+    p.cost = parseFloat(p.cost || 0);
+    p.profit = parseFloat(p.profit || 0);
+    p.margin_pct = parseFloat(p.margin_pct || 0);
+  }
+  for (const c of categories) {
+    c.revenue = parseFloat(c.revenue || 0);
+    c.cost = parseFloat(c.cost || 0);
+    c.profit = parseFloat(c.profit || 0);
+    c.margin_pct = parseFloat(c.margin_pct || 0);
+  }
+
+  const totalRevenue = products.reduce((s, p) => s + p.revenue, 0);
+  const totalCost = products.reduce((s, p) => s + p.cost, 0);
+  const totalProfit = totalRevenue - totalCost;
+  const avgMargin = totalRevenue > 0 ? Math.round((totalProfit / totalRevenue) * 1000) / 10 : 0;
+
+  res.json({
+    products,
+    categories,
+    summary: { total_revenue: totalRevenue, total_cost: totalCost, total_profit: totalProfit, avg_margin: avgMargin }
+  });
+});
+
+// Посещаемость
+router.get('/traffic', async (req, res) => {
+  const { from, to } = req.query;
+  const dateFrom = from || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const dateTo = to || new Date().toISOString().split('T')[0];
+
+  const hourly = await all(`
+    SELECT EXTRACT(HOUR FROM o.created_at)::int as hour,
+           COUNT(*)::int as orders_count,
+           SUM(o.total) as revenue,
+           ROUND(AVG(o.total))::int as avg_check
+    FROM orders o
+    WHERE o.status = 'closed' AND o.closed_at::date >= $1 AND o.closed_at::date <= $2 AND o.tenant_id = $3
+    GROUP BY hour ORDER BY hour
+  `, [dateFrom, dateTo, req.tenantId]);
+
+  const daily = await all(`
+    SELECT EXTRACT(ISODOW FROM o.created_at)::int as day_of_week,
+           COUNT(*)::int as orders_count,
+           SUM(o.total) as revenue,
+           ROUND(AVG(o.total))::int as avg_check
+    FROM orders o
+    WHERE o.status = 'closed' AND o.closed_at::date >= $1 AND o.closed_at::date <= $2 AND o.tenant_id = $3
+    GROUP BY day_of_week ORDER BY day_of_week
+  `, [dateFrom, dateTo, req.tenantId]);
+
+  for (const h of hourly) {
+    h.revenue = parseFloat(h.revenue || 0);
+  }
+  for (const d of daily) {
+    d.revenue = parseFloat(d.revenue || 0);
+  }
+
+  const totalOrders = hourly.reduce((s, h) => s + h.orders_count, 0);
+  const totalRevenue = hourly.reduce((s, h) => s + h.revenue, 0);
+
+  const peakHour = hourly.length > 0 ? hourly.reduce((a, b) => b.orders_count > a.orders_count ? b : a).hour : null;
+  const peakDay = daily.length > 0 ? daily.reduce((a, b) => b.orders_count > a.orders_count ? b : a).day_of_week : null;
+
+  const daysInRange = Math.max(1, Math.ceil((new Date(dateTo) - new Date(dateFrom)) / (1000 * 60 * 60 * 24)) + 1);
+  const avgOrdersPerDay = Math.round(totalOrders / daysInRange);
+
+  res.json({
+    hourly,
+    daily,
+    peak_hour: peakHour,
+    peak_day: peakDay,
+    total_orders: totalOrders,
+    total_revenue: totalRevenue,
+    avg_check: totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0,
+    avg_orders_per_day: avgOrdersPerDay
+  });
+});
+
+// Статистика сотрудников
+router.get('/employees', async (req, res) => {
+  const { from, to } = req.query;
+  const dateFrom = from || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const dateTo = to || new Date().toISOString().split('T')[0];
+
+  const employees = await all(`
+    SELECT u.id, u.name,
+           COUNT(o.id)::int as orders_count,
+           SUM(o.total) as revenue,
+           ROUND(AVG(o.total))::int as avg_check,
+           SUM(CASE WHEN o.payment_method = 'cash' THEN o.total ELSE 0 END) as cash_total,
+           SUM(CASE WHEN o.payment_method = 'card' THEN o.total ELSE 0 END) as card_total
+    FROM orders o
+    JOIN users u ON o.user_id = u.id
+    WHERE o.status = 'closed' AND o.closed_at::date >= $1 AND o.closed_at::date <= $2 AND o.tenant_id = $3
+    GROUP BY u.id, u.name
+    ORDER BY revenue DESC
+  `, [dateFrom, dateTo, req.tenantId]);
+
+  for (const e of employees) {
+    e.revenue = parseFloat(e.revenue || 0);
+    e.cash_total = parseFloat(e.cash_total || 0);
+    e.card_total = parseFloat(e.card_total || 0);
+  }
+
+  res.json({ employees });
+});
+
+// Анализ скидок
+router.get('/discounts', async (req, res) => {
+  const { from, to } = req.query;
+  const dateFrom = from || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const dateTo = to || new Date().toISOString().split('T')[0];
+
+  const summary = await get(`
+    SELECT COUNT(*)::int as total_orders,
+           COUNT(CASE WHEN discount_amount > 0 THEN 1 END)::int as discounted_orders,
+           COALESCE(SUM(CASE WHEN discount_amount > 0 THEN discount_amount ELSE 0 END), 0)::numeric as total_discount,
+           COALESCE(SUM(total), 0)::numeric as total_revenue,
+           COALESCE(SUM(CASE WHEN discount_amount > 0 THEN total + discount_amount ELSE total END), 0)::numeric as total_before_discount
+    FROM orders
+    WHERE status = 'closed' AND closed_at::date >= $1 AND closed_at::date <= $2 AND tenant_id = $3
+  `, [dateFrom, dateTo, req.tenantId]);
+
+  summary.total_discount = parseFloat(summary.total_discount || 0);
+  summary.total_revenue = parseFloat(summary.total_revenue || 0);
+  summary.total_before_discount = parseFloat(summary.total_before_discount || 0);
+  summary.discount_pct = summary.total_before_discount > 0
+    ? Math.round(summary.total_discount / summary.total_before_discount * 1000) / 10
+    : 0;
+
+  const byGuest = await all(`
+    SELECT g.name, g.discount_type, g.discount_value,
+           COUNT(o.id)::int as orders_count,
+           SUM(o.discount_amount) as total_discount,
+           SUM(o.total) as total_paid
+    FROM orders o
+    JOIN guests g ON o.guest_id = g.id
+    WHERE o.status = 'closed' AND o.discount_amount > 0
+      AND o.closed_at::date >= $1 AND o.closed_at::date <= $2 AND o.tenant_id = $3
+    GROUP BY g.id, g.name, g.discount_type, g.discount_value
+    ORDER BY total_discount DESC
+  `, [dateFrom, dateTo, req.tenantId]);
+
+  for (const g of byGuest) {
+    g.total_discount = parseFloat(g.total_discount || 0);
+    g.total_paid = parseFloat(g.total_paid || 0);
+    g.discount_value = parseFloat(g.discount_value || 0);
+  }
+
+  res.json({ summary, by_guest: byGuest });
+});
+
 router.get('/shift/:id', async (req, res) => {
   const shift = await get('SELECT * FROM register_days WHERE id = $1 AND tenant_id = $2', [req.params.id, req.tenantId]);
   if (!shift) return res.status(404).json({ error: 'Смена не найдена' });
