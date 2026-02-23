@@ -1,5 +1,7 @@
 const { get } = require('../db');
 
+const RESERVED_SLUGS = ['www', 'api', 'app', 'admin', 'mail', 'ftp', 'static', 'cdn'];
+
 const TRANSLIT_MAP = {
   'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
   'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
@@ -37,4 +39,12 @@ async function generateUniqueSlug(companyName, txClient) {
   return `${base}-${Date.now()}`;
 }
 
-module.exports = { transliterate, generateUniqueSlug };
+function validateSlug(slug) {
+  if (!slug || typeof slug !== 'string') return 'Адрес заведения обязателен';
+  if (slug.length < 3 || slug.length > 63) return 'Адрес должен быть от 3 до 63 символов';
+  if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/.test(slug)) return 'Адрес может содержать только латинские буквы, цифры и дефис, и не должен начинаться/заканчиваться дефисом';
+  if (RESERVED_SLUGS.includes(slug)) return 'Этот адрес зарезервирован';
+  return null;
+}
+
+module.exports = { transliterate, generateUniqueSlug, validateSlug, RESERVED_SLUGS };

@@ -3,9 +3,39 @@ import { Navigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { buildSubdomainUrl } from '../utils/subdomain';
 
+const TRANSLIT_MAP = {
+  'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
+  'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
+  'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
+  'ф': 'f', 'х': 'kh', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'shch',
+  'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya',
+};
+
+function transliterate(str) {
+  return str
+    .toLowerCase()
+    .split('')
+    .map((ch) => TRANSLIT_MAP[ch] !== undefined ? TRANSLIT_MAP[ch] : ch)
+    .join('')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .substring(0, 63);
+}
+
+function validateSlugClient(slug) {
+  if (slug.length < 3) return 'Минимум 3 символа';
+  if (slug.length > 63) return 'Максимум 63 символа';
+  if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/.test(slug)) return 'Только латиница, цифры и дефис';
+  return null;
+}
+
+const BASE_DOMAIN = import.meta.env.VITE_BASE_DOMAIN || 'lvh.me';
+
 export default function RegisterPage() {
   const { user, register } = useAuthStore();
   const [companyName, setCompanyName] = useState('');
+  const [slug, setSlug] = useState('');
+  const [slugError, setSlugError] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -15,12 +45,31 @@ export default function RegisterPage() {
 
   if (user) return <Navigate to="/" />;
 
+  const previewSlug = slug || transliterate(companyName) || 'my-hookah-bar';
+
+  const handleSlugChange = (value) => {
+    const normalized = value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+    setSlug(normalized);
+    if (normalized) {
+      setSlugError(validateSlugClient(normalized) || '');
+    } else {
+      setSlugError('');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    if (slug) {
+      const err = validateSlugClient(slug);
+      if (err) {
+        setSlugError(err);
+        return;
+      }
+    }
     setLoading(true);
     try {
-      const data = await register(companyName, name, email, password);
+      const data = await register(companyName, name, email, password, slug || undefined);
       setRegistered(data);
     } catch (err) {
       setError(err.message);
@@ -69,6 +118,19 @@ export default function RegisterPage() {
             autoFocus
             required
           />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Адрес заведения</label>
+          <input
+            className="form-input"
+            type="text"
+            value={slug}
+            onChange={(e) => handleSlugChange(e.target.value)}
+            placeholder="my-hookah-bar"
+          />
+          <div style={{ fontSize: 13, marginTop: 4, color: slugError ? 'var(--danger)' : 'var(--text-secondary)' }}>
+            {slugError || <>{previewSlug}.{BASE_DOMAIN}</>}
+          </div>
         </div>
         <div className="form-group">
           <label className="form-label">Ваше имя</label>

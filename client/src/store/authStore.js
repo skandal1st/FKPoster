@@ -18,8 +18,10 @@ export const useAuthStore = create((set) => ({
     set({ user: data.user, tenant: data.tenant, token: data.token });
   },
 
-  register: async (company_name, name, email, password) => {
-    const data = await api.post('/auth/register', { company_name, name, email, password });
+  register: async (company_name, name, email, password, slug) => {
+    const body = { company_name, name, email, password };
+    if (slug) body.slug = slug;
+    const data = await api.post('/auth/register', body);
     // Не сохраняем токен на main domain — вернём data для редиректа на сабдомен
     return data;
   },

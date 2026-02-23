@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const { get, all } = require('../db');
 const { authMiddleware } = require('../middleware/auth');
 const config = require('../config');
-const { generateUniqueSlug } = require('../utils/slugify');
+const { generateUniqueSlug, validateSlug } = require('../utils/slugify');
 
 const router = express.Router();
 
@@ -51,7 +51,7 @@ router.post('/login', async (req, res) => {
 });
 
 router.post('/register', async (req, res) => {
-  const { company_name, name, email, password } = req.body;
+  const { company_name, name, email, password, slug: requestedSlug } = req.body;
   if (!company_name || !name || !email || !password) {
     return res.status(400).json({ error: 'Заполните все поля' });
   }
@@ -65,7 +65,21 @@ router.post('/register', async (req, res) => {
   }
 
   const { transaction } = require('../db');
-  const slug = await generateUniqueSlug(company_name);
+
+  let slug;
+  if (requestedSlug) {
+    const slugError = validateSlug(requestedSlug);
+    if (slugError) {
+      return res.status(400).json({ error: slugError });
+    }
+    const existingTenant = await get('SELECT id FROM tenants WHERE slug = $1', [requestedSlug]);
+    if (existingTenant) {
+      return res.status(400).json({ error: 'Этот адрес уже занят' });
+    }
+    slug = requestedSlug;
+  } else {
+    slug = await generateUniqueSlug(company_name);
+  }
 
   const result = await transaction(async (tx) => {
     const tenantRes = await tx.run(
