@@ -134,12 +134,12 @@ export default function HookahBOSLanding() {
           <div className="landing-pricing-grid">
             <div className="landing-price-card glass-card">
               <div className="landing-price-name">Start</div>
-              <div className="landing-price-value">3&nbsp;900&nbsp;₽/мес</div>
+              <div className="landing-price-value">1&nbsp;990&nbsp;₽/мес</div>
               <ul className="landing-price-list">
-                <li>1 заведение, до 5 сотрудников</li>
-                <li>POS‑экран и учёт смен</li>
-                <li>Базовый склад и остатки</li>
-                <li>Стандартные отчёты по выручке</li>
+                <li>Для небольших кальянных без кухни</li>
+                <li>Учёт кальянов и табака, касса</li>
+                <li>Базовая аналитика и отчёты</li>
+                <li>Учёт смен персонала</li>
               </ul>
               <Link to="/register" className="btn btn-primary btn-sm landing-price-btn">
                 Подключить Start
@@ -148,12 +148,13 @@ export default function HookahBOSLanding() {
             <div className="landing-price-card glass-card landing-price-card-featured">
               <div className="landing-price-badge">Рекомендуем</div>
               <div className="landing-price-name">Business</div>
-              <div className="landing-price-value">6&nbsp;900&nbsp;₽/мес</div>
+              <div className="landing-price-value">3&nbsp;990&nbsp;₽/мес</div>
               <ul className="landing-price-list">
-                <li>До 3 заведений в одной сети</li>
-                <li>Техкарты, себестоимость и кухня</li>
-                <li>Интеграции с ЕГАИС и маркировкой</li>
-                <li>Расширенная аналитика и отчёты</li>
+                <li>Для кальянных с баром и простым меню</li>
+                <li>Всё из «Старта»</li>
+                <li>Расширенный складской учёт</li>
+                <li>Учёт бара и ЕГАИС</li>
+                <li>Программа лояльности</li>
               </ul>
               <Link to="/register" className="btn btn-primary btn-sm landing-price-btn">
                 Подключить Business
@@ -161,12 +162,12 @@ export default function HookahBOSLanding() {
             </div>
             <div className="landing-price-card glass-card">
               <div className="landing-price-name">Pro</div>
-              <div className="landing-price-value">от 12&nbsp;900&nbsp;₽/мес</div>
+              <div className="landing-price-value">5&nbsp;990&nbsp;₽/мес</div>
               <ul className="landing-price-list">
-                <li>Сети от 4 заведений</li>
-                <li>Персональные доработки под ваши процессы</li>
-                <li>Приоритетная поддержка и SLA</li>
-                <li>Индивидуальные условия по интеграциям</li>
+                <li>Для кальянных с полноценной кухней</li>
+                <li>Всё из «Бизнеса»</li>
+                <li>Техкарты и списание продуктов</li>
+                <li>Аналитика себестоимости и маржи</li>
               </ul>
               <a href="mailto:sales@skandata.ru" className="btn btn-ghost btn-sm landing-price-btn">
                 Обсудить условия
