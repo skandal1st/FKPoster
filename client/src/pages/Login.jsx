@@ -21,7 +21,7 @@ export default function Login() {
     return <div className="spinner" style={{ marginTop: '40vh' }} />;
   }
 
-  if (user && !(user.role === 'superadmin' && !tenant)) return <Navigate to="/" />;
+  if (user && !(user.role === 'superadmin' && !tenant)) return <Navigate to="/dashboard" />;
   if (user?.role === 'superadmin' && !tenant) return <Navigate to="/superadmin" />;
 
   const handleSubmit = async (e) => {

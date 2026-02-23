@@ -27,6 +27,7 @@ import MarkedItems from './pages/admin/MarkedItems';
 import Guests from './pages/admin/Guests';
 import IngredientGroups from './pages/admin/IngredientGroups';
 import Workshops from './pages/admin/Workshops';
+import HookahBOSLanding from './pages/HookahBOSLanding';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuthStore();
@@ -103,12 +104,12 @@ function MainDomainApp() {
 
   return (
     <Routes>
+      <Route path="/" element={<HookahBOSLanding />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/accept-invite" element={<AcceptInvite />} />
       <Route path="/" element={<ProtectedRoute><LayoutSwitch /></ProtectedRoute>}>
         <Route path="superadmin" element={<SuperadminTenants />} />
-        <Route index element={<HallMap readOnly />} />
         <Route path="pos" element={<Navigate to="/" replace />} />
         <Route path="hall-map" element={<AdminRoute><HallMap /></AdminRoute>} />
         <Route path="admin/categories" element={<AdminRoute><Categories /></AdminRoute>} />
