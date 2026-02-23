@@ -69,4 +69,37 @@ router.get('/users', adminOnly, async (req, res) => {
   res.json({ users, invitations });
 });
 
+// ── Print settings ──
+
+router.get('/print-settings', async (req, res) => {
+  const row = await get(
+    'SELECT receipt_width, receipt_header, receipt_footer, auto_print_receipt FROM tenant_print_settings WHERE tenant_id = $1',
+    [req.tenantId]
+  );
+  res.json(row || { receipt_width: '80mm', receipt_header: '', receipt_footer: 'Спасибо за визит!', auto_print_receipt: false });
+});
+
+router.put('/print-settings', ownerOnly, async (req, res) => {
+  const { receipt_width, receipt_header, receipt_footer, auto_print_receipt } = req.body;
+
+  if (receipt_width && !['58mm', '80mm'].includes(receipt_width)) {
+    return res.status(400).json({ error: 'Ширина чека должна быть 58mm или 80mm' });
+  }
+
+  const existing = await get('SELECT id FROM tenant_print_settings WHERE tenant_id = $1', [req.tenantId]);
+  if (existing) {
+    await run(
+      `UPDATE tenant_print_settings SET receipt_width = $1, receipt_header = $2, receipt_footer = $3, auto_print_receipt = $4, updated_at = NOW() WHERE tenant_id = $5`,
+      [receipt_width || '80mm', receipt_header ?? '', receipt_footer ?? 'Спасибо за визит!', auto_print_receipt ?? false, req.tenantId]
+    );
+  } else {
+    await run(
+      `INSERT INTO tenant_print_settings (tenant_id, receipt_width, receipt_header, receipt_footer, auto_print_receipt) VALUES ($1, $2, $3, $4, $5)`,
+      [req.tenantId, receipt_width || '80mm', receipt_header ?? '', receipt_footer ?? 'Спасибо за визит!', auto_print_receipt ?? false]
+    );
+  }
+
+  res.json({ success: true });
+});
+
 module.exports = router;

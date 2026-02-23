@@ -1,11 +1,23 @@
+import { useEffect } from 'react';
 import { X, Printer } from 'lucide-react';
+import { useAuthStore } from '../store/authStore';
+import { openPrintWindow, formatReceipt } from '../utils/print';
 
-export default function ReceiptModal({ order, onClose }) {
+export default function ReceiptModal({ order, onClose, printSettings }) {
   if (!order) return null;
 
+  const { tenant } = useAuthStore();
+
   const handlePrint = () => {
-    window.print();
+    const html = formatReceipt(order, tenant, printSettings);
+    openPrintWindow(html, `Чек #${order.id}`, { width: printSettings?.receipt_width });
   };
+
+  useEffect(() => {
+    if (printSettings?.auto_print_receipt) {
+      handlePrint();
+    }
+  }, []);
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -16,7 +28,7 @@ export default function ReceiptModal({ order, onClose }) {
         </div>
 
         <div style={{ textAlign: 'center', marginBottom: 16 }}>
-          <div style={{ fontSize: 18, fontWeight: 700 }}>HookahPOS</div>
+          <div style={{ fontSize: 18, fontWeight: 700 }}>{tenant?.name || 'HookahPOS'}</div>
           <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
             Заказ #{order.id} | {order.closed_at ? new Date(order.closed_at).toLocaleString('ru') : ''}
           </div>

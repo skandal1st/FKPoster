@@ -39,7 +39,14 @@ router.get('/:id', async (req, res) => {
     WHERE o.id = $1 AND o.tenant_id = $2
   `, [req.params.id, req.tenantId]);
   if (!order) return res.status(404).json({ error: 'Заказ не найден' });
-  order.items = await all('SELECT * FROM order_items WHERE order_id = $1', [order.id]);
+  order.items = await all(`
+    SELECT oi.*, c.name as category_name, w.name as workshop_name, w.id as workshop_id
+    FROM order_items oi
+    LEFT JOIN products p ON oi.product_id = p.id
+    LEFT JOIN categories c ON p.category_id = c.id
+    LEFT JOIN workshops w ON c.workshop_id = w.id
+    WHERE oi.order_id = $1
+  `, [order.id]);
   res.json(order);
 });
 
@@ -278,7 +285,14 @@ router.post('/:id/close', async (req, res) => {
     LEFT JOIN guests g ON o.guest_id = g.id
     WHERE o.id = $1
   `, [order.id]);
-  updated.items = items;
+  updated.items = await all(`
+    SELECT oi.*, c.name as category_name, w.name as workshop_name, w.id as workshop_id
+    FROM order_items oi
+    LEFT JOIN products p ON oi.product_id = p.id
+    LEFT JOIN categories c ON p.category_id = c.id
+    LEFT JOIN workshops w ON c.workshop_id = w.id
+    WHERE oi.order_id = $1
+  `, [order.id]);
   res.json(updated);
 });
 

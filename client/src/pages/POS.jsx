@@ -1,18 +1,22 @@
 import { useEffect, useState } from 'react';
 import { usePosStore } from '../store/posStore';
 import toast from 'react-hot-toast';
-import { Plus, Minus, X, Banknote, CreditCard, Trash2, Receipt, Info, User } from 'lucide-react';
+import { Plus, Minus, X, Banknote, CreditCard, Trash2, Receipt, Info, User, Printer } from 'lucide-react';
 import ReceiptModal from '../components/ReceiptModal';
 import TechCardPopover from '../components/TechCardPopover';
 import MarkingScanner from '../components/MarkingScanner';
+import { useAuthStore } from '../store/authStore';
+import { openPrintWindow, formatReceipt, formatKitchenTicket } from '../utils/print';
 import './POS.css';
 
 export default function POS({ embedded = false, onClose }) {
   const {
-    categories, products, tables, openOrders, currentOrder, registerDay, guests,
-    loadCategories, loadProducts, loadTables, loadOpenOrders, loadRegisterDay, loadGuests,
+    categories, products, tables, openOrders, currentOrder, registerDay, guests, workshops, printSettings,
+    loadCategories, loadProducts, loadTables, loadOpenOrders, loadRegisterDay, loadGuests, loadWorkshops, loadPrintSettings,
     createOrder, selectOrder, addItem, removeItem, closeOrder, cancelOrder, clearCurrentOrder,
   } = usePosStore();
+
+  const { tenant } = useAuthStore();
 
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [showReceipt, setShowReceipt] = useState(null);
@@ -35,6 +39,8 @@ export default function POS({ embedded = false, onClose }) {
     loadOpenOrders();
     loadRegisterDay();
     loadGuests();
+    loadWorkshops();
+    loadPrintSettings();
   }, []);
 
   const filteredProducts = selectedCategory
@@ -53,6 +59,17 @@ export default function POS({ embedded = false, onClose }) {
   })();
   const totalToPay = Math.max(0, totalBeforeDiscount - discountAmount);
   const activeGuests = guests.filter((g) => g.active !== false);
+
+  const handleKitchenPrint = () => {
+    if (!currentOrder?.items?.length) return;
+    const enrichedItems = currentOrder.items.map(item => {
+      const product = products.find(p => p.id === item.product_id);
+      const category = product ? categories.find(c => c.id === product.category_id) : null;
+      return { ...item, workshop_name: item.workshop_name || category?.workshop_name || null };
+    });
+    const html = formatKitchenTicket({ ...currentOrder, items: enrichedItems }, printSettings);
+    openPrintWindow(html, `Кухня - Стол ${currentOrder.table_number || currentOrder.id}`, { width: printSettings?.receipt_width });
+  };
 
   const handleNewOrder = async (tableId) => {
     try {
@@ -89,6 +106,10 @@ export default function POS({ embedded = false, onClose }) {
       setShowReceipt(order);
       setSelectedGuest(null);
       toast.success('Заказ оплачен');
+      if (printSettings?.auto_print_receipt) {
+        const html = formatReceipt(order, tenant, printSettings);
+        openPrintWindow(html, `Чек #${order.id}`, { width: printSettings.receipt_width });
+      }
       if (embedded) {
         // Панель закроется после закрытия чека в ReceiptModal onClose
       }
@@ -112,6 +133,10 @@ export default function POS({ embedded = false, onClose }) {
         setShowReceipt(order);
         setSelectedGuest(null);
         toast.success('Заказ оплачен');
+        if (printSettings?.auto_print_receipt) {
+          const html = formatReceipt(order, tenant, printSettings);
+          openPrintWindow(html, `Чек #${order.id}`, { width: printSettings.receipt_width });
+        }
       } catch (err) {
         toast.error(err.message);
       }
@@ -305,6 +330,11 @@ export default function POS({ embedded = false, onClose }) {
                 <CreditCard size={18} /> Карта
               </button>
             </div>
+            {workshops.length > 0 && currentOrder.items?.length > 0 && (
+              <button className="btn btn-ghost btn-sm" onClick={handleKitchenPrint} style={{ width: '100%', marginTop: 8 }}>
+                <Printer size={16} /> Печать на кухню
+              </button>
+            )}
             <button className="btn btn-ghost btn-sm" onClick={handleCancel} style={{ width: '100%', marginTop: 8 }}>
               Отменить заказ
             </button>
@@ -419,6 +449,7 @@ export default function POS({ embedded = false, onClose }) {
       {showReceipt && (
         <ReceiptModal
           order={showReceipt}
+          printSettings={printSettings}
           onClose={() => {
             setShowReceipt(null);
             if (embedded && onClose) onClose();

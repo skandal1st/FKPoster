@@ -10,6 +10,8 @@ export const usePosStore = create((set, get) => ({
   openOrders: [],
   registerDay: null,
   guests: [],
+  workshops: [],
+  printSettings: null,
 
   loadGuests: async () => {
     const guests = await api.get('/guests');
@@ -34,6 +36,20 @@ export const usePosStore = create((set, get) => ({
   loadHalls: async () => {
     const halls = await api.get('/halls');
     set({ halls });
+  },
+
+  loadWorkshops: async () => {
+    try {
+      const workshops = await api.get('/workshops');
+      set({ workshops });
+    } catch { set({ workshops: [] }); }
+  },
+
+  loadPrintSettings: async () => {
+    try {
+      const ps = await api.get('/tenant/print-settings');
+      set({ printSettings: ps });
+    } catch { set({ printSettings: null }); }
   },
 
   loadOpenOrders: async () => {

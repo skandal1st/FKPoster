@@ -12,6 +12,13 @@ export default function TenantSettings() {
   const [subscription, setSubscription] = useState(null);
   const [usage, setUsage] = useState(null);
 
+  // Print settings
+  const [receiptWidth, setReceiptWidth] = useState('80mm');
+  const [receiptHeader, setReceiptHeader] = useState('');
+  const [receiptFooter, setReceiptFooter] = useState('Спасибо за визит!');
+  const [autoPrintReceipt, setAutoPrintReceipt] = useState(false);
+  const [savingPrint, setSavingPrint] = useState(false);
+
   useEffect(() => {
     if (tenant) {
       setName(tenant.name || '');
@@ -28,7 +35,31 @@ export default function TenantSettings() {
     ]).then(([users, halls, products]) => {
       setUsage({ users, halls, products });
     });
+    api.get('/tenant/print-settings').then((ps) => {
+      setReceiptWidth(ps.receipt_width || '80mm');
+      setReceiptHeader(ps.receipt_header || '');
+      setReceiptFooter(ps.receipt_footer ?? 'Спасибо за визит!');
+      setAutoPrintReceipt(ps.auto_print_receipt || false);
+    }).catch(() => {});
   }, [tenant]);
+
+  const handleSavePrint = async (e) => {
+    e.preventDefault();
+    setSavingPrint(true);
+    try {
+      await api.put('/tenant/print-settings', {
+        receipt_width: receiptWidth,
+        receipt_header: receiptHeader,
+        receipt_footer: receiptFooter,
+        auto_print_receipt: autoPrintReceipt,
+      });
+      toast.success('Настройки печати сохранены');
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setSavingPrint(false);
+    }
+  };
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -129,6 +160,52 @@ export default function TenantSettings() {
             <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Нет активной подписки</p>
           )}
         </div>
+      </div>
+
+      <div className="card" style={{ marginTop: 24 }}>
+        <h3 style={{ marginBottom: 16 }}>Настройки печати</h3>
+        <form onSubmit={handleSavePrint}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div className="form-group">
+              <label className="form-label">Ширина чека</label>
+              <select className="form-input" value={receiptWidth} onChange={(e) => setReceiptWidth(e.target.value)}>
+                <option value="80mm">80 мм</option>
+                <option value="58mm">58 мм</option>
+              </select>
+            </div>
+            <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 24 }}>
+              <input
+                type="checkbox"
+                id="autoPrint"
+                checked={autoPrintReceipt}
+                onChange={(e) => setAutoPrintReceipt(e.target.checked)}
+              />
+              <label htmlFor="autoPrint" style={{ cursor: 'pointer' }}>Автоматически печатать чек после оплаты</label>
+            </div>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Заголовок чека (название, адрес, ИНН)</label>
+            <textarea
+              className="form-input"
+              value={receiptHeader}
+              onChange={(e) => setReceiptHeader(e.target.value)}
+              rows={3}
+              placeholder="Ваш бар&#10;г. Москва, ул. Примерная, 1&#10;ИНН 1234567890"
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Подвал чека</label>
+            <input
+              className="form-input"
+              value={receiptFooter}
+              onChange={(e) => setReceiptFooter(e.target.value)}
+              placeholder="Спасибо за визит!"
+            />
+          </div>
+          <button className="btn btn-primary" type="submit" disabled={savingPrint}>
+            {savingPrint ? 'Сохранение...' : 'Сохранить настройки печати'}
+          </button>
+        </form>
       </div>
     </div>
   );
