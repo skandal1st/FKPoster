@@ -944,11 +944,83 @@ select.form-input {
   pointer-events: none;
 }
 
-.landing-header {
+.landing-shell {
   position: relative;
   z-index: 1;
   max-width: 1200px;
-  margin: 0 auto 32px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 40px;
+}
+
+.landing-sidenav {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--text-muted);
+}
+
+.landing-sidenav-logo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.landing-sidenav-mark {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.landing-sidenav-title {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.landing-sidenav-divider {
+  width: 1px;
+  height: 120px;
+  margin: 20px 0;
+  background: linear-gradient(to bottom, transparent, rgba(148, 163, 184, 0.7), transparent);
+}
+
+.landing-sidenav-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.landing-sidenav-nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: inherit;
+  text-decoration: none;
+  padding: 4px 0;
+}
+
+.landing-sidenav-index {
+  opacity: 0.6;
+}
+
+.landing-sidenav-label {
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.landing-content {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.landing-header {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1016,8 +1088,6 @@ select.form-input {
 .landing-main {
   position: relative;
   z-index: 1;
-  max-width: 1200px;
-  margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 40px;
@@ -1357,10 +1427,7 @@ select.form-input {
 }
 
 .landing-footer {
-  position: relative;
-  z-index: 1;
-  max-width: 1200px;
-  margin: 32px auto 0;
+  margin-top: 8px;
   padding-top: 8px;
   border-top: 1px solid rgba(148, 163, 184, 0.4);
   font-size: 12px;
@@ -1379,9 +1446,19 @@ select.form-input {
     padding: 20px 20px 28px;
   }
 
-  .landing-header {
-    flex-wrap: wrap;
-    align-items: flex-start;
+  .landing-shell {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+
+  .landing-sidenav {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .landing-sidenav-divider {
+    display: none;
   }
 
   .landing-hero {
@@ -1404,6 +1481,12 @@ select.form-input {
 @media (max-width: 768px) {
   .landing-root {
     padding: 16px 16px 24px;
+  }
+
+  .landing-sidenav {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
   }
 
   .landing-header {

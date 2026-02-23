@@ -5,26 +5,54 @@ export default function HookahBOSLanding() {
     <div className="landing-root">
       <div className="landing-grid-bg" aria-hidden="true" />
 
-      <header className="landing-header">
-        <div className="landing-logo">
-          <span className="landing-logo-mark">HB</span>
-          <div>
-            <div className="landing-logo-title">HookahBOS</div>
-            <div className="landing-logo-subtitle">POS‑система для кальянных и баров</div>
+      <div className="landing-shell">
+        <aside className="landing-sidenav">
+          <div className="landing-sidenav-logo">
+            <span className="landing-sidenav-mark">HB</span>
+            <span className="landing-sidenav-title">HookahBOS</span>
           </div>
-        </div>
-        <nav className="landing-nav">
-          <a href="#features">Возможности</a>
-          <a href="#pricing">Тарифы</a>
-          <a href="#how-it-works">Как работает</a>
-        </nav>
-        <div className="landing-actions">
-          <Link to="/login" className="btn btn-ghost btn-sm">Войти</Link>
-          <Link to="/register" className="btn btn-primary btn-sm">Регистрация заведения</Link>
-        </div>
-      </header>
+          <div className="landing-sidenav-divider" />
+          <nav className="landing-sidenav-nav">
+            <a href="#hero">
+              <span className="landing-sidenav-index">01</span>
+              <span className="landing-sidenav-label">Обзор</span>
+            </a>
+            <a href="#features">
+              <span className="landing-sidenav-index">02</span>
+              <span className="landing-sidenav-label">Возможности</span>
+            </a>
+            <a href="#pricing">
+              <span className="landing-sidenav-index">03</span>
+              <span className="landing-sidenav-label">Тарифы</span>
+            </a>
+            <a href="#how-it-works">
+              <span className="landing-sidenav-index">04</span>
+              <span className="landing-sidenav-label">Внедрение</span>
+            </a>
+          </nav>
+        </aside>
 
-      <main className="landing-main">
+        <div className="landing-content">
+          <header className="landing-header">
+            <div className="landing-logo">
+              <span className="landing-logo-mark">HB</span>
+              <div>
+                <div className="landing-logo-title">HookahBOS</div>
+                <div className="landing-logo-subtitle">POS‑система для кальянных и баров</div>
+              </div>
+            </div>
+            <nav className="landing-nav">
+              <a href="#features">Возможности</a>
+              <a href="#pricing">Тарифы</a>
+              <a href="#how-it-works">Как работает</a>
+            </nav>
+            <div className="landing-actions">
+              <Link to="/login" className="btn btn-ghost btn-sm">Войти</Link>
+              <Link to="/register" className="btn btn-primary btn-sm">Регистрация заведения</Link>
+            </div>
+          </header>
+
+          <main className="landing-main">
         <section id="hero" className="landing-hero glass-card">
           <div className="landing-hero-left">
             <div className="landing-pill">SaaS‑платформа под брендом Skandata</div>
@@ -221,13 +249,15 @@ export default function HookahBOSLanding() {
             </div>
           </div>
         </section>
-      </main>
+          </main>
 
-      <footer className="landing-footer">
-        <span>© {new Date().getFullYear()} HookahBOS / Skandata</span>
-        <span className="landing-footer-separator">·</span>
-        <span>Облачная POS‑платформа для кальянных и баров</span>
-      </footer>
+          <footer className="landing-footer">
+            <span>© {new Date().getFullYear()} HookahBOS / Skandata</span>
+            <span className="landing-footer-separator">·</span>
+            <span>Облачная POS‑платформа для кальянных и баров</span>
+          </footer>
+        </div>
+      </div>
     </div>
   );
 }
