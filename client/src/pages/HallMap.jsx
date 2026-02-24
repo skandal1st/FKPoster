@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { api } from '../api';
 import { usePosStore } from '../store/posStore';
 import toast from 'react-hot-toast';
-import { Plus, Trash2, X, GripVertical, Users } from 'lucide-react';
+import { Plus, Trash2, X, GripVertical, Users, Pencil } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import POS from './POS';
 import { getTableDisplayName } from '../utils/tableDisplay';
@@ -53,6 +53,11 @@ export default function HallMap({ readOnly = false }) {
   const [tableSeats, setTableSeats] = useState(4);
   const [tableShape, setTableShape] = useState('square');
   const [showPosPanel, setShowPosPanel] = useState(false);
+  const [editingTable, setEditingTable] = useState(null);
+  const [editNumber, setEditNumber] = useState('');
+  const [editLabel, setEditLabel] = useState('');
+  const [editSeats, setEditSeats] = useState(4);
+  const [editShape, setEditShape] = useState('square');
   const gridRef = useRef(null);
   const isAdmin = user?.role === 'admin' || user?.role === 'owner';
 
@@ -184,6 +189,31 @@ export default function HallMap({ readOnly = false }) {
       await loadHalls();
       if (selectedHall === hallId) setSelectedHall(null);
       toast.success('Зал удалён');
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
+  const openEditModal = (table) => {
+    setEditingTable(table);
+    setEditNumber(String(table.number));
+    setEditLabel(table.label || '');
+    setEditSeats(table.seats ?? 4);
+    setEditShape(table.shape || 'square');
+  };
+
+  const saveEditTable = async () => {
+    if (!editingTable || !editNumber) return;
+    try {
+      await api.patch(`/tables/${editingTable.id}`, {
+        number: Number(editNumber),
+        label: editLabel.trim() || null,
+        seats: editSeats,
+        shape: editShape,
+      });
+      loadTables();
+      setEditingTable(null);
+      toast.success('Столик обновлён');
     } catch (err) {
       toast.error(err.message);
     }
@@ -384,17 +414,30 @@ export default function HallMap({ readOnly = false }) {
                   <div className="hall-table-sum">{Number(order.total).toFixed(0)} ₽</div>
                 )}
                 {!readOnly && isAdmin && !order && (
-                  <button
-                    type="button"
-                    className="hall-table-delete"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteTable(table.id);
-                    }}
-                    title="Удалить столик"
-                  >
-                    <Trash2 size={10} />
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      className="hall-table-edit"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openEditModal(table);
+                      }}
+                      title="Редактировать столик"
+                    >
+                      <Pencil size={10} />
+                    </button>
+                    <button
+                      type="button"
+                      className="hall-table-delete"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteTable(table.id);
+                      }}
+                      title="Удалить столик"
+                    >
+                      <Trash2 size={10} />
+                    </button>
+                  </>
                 )}
               </div>
             );
@@ -455,6 +498,73 @@ export default function HallMap({ readOnly = false }) {
               </button>
               <button type="button" className="btn btn-primary" onClick={addHall}>
                 Создать
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editingTable && (
+        <div className="modal-overlay" onClick={() => setEditingTable(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title">Редактировать столик</h3>
+              <button type="button" className="btn-icon" onClick={() => setEditingTable(null)}>
+                <X size={18} />
+              </button>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Номер столика</label>
+              <input
+                className="form-input"
+                type="number"
+                min={1}
+                value={editNumber}
+                onChange={(e) => setEditNumber(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Название (необязательно)</label>
+              <input
+                className="form-input"
+                value={editLabel}
+                onChange={(e) => setEditLabel(e.target.value)}
+                placeholder="Бар, VIP, Терраса..."
+                maxLength={50}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Количество мест</label>
+              <input
+                className="form-input"
+                type="number"
+                min={1}
+                max={24}
+                value={editSeats}
+                onChange={(e) => setEditSeats(Number(e.target.value) || 4)}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Форма</label>
+              <select
+                className="form-input"
+                value={editShape}
+                onChange={(e) => setEditShape(e.target.value)}
+              >
+                {SHAPE_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="modal-actions">
+              <button type="button" className="btn btn-ghost" onClick={() => setEditingTable(null)}>
+                Отмена
+              </button>
+              <button type="button" className="btn btn-primary" onClick={saveEditTable}>
+                Сохранить
               </button>
             </div>
           </div>

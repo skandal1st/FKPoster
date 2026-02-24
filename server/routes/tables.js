@@ -30,7 +30,7 @@ router.put('/:id/position', async (req, res) => {
 });
 
 router.patch('/:id', async (req, res) => {
-  const { x, y, width, height, grid_x, grid_y, label } = req.body;
+  const { x, y, width, height, grid_x, grid_y, label, number, seats, shape } = req.body;
   const id = req.params.id;
   const updates = [];
   const params = [];
@@ -42,6 +42,27 @@ router.patch('/:id', async (req, res) => {
   if (typeof width === 'number' && width >= 48 && width <= 200) { updates.push(`width = $${idx++}`); params.push(width); }
   if (typeof height === 'number' && height >= 48 && height <= 200) { updates.push(`height = $${idx++}`); params.push(height); }
   if (label !== undefined) { updates.push(`label = $${idx++}`); params.push(label ? String(label).trim().slice(0, 50) || null : null); }
+  if (number != null) {
+    const num = Number(number);
+    if (num > 0) {
+      const table = await get('SELECT hall_id FROM tables WHERE id = $1 AND tenant_id = $2', [id, req.tenantId]);
+      if (table) {
+        const dup = await get(
+          'SELECT id FROM tables WHERE hall_id = $1 AND number = $2 AND active = true AND tenant_id = $3 AND id != $4',
+          [table.hall_id, num, req.tenantId, id]
+        );
+        if (dup) return res.status(400).json({ error: 'Столик с таким номером уже существует' });
+      }
+      updates.push(`number = $${idx++}`); params.push(num);
+    }
+  }
+  if (seats != null) {
+    const s = Math.max(1, Math.min(24, Number(seats)));
+    updates.push(`seats = $${idx++}`); params.push(s);
+  }
+  if (shape && ['square', 'rectangle', 'round', 'corner'].includes(shape)) {
+    updates.push(`shape = $${idx++}`); params.push(shape);
+  }
   if (updates.length === 0) return res.status(400).json({ error: 'Нет полей для обновления' });
   params.push(id, req.tenantId);
   await run(`UPDATE tables SET ${updates.join(', ')} WHERE id = $${idx++} AND tenant_id = $${idx}`, params);

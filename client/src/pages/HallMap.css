@@ -281,8 +281,29 @@
   font-size: 12px;
 }
 
-.hall-table--grid:hover .hall-table-delete {
+.hall-table--grid:hover .hall-table-delete,
+.hall-table--grid:hover .hall-table-edit {
   opacity: 1;
+}
+
+.hall-table-edit {
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 2;
+  cursor: pointer;
+  border: none;
+  font-size: 12px;
 }
 
 /* Пустое состояние */
