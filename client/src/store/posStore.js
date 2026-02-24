@@ -127,4 +127,17 @@ export const usePosStore = create((set, get) => ({
   },
 
   clearCurrentOrder: () => set({ currentOrder: null }),
+
+  reset: () => set({
+    categories: [],
+    products: [],
+    tables: [],
+    halls: [],
+    currentOrder: null,
+    openOrders: [],
+    registerDay: null,
+    guests: [],
+    workshops: [],
+    printSettings: null,
+  }),
 }));

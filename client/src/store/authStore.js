@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { api } from '../api';
 import { applyBranding, resetBranding } from '../utils/branding';
+import { usePosStore } from './posStore';
 
 export const useAuthStore = create((set) => ({
   user: null,
@@ -37,6 +38,7 @@ export const useAuthStore = create((set) => ({
     localStorage.removeItem('token');
     sessionStorage.removeItem('superadmin_token');
     resetBranding();
+    usePosStore.getState().reset();
     set({ user: null, tenant: null, token: null });
   },
 

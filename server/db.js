@@ -3,6 +3,9 @@ const config = require('./config');
 
 const pool = new Pool({
   connectionString: config.DATABASE_URL,
+  max: parseInt(process.env.PG_POOL_MAX || '50', 10),
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000,
 });
 
 async function getDb() {

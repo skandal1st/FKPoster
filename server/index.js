@@ -39,15 +39,22 @@ app.set('trust proxy', 1);
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(morgan(config.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
-// CORS — разрешить *.BASE_DOMAIN + localhost
+// CORS — разрешить *.BASE_DOMAIN + localhost/127.0.0.1 (exact suffix match)
 const baseDomain = config.BASE_DOMAIN;
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true); // allow non-browser (curl, etc)
+    let hostname;
+    try {
+      hostname = new URL(origin).hostname;
+    } catch {
+      return callback(null, false);
+    }
     const allowed =
-      origin.includes('localhost') ||
-      origin.includes('127.0.0.1') ||
-      origin.includes(baseDomain);
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname === baseDomain ||
+      hostname.endsWith('.' + baseDomain);
     callback(null, allowed);
   },
   credentials: true,

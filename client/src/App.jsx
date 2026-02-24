@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import { isSubdomain } from './utils/subdomain';
+import ErrorBoundary from './components/ErrorBoundary';
 import Layout from './components/Layout';
 import LayoutSwitch from './components/LayoutSwitch';
 import SuperadminTenants from './pages/superadmin/SuperadminTenants';
@@ -135,5 +136,9 @@ function MainDomainApp() {
 }
 
 export default function App() {
-  return isSubdomain() ? <SubdomainApp /> : <MainDomainApp />;
+  return (
+    <ErrorBoundary>
+      {isSubdomain() ? <SubdomainApp /> : <MainDomainApp />}
+    </ErrorBoundary>
+  );
 }

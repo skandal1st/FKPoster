@@ -11,12 +11,11 @@ router.get('/sales', async (req, res) => {
   const dateFrom = from || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
   const dateTo = to || new Date().toISOString().split('T')[0];
 
-  let groupBy;
-  if (group === 'month') {
-    groupBy = "to_char(o.closed_at, 'YYYY-MM')";
-  } else {
-    groupBy = "o.closed_at::date";
-  }
+  const ALLOWED_GROUPS = {
+    month: "to_char(o.closed_at, 'YYYY-MM')",
+    day: "o.closed_at::date",
+  };
+  const groupBy = ALLOWED_GROUPS[group] || ALLOWED_GROUPS.day;
 
   const sales = await all(`
     SELECT ${groupBy}::text as period,
