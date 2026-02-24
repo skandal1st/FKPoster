@@ -7,6 +7,7 @@ import TechCardPopover from '../components/TechCardPopover';
 import MarkingScanner from '../components/MarkingScanner';
 import { useAuthStore } from '../store/authStore';
 import { openPrintWindow, formatReceipt, formatKitchenTicket } from '../utils/print';
+import { getTableDisplayName } from '../utils/tableDisplay';
 import './POS.css';
 
 export default function POS({ embedded = false, onClose }) {
@@ -68,7 +69,8 @@ export default function POS({ embedded = false, onClose }) {
       return { ...item, workshop_name: item.workshop_name || category?.workshop_name || null };
     });
     const html = formatKitchenTicket({ ...currentOrder, items: enrichedItems }, printSettings);
-    openPrintWindow(html, `Кухня - Стол ${currentOrder.table_number || currentOrder.id}`, { width: printSettings?.receipt_width });
+    const kitchenTitle = currentOrder.table_label || (currentOrder.table_number ? `Стол ${currentOrder.table_number}` : `#${currentOrder.id}`);
+    openPrintWindow(html, `Кухня - ${kitchenTitle}`, { width: printSettings?.receipt_width });
   };
 
   const handleNewOrder = async (tableId) => {
@@ -159,7 +161,7 @@ export default function POS({ embedded = false, onClose }) {
         <div className="pos-embedded-header">
           <h3 className="pos-embedded-title">
             {currentOrder
-              ? `Стол ${currentOrder.table_number ?? currentOrder.id}`
+              ? getTableDisplayName({ label: currentOrder.table_label, number: currentOrder.table_number, fallback: currentOrder.id })
               : 'Заказ'}
           </h3>
           <button type="button" className="btn-icon pos-embedded-close" onClick={onClose} aria-label="Закрыть">
@@ -238,7 +240,7 @@ export default function POS({ embedded = false, onClose }) {
         <div className="pos-order-header">
           <h3>
             {currentOrder
-              ? `Заказ #${currentOrder.id}${currentOrder.table_number ? ` (Стол ${currentOrder.table_number})` : ''}`
+              ? `Заказ #${currentOrder.id}${currentOrder.table_number ? ` (${getTableDisplayName({ label: currentOrder.table_label, number: currentOrder.table_number })})` : ''}`
               : 'Нет активного заказа'
             }
           </h3>
@@ -369,7 +371,7 @@ export default function POS({ embedded = false, onClose }) {
             className={`pos-bottom-order ${currentOrder?.id === order.id ? 'active' : ''}`}
             onClick={() => selectOrder(order.id)}
           >
-            {order.table_number ? `Стол ${order.table_number}` : `#${order.id}`}
+            {getTableDisplayName({ label: order.table_label, number: order.table_number, fallback: order.id })}
             <span className="pos-bottom-order-sum">{order.total} ₽</span>
           </button>
         ))}
@@ -397,7 +399,7 @@ export default function POS({ embedded = false, onClose }) {
                     onClick={() => !hasOrder && handleNewOrder(table.id)}
                     disabled={hasOrder}
                   >
-                    Стол {table.number}
+                    {getTableDisplayName({ label: table.label, number: table.number })}
                     {hasOrder && <span className="pos-table-busy">занят</span>}
                   </button>
                 );

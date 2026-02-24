@@ -147,7 +147,7 @@ export default function ShiftReportModal({ shiftId, onClose }) {
             {data.orders.map((o) => (
               <tr key={o.id}>
                 <td>{o.closed_at ? new Date(o.closed_at).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' }) : '—'}</td>
-                <td>{o.table_number ? `Стол ${o.table_number}` : '—'}</td>
+                <td>{o.table_label || (o.table_number ? `Стол ${o.table_number}` : '—')}</td>
                 <td>{o.total} ₽</td>
                 <td>
                   <select

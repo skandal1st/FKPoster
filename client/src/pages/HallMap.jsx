@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { Plus, Trash2, X, GripVertical, Users } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import POS from './POS';
+import { getTableDisplayName } from '../utils/tableDisplay';
 import './HallMap.css';
 
 const CELL_SIZE = 130;
@@ -48,6 +49,7 @@ export default function HallMap({ readOnly = false }) {
   const [hallName, setHallName] = useState('');
   const [showAddTable, setShowAddTable] = useState(false);
   const [tableNumber, setTableNumber] = useState('');
+  const [tableLabel, setTableLabel] = useState('');
   const [tableSeats, setTableSeats] = useState(4);
   const [tableShape, setTableShape] = useState('square');
   const [showPosPanel, setShowPosPanel] = useState(false);
@@ -149,6 +151,7 @@ export default function HallMap({ readOnly = false }) {
       const { grid_x, grid_y } = findFirstFreeCell();
       await api.post(`/halls/${selectedHall}/tables`, {
         number: num,
+        label: tableLabel.trim() || undefined,
         seats: tableSeats,
         shape: tableShape,
         grid_x,
@@ -157,6 +160,7 @@ export default function HallMap({ readOnly = false }) {
       loadTables();
       setShowAddTable(false);
       setTableNumber('');
+      setTableLabel('');
       setTableSeats(4);
       setTableShape('square');
       toast.success('Столик добавлен');
@@ -371,7 +375,7 @@ export default function HallMap({ readOnly = false }) {
                   <GripVertical className="hall-table-grip" aria-hidden />
                 )}
                 <span className="hall-table-dot" data-status={order ? 'occupied' : 'free'} />
-                <span className="hall-table-number">{table.number}</span>
+                <span className="hall-table-number">{table.label || table.number}</span>
                 <div className="hall-table-meta">
                   <Users size={12} />
                   <span>{table.seats ?? 4} мест</span>
@@ -475,6 +479,16 @@ export default function HallMap({ readOnly = false }) {
                 value={tableNumber}
                 onChange={(e) => setTableNumber(e.target.value)}
                 autoFocus
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Название (необязательно)</label>
+              <input
+                className="form-input"
+                value={tableLabel}
+                onChange={(e) => setTableLabel(e.target.value)}
+                placeholder="Бар, VIP, Терраса..."
+                maxLength={50}
               />
             </div>
             <div className="form-group">

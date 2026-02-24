@@ -83,7 +83,7 @@ export function formatReceipt(order, tenant, printSettings) {
     : new Date().toLocaleString('ru', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
   const tableInfo = order.table_number
-    ? `Стол ${order.table_number}${order.hall_name ? ` (${order.hall_name})` : ''}`
+    ? `${order.table_label || `Стол ${order.table_number}`}${order.hall_name ? ` (${order.hall_name})` : ''}`
     : '';
 
   const cashierName = order.user_name || '';
@@ -141,7 +141,9 @@ export function formatReceipt(order, tenant, printSettings) {
  */
 export function formatKitchenTicket(order, printSettings) {
   const dateStr = new Date().toLocaleString('ru', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-  const tableLabel = order.table_number ? `СТОЛ ${order.table_number}` : `ЗАКАЗ #${order.id}`;
+  const tableLabel = order.table_label
+    ? order.table_label.toUpperCase()
+    : order.table_number ? `СТОЛ ${order.table_number}` : `ЗАКАЗ #${order.id}`;
 
   // Группировка по цехам
   const groups = {};

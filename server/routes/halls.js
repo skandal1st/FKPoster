@@ -46,7 +46,7 @@ router.get('/:id/tables', async (req, res) => {
 });
 
 router.post('/:id/tables', adminOnly, async (req, res) => {
-  const { number, grid_x, grid_y, seats, shape, width, height } = req.body;
+  const { number, grid_x, grid_y, seats, shape, width, height, label } = req.body;
   const hallId = req.params.id;
   const hall = await get('SELECT grid_cols, grid_rows FROM halls WHERE id = $1 AND tenant_id = $2', [hallId, req.tenantId]);
   const cols = hall ? (hall.grid_cols ?? 6) : 6;
@@ -65,9 +65,10 @@ router.post('/:id/tables', adminOnly, async (req, res) => {
   const gy = grid_y != null ? Math.max(0, Math.min(rows - 1, Number(grid_y))) : 0;
   const xPct = cols > 0 ? (gx / (cols - 1 || 1)) * 100 : 10;
   const yPct = rows > 0 ? (gy / (rows - 1 || 1)) * 100 : 10;
+  const labelVal = label ? String(label).trim().slice(0, 50) || null : null;
   const result = await run(
-    'INSERT INTO tables (hall_id, number, x, y, grid_x, grid_y, seats, shape, width, height, tenant_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id',
-    [hallId, num, xPct, yPct, gx, gy, seatsVal, shapeVal, w, h, req.tenantId]
+    'INSERT INTO tables (hall_id, number, x, y, grid_x, grid_y, seats, shape, width, height, label, tenant_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id',
+    [hallId, num, xPct, yPct, gx, gy, seatsVal, shapeVal, w, h, labelVal, req.tenantId]
   );
   res.json({
     id: result.id,
@@ -77,6 +78,7 @@ router.post('/:id/tables', adminOnly, async (req, res) => {
     grid_x: gx, grid_y: gy,
     seats: seatsVal, shape: shapeVal,
     width: w, height: h,
+    label: labelVal,
     active: true,
   });
 });

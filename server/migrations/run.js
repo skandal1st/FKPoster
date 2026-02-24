@@ -16,6 +16,7 @@ async function runMigrations() {
     require('./010_plans_dedupe'),
     require('./011_subdomain_pin_auth'),
     require('./012_print_settings'),
+    require('./013_table_labels'),
   ];
 
   for (const migration of migrations) {

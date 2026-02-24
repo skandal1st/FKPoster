@@ -10,7 +10,7 @@ router.use(authMiddleware, checkSubscription, loadIntegrations);
 router.get('/', async (req, res) => {
   const { status } = req.query;
   let sql = `
-    SELECT o.*, t.number as table_number, h.name as hall_name, u.name as user_name, g.name as guest_name
+    SELECT o.*, t.number as table_number, t.label as table_label, h.name as hall_name, u.name as user_name, g.name as guest_name
     FROM orders o
     LEFT JOIN tables t ON o.table_id = t.id
     LEFT JOIN halls h ON t.hall_id = h.id
@@ -30,7 +30,7 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
   const order = await get(`
-    SELECT o.*, t.number as table_number, h.name as hall_name,
+    SELECT o.*, t.number as table_number, t.label as table_label, h.name as hall_name,
            g.name as guest_name, g.discount_type as guest_discount_type, g.discount_value as guest_discount_value
     FROM orders o
     LEFT JOIN tables t ON o.table_id = t.id
@@ -277,7 +277,7 @@ router.post('/:id/close', async (req, res) => {
   });
 
   const updated = await get(`
-    SELECT o.*, t.number as table_number, h.name as hall_name,
+    SELECT o.*, t.number as table_number, t.label as table_label, h.name as hall_name,
            g.name as guest_name, g.discount_type as guest_discount_type, g.discount_value as guest_discount_value
     FROM orders o
     LEFT JOIN tables t ON o.table_id = t.id
@@ -361,7 +361,7 @@ router.patch('/:id/payment-method', async (req, res) => {
   });
 
   const updated = await get(
-    'SELECT o.*, t.number as table_number, h.name as hall_name FROM orders o LEFT JOIN tables t ON o.table_id = t.id LEFT JOIN halls h ON t.hall_id = h.id WHERE o.id = $1',
+    'SELECT o.*, t.number as table_number, t.label as table_label, h.name as hall_name FROM orders o LEFT JOIN tables t ON o.table_id = t.id LEFT JOIN halls h ON t.hall_id = h.id WHERE o.id = $1',
     [order.id]
   );
   res.json(updated);

@@ -433,7 +433,7 @@ router.get('/shift/:id', async (req, res) => {
 
   const orders = await all(`
     SELECT o.id, o.total, o.payment_method, o.created_at, o.closed_at,
-           u.name as cashier_name, t.number as table_number
+           u.name as cashier_name, t.number as table_number, t.label as table_label
     FROM orders o
     LEFT JOIN users u ON o.user_id = u.id
     LEFT JOIN tables t ON o.table_id = t.id

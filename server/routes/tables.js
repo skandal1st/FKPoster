@@ -30,7 +30,7 @@ router.put('/:id/position', async (req, res) => {
 });
 
 router.patch('/:id', async (req, res) => {
-  const { x, y, width, height, grid_x, grid_y } = req.body;
+  const { x, y, width, height, grid_x, grid_y, label } = req.body;
   const id = req.params.id;
   const updates = [];
   const params = [];
@@ -41,6 +41,7 @@ router.patch('/:id', async (req, res) => {
   if (typeof grid_y === 'number' && grid_y >= 0) { updates.push(`grid_y = $${idx++}`); params.push(grid_y); }
   if (typeof width === 'number' && width >= 48 && width <= 200) { updates.push(`width = $${idx++}`); params.push(width); }
   if (typeof height === 'number' && height >= 48 && height <= 200) { updates.push(`height = $${idx++}`); params.push(height); }
+  if (label !== undefined) { updates.push(`label = $${idx++}`); params.push(label ? String(label).trim().slice(0, 50) || null : null); }
   if (updates.length === 0) return res.status(400).json({ error: 'Нет полей для обновления' });
   params.push(id, req.tenantId);
   await run(`UPDATE tables SET ${updates.join(', ')} WHERE id = $${idx++} AND tenant_id = $${idx}`, params);
