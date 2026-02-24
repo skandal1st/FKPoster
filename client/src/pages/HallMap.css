@@ -242,6 +242,11 @@
   line-height: 1.2;
 }
 
+.hall-table-number--label {
+  font-size: 15px;
+  font-weight: 600;
+}
+
 /* Мета: места */
 .hall-table-meta {
   display: flex;

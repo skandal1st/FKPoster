@@ -405,7 +405,7 @@ export default function HallMap({ readOnly = false }) {
                   <GripVertical className="hall-table-grip" aria-hidden />
                 )}
                 <span className="hall-table-dot" data-status={order ? 'occupied' : 'free'} />
-                <span className="hall-table-number">{table.label || table.number}</span>
+                <span className={`hall-table-number ${table.label ? 'hall-table-number--label' : ''}`}>{table.label || table.number}</span>
                 <div className="hall-table-meta">
                   <Users size={12} />
                   <span>{table.seats ?? 4} мест</span>
