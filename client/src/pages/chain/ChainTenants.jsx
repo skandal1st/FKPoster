@@ -31,7 +31,7 @@ export default function ChainTenants() {
     try {
       const res = await api.post('/chain/impersonate', { tenant_id: tenantId });
       useAuthStore.getState().setChainImpersonation(res.token, res.user, res.tenant);
-      window.location.href = '/';
+      window.location.href = '/dashboard';
     } catch (e) {
       toast.error(e.message);
     }

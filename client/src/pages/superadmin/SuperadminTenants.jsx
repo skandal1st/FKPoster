@@ -52,7 +52,7 @@ export default function SuperadminTenants() {
     try {
       const data = await api.post('/superadmin/impersonate', { tenant_id: tenantId });
       useAuthStore.getState().setImpersonation(data.token, data.user, data.tenant);
-      window.location.href = '/';
+      window.location.href = '/dashboard';
     } catch (e) {
       toast.error(e.message);
     }

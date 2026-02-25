@@ -49,7 +49,7 @@ export const useAuthStore = create((set) => ({
     if (current) sessionStorage.setItem('superadmin_token', current);
     localStorage.setItem('token', token);
     if (tenant) applyBranding(tenant);
-    set({ user, tenant, token });
+    set({ user, tenant, chain: null, token });
   },
 
   exitImpersonation: async () => {
@@ -58,18 +58,18 @@ export const useAuthStore = create((set) => ({
     if (!saved) {
       localStorage.removeItem('token');
       resetBranding();
-      set({ user: null, tenant: null, token: null, loading: false });
+      set({ user: null, tenant: null, chain: null, token: null, loading: false });
       return;
     }
     localStorage.setItem('token', saved);
     resetBranding();
-    set({ user: null, tenant: null, token: null, loading: true });
+    set({ user: null, tenant: null, chain: null, token: null, loading: true });
     try {
       const data = await api.get('/auth/me');
-      set({ user: data.user, tenant: data.tenant, loading: false });
+      set({ user: data.user, tenant: data.tenant, chain: data.chain || null, loading: false });
     } catch {
       localStorage.removeItem('token');
-      set({ user: null, tenant: null, token: null, loading: false });
+      set({ user: null, tenant: null, chain: null, token: null, loading: false });
     }
   },
 
