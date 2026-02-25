@@ -6,6 +6,7 @@ import { usePosStore } from './posStore';
 export const useAuthStore = create((set) => ({
   user: null,
   tenant: null,
+  chain: null,
   token: localStorage.getItem('token'),
   loading: true,
 
@@ -16,7 +17,7 @@ export const useAuthStore = create((set) => ({
       sessionStorage.setItem('superadmin_token', data.token);
     }
     if (data.tenant) applyBranding(data.tenant);
-    set({ user: data.user, tenant: data.tenant, token: data.token });
+    set({ user: data.user, tenant: data.tenant, chain: data.chain || null, token: data.token });
   },
 
   register: async (company_name, name, email, password, slug) => {
@@ -37,9 +38,10 @@ export const useAuthStore = create((set) => ({
   logout: () => {
     localStorage.removeItem('token');
     sessionStorage.removeItem('superadmin_token');
+    sessionStorage.removeItem('chain_token');
     resetBranding();
     usePosStore.getState().reset();
-    set({ user: null, tenant: null, token: null });
+    set({ user: null, tenant: null, chain: null, token: null });
   },
 
   setImpersonation: (token, user, tenant) => {
@@ -71,6 +73,35 @@ export const useAuthStore = create((set) => ({
     }
   },
 
+  setChainImpersonation: (token, user, tenant) => {
+    const current = localStorage.getItem('token');
+    if (current) sessionStorage.setItem('chain_token', current);
+    localStorage.setItem('token', token);
+    if (tenant) applyBranding(tenant);
+    set({ user, tenant, chain: null, token });
+  },
+
+  exitChainImpersonation: async () => {
+    const saved = sessionStorage.getItem('chain_token');
+    sessionStorage.removeItem('chain_token');
+    if (!saved) {
+      localStorage.removeItem('token');
+      resetBranding();
+      set({ user: null, tenant: null, chain: null, token: null, loading: false });
+      return;
+    }
+    localStorage.setItem('token', saved);
+    resetBranding();
+    set({ user: null, tenant: null, chain: null, token: null, loading: true });
+    try {
+      const data = await api.get('/auth/me');
+      set({ user: data.user, tenant: data.tenant, chain: data.chain || null, loading: false });
+    } catch {
+      localStorage.removeItem('token');
+      set({ user: null, tenant: null, chain: null, token: null, loading: false });
+    }
+  },
+
   checkAuth: async () => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -80,10 +111,10 @@ export const useAuthStore = create((set) => ({
     try {
       const data = await api.get('/auth/me');
       if (data.tenant) applyBranding(data.tenant);
-      set({ user: data.user, tenant: data.tenant, loading: false });
+      set({ user: data.user, tenant: data.tenant, chain: data.chain || null, loading: false });
     } catch {
       localStorage.removeItem('token');
-      set({ user: null, tenant: null, token: null, loading: false });
+      set({ user: null, tenant: null, chain: null, token: null, loading: false });
     }
   },
 

@@ -1,6 +1,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const { all, get, run } = require('../db');
+const bcrypt = require('bcryptjs');
+const { all, get, run, transaction } = require('../db');
 const { authMiddleware, superadminOnly } = require('../middleware/auth');
 const config = require('../config');
 
@@ -133,6 +134,53 @@ router.get('/plans', async (req, res) => {
     FROM plans WHERE active = true ORDER BY name, id
   `);
   res.json(plans.sort((a, b) => (parseFloat(a.price) || 0) - (parseFloat(b.price) || 0)));
+});
+
+/** Список всех сетей */
+router.get('/chains', async (req, res) => {
+  const chains = await all(`
+    SELECT c.id, c.name, c.created_at,
+      COUNT(ct.id) AS tenants_count,
+      u.email AS owner_email, u.name AS owner_name
+    FROM chains c
+    LEFT JOIN chain_tenants ct ON ct.chain_id = c.id
+    LEFT JOIN users u ON u.chain_id = c.id AND u.role = 'chain_owner'
+    GROUP BY c.id, c.name, c.created_at, u.email, u.name
+    ORDER BY c.name
+  `);
+  res.json(chains);
+});
+
+/** Создать сеть + chain_owner юзера */
+router.post('/chains', async (req, res) => {
+  const { name, email, password, owner_name } = req.body;
+  if (!name || !email || !password) {
+    return res.status(400).json({ error: 'Заполните все поля (название сети, email, пароль)' });
+  }
+  if (password.length < 6) {
+    return res.status(400).json({ error: 'Пароль должен быть минимум 6 символов' });
+  }
+
+  const existingUser = await get('SELECT id FROM users WHERE email = $1', [email]);
+  if (existingUser) {
+    return res.status(400).json({ error: 'Пользователь с таким email уже существует' });
+  }
+
+  const result = await transaction(async (tx) => {
+    const chainRes = await tx.run('INSERT INTO chains (name) VALUES ($1) RETURNING id', [name]);
+    const chainId = chainRes.id;
+
+    const hash = await bcrypt.hash(password, 10);
+    const userRes = await tx.run(
+      'INSERT INTO users (email, username, password, name, role, chain_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
+      [email, email, hash, owner_name || name, 'chain_owner', chainId]
+    );
+
+    return { chainId, userId: userRes.id };
+  });
+
+  const chain = await get('SELECT id, name, created_at FROM chains WHERE id = $1', [result.chainId]);
+  res.json(chain);
 });
 
 module.exports = router;

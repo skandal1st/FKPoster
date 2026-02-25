@@ -29,6 +29,7 @@ const markingRoutes = require('./routes/marking');
 const guestRoutes = require('./routes/guests');
 const ingredientGroupRoutes = require('./routes/ingredientGroups');
 const workshopRoutes = require('./routes/workshops');
+const chainRoutes = require('./routes/chain');
 
 const app = express();
 
@@ -106,6 +107,7 @@ app.use('/api/marking', markingRoutes);
 app.use('/api/guests', guestRoutes);
 app.use('/api/ingredient-groups', ingredientGroupRoutes);
 app.use('/api/workshops', workshopRoutes);
+app.use('/api/chain', chainRoutes);
 
 // Production: serve React build
 if (config.NODE_ENV === 'production') {

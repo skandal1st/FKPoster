@@ -30,7 +30,7 @@ router.post('/login', async (req, res) => {
   }
 
   const token = jwt.sign(
-    { id: user.id, role: user.role, tenant_id: user.tenant_id },
+    { id: user.id, role: user.role, tenant_id: user.tenant_id, chain_id: user.chain_id || null },
     config.JWT_SECRET,
     { expiresIn: '24h' }
   );
@@ -43,10 +43,16 @@ router.post('/login', async (req, res) => {
     );
   }
 
+  let chain = null;
+  if (user.chain_id) {
+    chain = await get('SELECT id, name FROM chains WHERE id = $1', [user.chain_id]);
+  }
+
   res.json({
     token,
-    user: { id: user.id, email: user.email, name: user.name, role: user.role, tenant_id: user.tenant_id },
+    user: { id: user.id, email: user.email, name: user.name, role: user.role, tenant_id: user.tenant_id, chain_id: user.chain_id || null },
     tenant,
+    chain,
   });
 });
 
@@ -255,9 +261,14 @@ router.get('/me', authMiddleware, async (req, res) => {
       [req.user.tenant_id]
     );
   }
+  let chain = null;
+  if (req.user.chain_id) {
+    chain = await get('SELECT id, name FROM chains WHERE id = $1', [req.user.chain_id]);
+  }
   res.json({
-    user: { id: req.user.id, email: req.user.email, name: req.user.name, role: req.user.role, tenant_id: req.user.tenant_id },
+    user: { id: req.user.id, email: req.user.email, name: req.user.name, role: req.user.role, tenant_id: req.user.tenant_id, chain_id: req.user.chain_id || null },
     tenant,
+    chain,
   });
 });
 

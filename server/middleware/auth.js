@@ -12,7 +12,7 @@ async function authMiddleware(req, res, next) {
     const token = header.split(' ')[1];
     const payload = jwt.verify(token, config.JWT_SECRET);
     const user = await get(
-      'SELECT id, email, username, name, role, tenant_id FROM users WHERE id = $1 AND active = true',
+      'SELECT id, email, username, name, role, tenant_id, chain_id FROM users WHERE id = $1 AND active = true',
       [payload.id]
     );
     if (!user) {
@@ -23,8 +23,16 @@ async function authMiddleware(req, res, next) {
     if (payload.superadmin_impersonating && payload.tenant_id && user.role === 'superadmin') {
       req.user = { ...user, tenant_id: payload.tenant_id, role: 'owner' };
       req.tenantId = payload.tenant_id;
+    // Владелец сети может работать «от имени» заведения сети
+    } else if (payload.chain_impersonating && payload.tenant_id && payload.chain_id && user.role === 'chain_owner') {
+      req.user = { ...user, tenant_id: payload.tenant_id, role: 'owner' };
+      req.tenantId = payload.tenant_id;
+      req.chainId = payload.chain_id;
     } else {
       req.tenantId = user.tenant_id;
+      if (user.role === 'chain_owner' && user.chain_id) {
+        req.chainId = user.chain_id;
+      }
     }
     next();
   } catch {
@@ -53,4 +61,11 @@ function superadminOnly(req, res, next) {
   next();
 }
 
-module.exports = { authMiddleware, adminOnly, ownerOnly, superadminOnly };
+function chainOwnerOnly(req, res, next) {
+  if (req.user.role !== 'chain_owner') {
+    return res.status(403).json({ error: 'Доступ только для владельца сети' });
+  }
+  next();
+}
+
+module.exports = { authMiddleware, adminOnly, ownerOnly, superadminOnly, chainOwnerOnly };

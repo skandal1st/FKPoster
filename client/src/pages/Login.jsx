@@ -16,7 +16,7 @@ export default function Login() {
     return <div className="spinner" style={{ marginTop: '40vh' }} />;
   }
 
-  if (user && tenant?.slug && user.role !== 'superadmin') {
+  if (user && tenant?.slug && user.role !== 'superadmin' && user.role !== 'chain_owner') {
     redirectingRef.current = true;
     // Очищаем токен с основного домена, чтобы при следующем заходе
     // на skandata.ru не было автоматического редиректа на сабдомен
@@ -27,6 +27,7 @@ export default function Login() {
     return <div className="spinner" style={{ marginTop: '40vh' }} />;
   }
 
+  if (user?.role === 'chain_owner' && !tenant) return <Navigate to="/chain" />;
   if (user && !(user.role === 'superadmin' && !tenant)) return <Navigate to="/dashboard" />;
   if (user?.role === 'superadmin' && !tenant) return <Navigate to="/superadmin" />;
 

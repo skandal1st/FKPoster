@@ -29,6 +29,11 @@ import Guests from './pages/admin/Guests';
 import IngredientGroups from './pages/admin/IngredientGroups';
 import Workshops from './pages/admin/Workshops';
 import HookahBOSLanding from './pages/HookahBOSLanding';
+import ChainDashboard from './pages/chain/ChainDashboard';
+import ChainTenants from './pages/chain/ChainTenants';
+import ChainSales from './pages/chain/ChainSales';
+import ChainComparison from './pages/chain/ChainComparison';
+import ChainProducts from './pages/chain/ChainProducts';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuthStore();
@@ -111,6 +116,11 @@ function MainDomainApp() {
       <Route path="/accept-invite" element={<AcceptInvite />} />
       <Route path="/" element={<ProtectedRoute><LayoutSwitch /></ProtectedRoute>}>
         <Route path="superadmin" element={<SuperadminTenants />} />
+        <Route path="chain" element={<ChainDashboard />} />
+        <Route path="chain/tenants" element={<ChainTenants />} />
+        <Route path="chain/sales" element={<ChainSales />} />
+        <Route path="chain/comparison" element={<ChainComparison />} />
+        <Route path="chain/products" element={<ChainProducts />} />
         <Route path="pos" element={<Navigate to="/" replace />} />
         <Route path="hall-map" element={<AdminRoute><HallMap /></AdminRoute>} />
         <Route path="admin/categories" element={<AdminRoute><Categories /></AdminRoute>} />

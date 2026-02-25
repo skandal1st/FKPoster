@@ -12,9 +12,10 @@ import {
 const SIDEBAR_COLLAPSED_KEY = 'sidebarCollapsed';
 
 export default function Layout() {
-  const { user, tenant, logout, exitImpersonation } = useAuthStore();
+  const { user, tenant, logout, exitImpersonation, exitChainImpersonation } = useAuthStore();
   const navigate = useNavigate();
   const [impersonating, setImpersonating] = useState(!!sessionStorage.getItem('superadmin_token'));
+  const [chainImpersonating, setChainImpersonating] = useState(!!sessionStorage.getItem('chain_token'));
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true');
 
   const toggleSidebar = () => {
@@ -44,8 +45,13 @@ export default function Layout() {
     navigate('/superadmin');
   };
 
+  const handleExitChainImpersonation = async () => {
+    await exitChainImpersonation();
+    navigate('/chain');
+  };
+
   return (
-    <div className={`app-layout${impersonating && tenant ? ' app-layout-with-banner' : ''}${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
+    <div className={`app-layout${(impersonating || chainImpersonating) && tenant ? ' app-layout-with-banner' : ''}${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
       {impersonating && tenant && (
         <div className="impersonation-banner">
           <span>Вы вошли как суперадмин: <strong>{tenant.name}</strong></span>
@@ -56,6 +62,19 @@ export default function Layout() {
             onClick={handleExitImpersonation}
           >
             <LogIn size={14} /> Выйти из заведения
+          </button>
+        </div>
+      )}
+      {chainImpersonating && !impersonating && tenant && (
+        <div className="impersonation-banner">
+          <span>Вы в заведении: <strong>{tenant.name}</strong></span>
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.5)' }}
+            onClick={handleExitChainImpersonation}
+          >
+            <LogIn size={14} /> Вернуться к сети
           </button>
         </div>
       )}
