@@ -12,10 +12,8 @@ import {
 const SIDEBAR_COLLAPSED_KEY = 'sidebarCollapsed';
 
 export default function Layout() {
-  const { user, tenant, chain, logout, exitImpersonation, exitChainImpersonation } = useAuthStore();
+  const { user, tenant, chain, logout, exitImpersonation, exitChainImpersonation, impersonating, chainImpersonating } = useAuthStore();
   const navigate = useNavigate();
-  const impersonating = !!sessionStorage.getItem('superadmin_token');
-  const chainImpersonating = !!sessionStorage.getItem('chain_token');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true');
 
   const toggleSidebar = () => {

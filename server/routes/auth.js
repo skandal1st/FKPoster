@@ -266,7 +266,12 @@ router.get('/me', authMiddleware, async (req, res) => {
     chain = await get('SELECT id, name FROM chains WHERE id = $1', [req.user.chain_id]);
   }
   res.json({
-    user: { id: req.user.id, email: req.user.email, name: req.user.name, role: req.user.role, tenant_id: req.user.tenant_id, chain_id: req.user.chain_id || null },
+    user: {
+      id: req.user.id, email: req.user.email, name: req.user.name, role: req.user.role,
+      tenant_id: req.user.tenant_id, chain_id: req.user.chain_id || null,
+      superadmin_impersonating: !!req.user.superadmin_impersonating,
+      chain_impersonating: !!req.user.chain_impersonating,
+    },
     tenant,
     chain,
   });

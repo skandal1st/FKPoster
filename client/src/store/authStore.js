@@ -9,6 +9,8 @@ export const useAuthStore = create((set) => ({
   chain: null,
   token: localStorage.getItem('token'),
   loading: true,
+  impersonating: false,
+  chainImpersonating: false,
 
   login: async (email, password) => {
     const data = await api.post('/auth/login', { email, password });
@@ -41,7 +43,7 @@ export const useAuthStore = create((set) => ({
     sessionStorage.removeItem('chain_token');
     resetBranding();
     usePosStore.getState().reset();
-    set({ user: null, tenant: null, chain: null, token: null });
+    set({ user: null, tenant: null, chain: null, token: null, impersonating: false, chainImpersonating: false });
   },
 
   setImpersonation: (token, user, tenant) => {
@@ -49,7 +51,7 @@ export const useAuthStore = create((set) => ({
     if (current) sessionStorage.setItem('superadmin_token', current);
     localStorage.setItem('token', token);
     if (tenant) applyBranding(tenant);
-    set({ user, tenant, chain: null, token });
+    set({ user, tenant, chain: null, token, impersonating: true, chainImpersonating: false });
   },
 
   exitImpersonation: async () => {
@@ -58,12 +60,12 @@ export const useAuthStore = create((set) => ({
     if (!saved) {
       localStorage.removeItem('token');
       resetBranding();
-      set({ user: null, tenant: null, chain: null, token: null, loading: false });
+      set({ user: null, tenant: null, chain: null, token: null, loading: false, impersonating: false, chainImpersonating: false });
       return;
     }
     localStorage.setItem('token', saved);
     resetBranding();
-    set({ user: null, tenant: null, chain: null, token: null, loading: true });
+    set({ user: null, tenant: null, chain: null, token: null, loading: true, impersonating: false, chainImpersonating: false });
     try {
       const data = await api.get('/auth/me');
       set({ user: data.user, tenant: data.tenant, chain: data.chain || null, loading: false });
@@ -78,7 +80,7 @@ export const useAuthStore = create((set) => ({
     if (current) sessionStorage.setItem('chain_token', current);
     localStorage.setItem('token', token);
     if (tenant) applyBranding(tenant);
-    set({ user, tenant, chain: null, token });
+    set({ user, tenant, chain: null, token, impersonating: false, chainImpersonating: true });
   },
 
   exitChainImpersonation: async () => {
@@ -87,12 +89,12 @@ export const useAuthStore = create((set) => ({
     if (!saved) {
       localStorage.removeItem('token');
       resetBranding();
-      set({ user: null, tenant: null, chain: null, token: null, loading: false });
+      set({ user: null, tenant: null, chain: null, token: null, loading: false, impersonating: false, chainImpersonating: false });
       return;
     }
     localStorage.setItem('token', saved);
     resetBranding();
-    set({ user: null, tenant: null, chain: null, token: null, loading: true });
+    set({ user: null, tenant: null, chain: null, token: null, loading: true, impersonating: false, chainImpersonating: false });
     try {
       const data = await api.get('/auth/me');
       set({ user: data.user, tenant: data.tenant, chain: data.chain || null, loading: false });
@@ -111,10 +113,17 @@ export const useAuthStore = create((set) => ({
     try {
       const data = await api.get('/auth/me');
       if (data.tenant) applyBranding(data.tenant);
-      set({ user: data.user, tenant: data.tenant, chain: data.chain || null, loading: false });
+      set({
+        user: data.user,
+        tenant: data.tenant,
+        chain: data.chain || null,
+        loading: false,
+        impersonating: !!data.user?.superadmin_impersonating,
+        chainImpersonating: !!data.user?.chain_impersonating,
+      });
     } catch {
       localStorage.removeItem('token');
-      set({ user: null, tenant: null, chain: null, token: null, loading: false });
+      set({ user: null, tenant: null, chain: null, token: null, loading: false, impersonating: false, chainImpersonating: false });
     }
   },
 

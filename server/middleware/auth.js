@@ -21,11 +21,11 @@ async function authMiddleware(req, res, next) {
     req.user = user;
     // Суперадмин может работать «от имени» заведения (имперсонация)
     if (payload.superadmin_impersonating && payload.tenant_id && user.role === 'superadmin') {
-      req.user = { ...user, tenant_id: payload.tenant_id, role: 'owner' };
+      req.user = { ...user, tenant_id: payload.tenant_id, role: 'owner', superadmin_impersonating: true };
       req.tenantId = payload.tenant_id;
     // Владелец сети может работать «от имени» заведения сети
     } else if (payload.chain_impersonating && payload.tenant_id && payload.chain_id && (user.role === 'chain_owner' || (user.role === 'owner' && user.chain_id))) {
-      req.user = { ...user, tenant_id: payload.tenant_id, role: 'owner' };
+      req.user = { ...user, tenant_id: payload.tenant_id, role: 'owner', chain_impersonating: true };
       req.tenantId = payload.tenant_id;
       req.chainId = payload.chain_id;
     } else {
