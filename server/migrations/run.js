@@ -18,6 +18,7 @@ async function runMigrations() {
     require('./012_print_settings'),
     require('./013_table_labels'),
     require('./014_chains'),
+    require('./015_business_plan'),
   ];
 
   for (const migration of migrations) {

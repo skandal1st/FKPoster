@@ -24,13 +24,13 @@ async function authMiddleware(req, res, next) {
       req.user = { ...user, tenant_id: payload.tenant_id, role: 'owner' };
       req.tenantId = payload.tenant_id;
     // Владелец сети может работать «от имени» заведения сети
-    } else if (payload.chain_impersonating && payload.tenant_id && payload.chain_id && user.role === 'chain_owner') {
+    } else if (payload.chain_impersonating && payload.tenant_id && payload.chain_id && (user.role === 'chain_owner' || (user.role === 'owner' && user.chain_id))) {
       req.user = { ...user, tenant_id: payload.tenant_id, role: 'owner' };
       req.tenantId = payload.tenant_id;
       req.chainId = payload.chain_id;
     } else {
       req.tenantId = user.tenant_id;
-      if (user.role === 'chain_owner' && user.chain_id) {
+      if (user.chain_id) {
         req.chainId = user.chain_id;
       }
     }
@@ -62,10 +62,10 @@ function superadminOnly(req, res, next) {
 }
 
 function chainOwnerOnly(req, res, next) {
-  if (req.user.role !== 'chain_owner') {
-    return res.status(403).json({ error: 'Доступ только для владельца сети' });
-  }
-  next();
+  // Разрешаем и chain_owner, и owner с chain_id (Business plan)
+  if (req.user.role === 'chain_owner') return next();
+  if (req.user.role === 'owner' && req.chainId) return next();
+  return res.status(403).json({ error: 'Доступ только для владельца сети' });
 }
 
 module.exports = { authMiddleware, adminOnly, ownerOnly, superadminOnly, chainOwnerOnly };

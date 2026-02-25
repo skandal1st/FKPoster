@@ -1,15 +1,16 @@
 import { useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import {
   LayoutDashboard, Building2, BarChart3, GitCompare, Package,
-  LogOut, ChevronLeft, ChevronRight, Link2
+  LogOut, ChevronLeft, ChevronRight, Link2, ArrowLeft
 } from 'lucide-react';
 
 const SIDEBAR_COLLAPSED_KEY = 'sidebarCollapsed';
 
 export default function ChainLayout() {
-  const { user, chain, logout } = useAuthStore();
+  const { user, tenant, chain, logout } = useAuthStore();
+  const navigate = useNavigate();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true');
 
   const toggleSidebar = () => {
@@ -19,6 +20,9 @@ export default function ChainLayout() {
       return next;
     });
   };
+
+  // Owner с tenant может вернуться к своему заведению
+  const isOwnerWithTenant = user?.role === 'owner' && tenant;
 
   return (
     <div className={`app-layout${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
@@ -49,6 +53,21 @@ export default function ChainLayout() {
               <Building2 size={18} /><span className="sidebar-link-text">Список заведений</span>
             </NavLink>
           </div>
+
+          {isOwnerWithTenant && (
+            <div className="sidebar-section">
+              <div className="sidebar-section-title">Моё заведение</div>
+              <button
+                type="button"
+                className="sidebar-link"
+                onClick={() => navigate('/')}
+                title="Вернуться в заведение"
+                style={{ width: '100%', textAlign: 'left', border: 'none', background: 'none', cursor: 'pointer' }}
+              >
+                <ArrowLeft size={18} /><span className="sidebar-link-text">Вернуться в {tenant.name}</span>
+              </button>
+            </div>
+          )}
         </nav>
         <div className="sidebar-footer">
           <button

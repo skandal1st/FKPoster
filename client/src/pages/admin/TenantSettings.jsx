@@ -1,16 +1,23 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../../api';
 import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
+import { Link2 } from 'lucide-react';
 
 export default function TenantSettings() {
-  const { tenant, setTenant } = useAuthStore();
+  const { user, tenant, chain, setTenant } = useAuthStore();
+  const navigate = useNavigate();
   const [name, setName] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
   const [accentColor, setAccentColor] = useState('#6366f1');
   const [saving, setSaving] = useState(false);
   const [subscription, setSubscription] = useState(null);
   const [usage, setUsage] = useState(null);
+
+  // Chain creation
+  const [chainName, setChainName] = useState('');
+  const [creatingChain, setCreatingChain] = useState(false);
 
   // Print settings
   const [receiptWidth, setReceiptWidth] = useState('80mm');
@@ -58,6 +65,28 @@ export default function TenantSettings() {
       toast.error(err.message);
     } finally {
       setSavingPrint(false);
+    }
+  };
+
+  const hasChainFeature = subscription?.features?.chain_management;
+  const isOwner = user?.role === 'owner';
+
+  const handleCreateChain = async (e) => {
+    e.preventDefault();
+    if (!chainName.trim()) return;
+    setCreatingChain(true);
+    try {
+      const data = await api.post('/chain/create', { name: chainName.trim() });
+      // Обновляем токен с chain_id
+      localStorage.setItem('token', data.token);
+      toast.success('Сеть создана! Переходим в управление сетью...');
+      // Перезагружаем auth чтобы получить chain
+      await useAuthStore.getState().checkAuth();
+      navigate('/chain');
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setCreatingChain(false);
     }
   };
 
@@ -139,10 +168,18 @@ export default function TenantSettings() {
                 {(() => {
                   const f = subscription.features;
                   if (f == null) return null;
-                  const text = typeof f === 'string' ? f : (typeof f === 'object' && Object.keys(f).length > 0
-                    ? Object.entries(f).filter(([, v]) => v).map(([k]) => k).join(', ')
-                    : '');
-                  return text ? <li>{text}</li> : null;
+                  const FEATURE_NAMES = {
+                    basic: 'Базовые функции',
+                    reports: 'Отчёты',
+                    api: 'API',
+                    chain_management: 'Управление сетью',
+                  };
+                  if (typeof f === 'object' && Object.keys(f).length > 0) {
+                    return Object.entries(f).filter(([, v]) => v).map(([k]) => (
+                      <li key={k}>{FEATURE_NAMES[k] || k}</li>
+                    ));
+                  }
+                  return null;
                 })()}
               </ul>
 
@@ -207,6 +244,45 @@ export default function TenantSettings() {
           </button>
         </form>
       </div>
+      {isOwner && hasChainFeature && !chain && (
+        <div className="card" style={{ marginTop: 24 }}>
+          <h3 style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Link2 size={20} /> Управление сетью
+          </h3>
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16 }}>
+            На вашем тарифе доступно управление сетью заведений. Создайте сеть, чтобы объединить несколько точек и видеть агрегированную аналитику.
+          </p>
+          <form onSubmit={handleCreateChain} style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+            <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
+              <label className="form-label">Название сети</label>
+              <input
+                className="form-input"
+                value={chainName}
+                onChange={(e) => setChainName(e.target.value)}
+                placeholder="Моя сеть кальянных"
+                required
+              />
+            </div>
+            <button className="btn btn-primary" type="submit" disabled={creatingChain}>
+              {creatingChain ? 'Создание...' : 'Создать сеть'}
+            </button>
+          </form>
+        </div>
+      )}
+
+      {isOwner && chain && (
+        <div className="card" style={{ marginTop: 24 }}>
+          <h3 style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Link2 size={20} /> Сеть: {chain.name}
+          </h3>
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16 }}>
+            Вы являетесь владельцем сети. Перейдите в кабинет сети для управления заведениями и аналитики.
+          </p>
+          <button className="btn btn-primary" onClick={() => navigate('/chain')}>
+            Перейти в кабинет сети
+          </button>
+        </div>
+      )}
     </div>
   );
 }

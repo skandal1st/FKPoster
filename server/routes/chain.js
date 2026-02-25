@@ -2,11 +2,50 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { all, get, run, transaction } = require('../db');
-const { authMiddleware, chainOwnerOnly } = require('../middleware/auth');
+const { authMiddleware, chainOwnerOnly, ownerOnly } = require('../middleware/auth');
+const { checkSubscription, checkFeature } = require('../middleware/subscription');
 const config = require('../config');
 const { generateUniqueSlug } = require('../utils/slugify');
 
 const router = express.Router();
+
+// === Создание сети (до chainOwnerOnly, т.к. у owner ещё нет chain_id) ===
+router.post('/create', authMiddleware, ownerOnly, checkSubscription, checkFeature('chain_management'), async (req, res) => {
+  const { name } = req.body;
+  if (!name) {
+    return res.status(400).json({ error: 'Укажите название сети' });
+  }
+
+  if (req.user.chain_id) {
+    return res.status(400).json({ error: 'Вы уже являетесь владельцем сети' });
+  }
+
+  const result = await transaction(async (tx) => {
+    const chainRes = await tx.run('INSERT INTO chains (name) VALUES ($1) RETURNING id', [name]);
+    const chainId = chainRes.id;
+
+    // Привязываем текущий tenant к сети
+    await tx.run('INSERT INTO chain_tenants (chain_id, tenant_id) VALUES ($1, $2)', [chainId, req.tenantId]);
+
+    // Устанавливаем chain_id на юзере
+    await tx.run('UPDATE users SET chain_id = $1 WHERE id = $2', [chainId, req.user.id]);
+
+    return { chainId };
+  });
+
+  const chain = await get('SELECT id, name FROM chains WHERE id = $1', [result.chainId]);
+
+  // Возвращаем обновлённый токен с chain_id
+  const token = jwt.sign(
+    { id: req.user.id, role: req.user.role, tenant_id: req.user.tenant_id, chain_id: chain.id },
+    config.JWT_SECRET,
+    { expiresIn: '24h' }
+  );
+
+  res.json({ chain, token });
+});
+
+// === Все остальные chain-роуты требуют chainOwnerOnly ===
 router.use(authMiddleware, chainOwnerOnly);
 
 /** Список заведений сети с мини-KPI */
@@ -101,6 +140,61 @@ router.post('/tenants', async (req, res) => {
 
   const tenant = await get('SELECT id, name, slug FROM tenants WHERE id = $1', [result.tenantId]);
   res.json(tenant);
+});
+
+/** Поиск заведений для добавления в сеть (по названию или slug) */
+router.get('/tenants/search', async (req, res) => {
+  const chainId = req.chainId;
+  const { q } = req.query;
+  if (!q || q.length < 2) {
+    return res.json([]);
+  }
+
+  const tenants = await all(`
+    SELECT t.id, t.name, t.slug
+    FROM tenants t
+    WHERE (LOWER(t.name) LIKE $1 OR LOWER(t.slug) LIKE $1)
+      AND t.id NOT IN (SELECT tenant_id FROM chain_tenants WHERE chain_id = $2)
+    ORDER BY t.name
+    LIMIT 10
+  `, [`%${q.toLowerCase()}%`, chainId]);
+
+  res.json(tenants);
+});
+
+/** Добавить существующее заведение в сеть */
+router.post('/tenants/link', async (req, res) => {
+  const chainId = req.chainId;
+  const { tenant_id } = req.body;
+
+  if (!tenant_id) {
+    return res.status(400).json({ error: 'Укажите tenant_id' });
+  }
+
+  const tenant = await get('SELECT id, name, slug FROM tenants WHERE id = $1', [tenant_id]);
+  if (!tenant) {
+    return res.status(404).json({ error: 'Заведение не найдено' });
+  }
+
+  const existing = await get(
+    'SELECT id FROM chain_tenants WHERE chain_id = $1 AND tenant_id = $2',
+    [chainId, tenant_id]
+  );
+  if (existing) {
+    return res.status(400).json({ error: 'Заведение уже в сети' });
+  }
+
+  // Проверяем что заведение не принадлежит другой сети
+  const otherChain = await get(
+    'SELECT c.name FROM chain_tenants ct JOIN chains c ON c.id = ct.chain_id WHERE ct.tenant_id = $1',
+    [tenant_id]
+  );
+  if (otherChain) {
+    return res.status(400).json({ error: `Заведение уже принадлежит сети "${otherChain.name}"` });
+  }
+
+  await run('INSERT INTO chain_tenants (chain_id, tenant_id) VALUES ($1, $2)', [chainId, tenant_id]);
+  res.json({ success: true, tenant });
 });
 
 /** Отвязать заведение от сети */

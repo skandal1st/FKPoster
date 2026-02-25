@@ -6,13 +6,13 @@ import {
   ShoppingCart, Map, LayoutGrid, Package, Truck, Settings,
   CreditCard, Users, BarChart3, LogOut, Boxes, ClipboardList, LayoutDashboard,
   Building2, FlaskConical, LogIn, ScanBarcode, Wine, Tag, UserCircle, FolderOpen, Warehouse,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, Link2
 } from 'lucide-react';
 
 const SIDEBAR_COLLAPSED_KEY = 'sidebarCollapsed';
 
 export default function Layout() {
-  const { user, tenant, logout, exitImpersonation, exitChainImpersonation } = useAuthStore();
+  const { user, tenant, chain, logout, exitImpersonation, exitChainImpersonation } = useAuthStore();
   const navigate = useNavigate();
   const [impersonating, setImpersonating] = useState(!!sessionStorage.getItem('superadmin_token'));
   const [chainImpersonating, setChainImpersonating] = useState(!!sessionStorage.getItem('chain_token'));
@@ -190,6 +190,18 @@ export default function Layout() {
                   <ScanBarcode /><span className="sidebar-link-text">Интеграции</span>
                 </NavLink>
               )}
+            </div>
+          )}
+
+          {isOwner && chain && (
+            <div className="sidebar-section">
+              <div className="sidebar-section-title">Сеть</div>
+              <NavLink to="/chain" end className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Дашборд сети">
+                <Link2 /><span className="sidebar-link-text">Дашборд сети</span>
+              </NavLink>
+              <NavLink to="/chain/tenants" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Заведения сети">
+                <Building2 /><span className="sidebar-link-text">Заведения сети</span>
+              </NavLink>
             </div>
           )}
         </nav>

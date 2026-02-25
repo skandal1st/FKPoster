@@ -1,15 +1,22 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { api } from '../../api';
 import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
-import { LogIn, Plus, Unlink, X, Building2 } from 'lucide-react';
+import { LogIn, Plus, Unlink, X, Building2, Search, Link2 } from 'lucide-react';
 
 export default function ChainTenants() {
   const [tenants, setTenants] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showLinkModal, setShowLinkModal] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [saving, setSaving] = useState(false);
+
+  // Search state for linking existing tenants
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const searchTimer = useRef(null);
 
   const load = () => {
     api.get('/chain/tenants')
@@ -47,7 +54,7 @@ export default function ChainTenants() {
     try {
       await api.post('/chain/tenants', form);
       toast.success('Заведение создано');
-      setShowModal(false);
+      setShowCreateModal(false);
       setForm({ name: '', email: '', password: '' });
       load();
     } catch (err) {
@@ -57,15 +64,52 @@ export default function ChainTenants() {
     }
   };
 
+  // Search for existing tenants
+  const handleSearch = (q) => {
+    setSearchQuery(q);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    if (q.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    searchTimer.current = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const results = await api.get(`/chain/tenants/search?q=${encodeURIComponent(q)}`);
+        setSearchResults(results);
+      } catch {
+        setSearchResults([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 300);
+  };
+
+  const handleLinkTenant = async (tenantId) => {
+    try {
+      await api.post('/chain/tenants/link', { tenant_id: tenantId });
+      toast.success('Заведение добавлено в сеть');
+      setSearchResults((prev) => prev.filter((t) => t.id !== tenantId));
+      load();
+    } catch (e) {
+      toast.error(e.message);
+    }
+  };
+
   if (loading) return <div className="spinner" style={{ marginTop: '20vh' }} />;
 
   return (
     <div className="page">
       <div className="page-header">
         <h1 className="page-title">Заведения сети</h1>
-        <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-          <Plus size={16} /> Создать заведение
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-ghost" onClick={() => { setShowLinkModal(true); setSearchQuery(''); setSearchResults([]); }}>
+            <Link2 size={16} /> Добавить существующее
+          </button>
+          <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>
+            <Plus size={16} /> Создать новое
+          </button>
+        </div>
       </div>
 
       <div className="card" style={{ overflow: 'hidden' }}>
@@ -122,12 +166,13 @@ export default function ChainTenants() {
         )}
       </div>
 
-      {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+      {/* Модалка: создать новое заведение */}
+      {showCreateModal && (
+        <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 440 }}>
             <div className="modal-header">
               <h3 className="modal-title">Создать заведение</h3>
-              <button type="button" className="btn-icon" onClick={() => setShowModal(false)}>
+              <button type="button" className="btn-icon" onClick={() => setShowCreateModal(false)}>
                 <X size={18} />
               </button>
             </div>
@@ -168,12 +213,75 @@ export default function ChainTenants() {
                 </div>
               </div>
               <div className="modal-footer" style={{ padding: '12px 16px', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-                <button type="button" className="btn btn-ghost" onClick={() => setShowModal(false)}>Отмена</button>
+                <button type="button" className="btn btn-ghost" onClick={() => setShowCreateModal(false)}>Отмена</button>
                 <button type="submit" className="btn btn-primary" disabled={saving}>
                   {saving ? 'Создание...' : 'Создать'}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Модалка: добавить существующее заведение */}
+      {showLinkModal && (
+        <div className="modal-overlay" onClick={() => setShowLinkModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
+            <div className="modal-header">
+              <h3 className="modal-title">Добавить существующее заведение</h3>
+              <button type="button" className="btn-icon" onClick={() => setShowLinkModal(false)}>
+                <X size={18} />
+              </button>
+            </div>
+            <div className="modal-body" style={{ padding: 16 }}>
+              <div className="form-group" style={{ position: 'relative' }}>
+                <label className="form-label">Поиск по названию или slug</label>
+                <div style={{ position: 'relative' }}>
+                  <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                  <input
+                    className="form-input"
+                    style={{ paddingLeft: 36 }}
+                    value={searchQuery}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    placeholder="Введите название или slug..."
+                    autoFocus
+                  />
+                </div>
+              </div>
+
+              {searching && <div className="spinner" style={{ margin: '20px auto' }} />}
+
+              {!searching && searchResults.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+                  {searchResults.map((t) => (
+                    <div key={t.id} style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      padding: '10px 12px', background: 'var(--bg-secondary)', borderRadius: 8,
+                    }}>
+                      <div>
+                        <div style={{ fontWeight: 500 }}>{t.name}</div>
+                        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{t.slug}</div>
+                      </div>
+                      <button className="btn btn-primary btn-sm" onClick={() => handleLinkTenant(t.id)}>
+                        <Plus size={14} /> Добавить
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {!searching && searchQuery.length >= 2 && searchResults.length === 0 && (
+                <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)' }}>
+                  Заведения не найдены
+                </div>
+              )}
+
+              {searchQuery.length < 2 && (
+                <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 8 }}>
+                  Введите минимум 2 символа для поиска
+                </p>
+              )}
+            </div>
           </div>
         </div>
       )}
