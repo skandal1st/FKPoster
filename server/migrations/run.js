@@ -19,6 +19,7 @@ async function runMigrations() {
     require('./013_table_labels'),
     require('./014_chains'),
     require('./015_business_plan'),
+    require('./016_mixed_payment'),
   ];
 
   for (const migration of migrations) {

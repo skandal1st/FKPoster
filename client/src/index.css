@@ -416,6 +416,15 @@ select optgroup {
   opacity: 0.92;
 }
 
+.btn-warning {
+  background: var(--warning);
+  color: #fff;
+}
+
+.btn-warning:hover {
+  opacity: 0.92;
+}
+
 .btn-danger {
   background: var(--danger);
   color: #fff;

@@ -171,11 +171,13 @@ router.delete('/:id/items/:itemId', async (req, res) => {
 });
 
 router.post('/:id/close', async (req, res) => {
-  const { payment_method, guest_id } = req.body;
+  const { payment_method, guest_id, paid_cash, paid_card } = req.body;
   const order = await get("SELECT * FROM orders WHERE id = $1 AND status = 'open' AND tenant_id = $2", [req.params.id, req.tenantId]);
   if (!order) return res.status(400).json({ error: 'Заказ не найден или уже закрыт' });
 
-  if (!payment_method) return res.status(400).json({ error: 'Выберите способ оплаты' });
+  if (!payment_method || !['cash', 'card', 'mixed'].includes(payment_method)) {
+    return res.status(400).json({ error: 'Выберите способ оплаты' });
+  }
 
   const items = await all('SELECT * FROM order_items WHERE order_id = $1', [order.id]);
   if (items.length === 0) return res.status(400).json({ error: 'Заказ пуст' });
@@ -198,6 +200,26 @@ router.post('/:id/close', async (req, res) => {
   }
 
   const totalToPay = Math.max(0, totalBeforeDiscount - discountAmount);
+
+  // Расчёт paid_cash / paid_card
+  let finalPaidCash = 0;
+  let finalPaidCard = 0;
+  if (payment_method === 'cash') {
+    finalPaidCash = totalToPay;
+  } else if (payment_method === 'card') {
+    finalPaidCard = totalToPay;
+  } else if (payment_method === 'mixed') {
+    finalPaidCash = parseFloat(paid_cash) || 0;
+    finalPaidCard = parseFloat(paid_card) || 0;
+    if (finalPaidCash < 0 || finalPaidCard < 0) {
+      return res.status(400).json({ error: 'Суммы оплаты не могут быть отрицательными' });
+    }
+    const sum = Math.round((finalPaidCash + finalPaidCard) * 100) / 100;
+    const expected = Math.round(totalToPay * 100) / 100;
+    if (sum !== expected) {
+      return res.status(400).json({ error: `Сумма наличных и карты (${sum}) не совпадает с суммой к оплате (${expected})` });
+    }
+  }
 
   // Проверка маркировки: если интеграция включена и есть маркированные позиции
   const hasIntegration = req.integrations && (req.integrations.egais_enabled || req.integrations.chestniy_znak_enabled);
@@ -252,27 +274,26 @@ router.post('/:id/close', async (req, res) => {
       }
     }
 
-    // Update order: итог к оплате, скидка, гость
+    // Update order: итог к оплате, скидка, гость, paid_cash/paid_card
     await tx.run(
       `UPDATE orders SET status = 'closed', payment_method = $1, closed_at = NOW(),
-       total = $2, discount_amount = $3, total_before_discount = $4, guest_id = $5 WHERE id = $6`,
-      [payment_method, totalToPay, discountAmount, totalBeforeDiscount, finalGuestId, order.id]
+       total = $2, discount_amount = $3, total_before_discount = $4, guest_id = $5,
+       paid_cash = $6, paid_card = $7 WHERE id = $8`,
+      [payment_method, totalToPay, discountAmount, totalBeforeDiscount, finalGuestId, finalPaidCash, finalPaidCard, order.id]
     );
 
     // Update register day totals (учитываем фактическую сумму к оплате)
     const day = await tx.get('SELECT * FROM register_days WHERE id = $1', [order.register_day_id]);
     if (day) {
-      if (payment_method === 'cash') {
-        await tx.run(
-          'UPDATE register_days SET total_cash = total_cash + $1, expected_cash = expected_cash + $2, total_sales = total_sales + $3 WHERE id = $4',
-          [totalToPay, totalToPay, totalToPay, day.id]
-        );
-      } else {
-        await tx.run(
-          'UPDATE register_days SET total_card = total_card + $1, total_sales = total_sales + $2 WHERE id = $3',
-          [totalToPay, totalToPay, day.id]
-        );
-      }
+      await tx.run(
+        `UPDATE register_days SET
+          total_cash = total_cash + $1,
+          total_card = total_card + $2,
+          expected_cash = expected_cash + $3,
+          total_sales = total_sales + $4
+        WHERE id = $5`,
+        [finalPaidCash, finalPaidCard, finalPaidCash, totalToPay, day.id]
+      );
     }
   });
 
@@ -309,9 +330,9 @@ router.post('/:id/cancel', async (req, res) => {
  * Пересчитывает итоги кассового дня (total_cash / total_card).
  */
 router.patch('/:id/payment-method', async (req, res) => {
-  const { payment_method } = req.body;
-  if (!payment_method || !['cash', 'card'].includes(payment_method)) {
-    return res.status(400).json({ error: 'Укажите способ оплаты: cash или card' });
+  const { payment_method, paid_cash, paid_card } = req.body;
+  if (!payment_method || !['cash', 'card', 'mixed'].includes(payment_method)) {
+    return res.status(400).json({ error: 'Укажите способ оплаты: cash, card или mixed' });
   }
 
   const order = await get(
@@ -321,43 +342,50 @@ router.patch('/:id/payment-method', async (req, res) => {
   if (!order) return res.status(404).json({ error: 'Заказ не найден или не закрыт' });
 
   const total = parseFloat(order.total) || 0;
-  const oldMethod = order.payment_method;
-  if (oldMethod === payment_method) {
-    return res.json(order);
+  const oldPaidCash = parseFloat(order.paid_cash) || 0;
+  const oldPaidCard = parseFloat(order.paid_card) || 0;
+
+  // Вычислить новые суммы
+  let newPaidCash = 0;
+  let newPaidCard = 0;
+  if (payment_method === 'cash') {
+    newPaidCash = total;
+  } else if (payment_method === 'card') {
+    newPaidCard = total;
+  } else if (payment_method === 'mixed') {
+    newPaidCash = parseFloat(paid_cash) || 0;
+    newPaidCard = parseFloat(paid_card) || 0;
+    if (newPaidCash < 0 || newPaidCard < 0) {
+      return res.status(400).json({ error: 'Суммы оплаты не могут быть отрицательными' });
+    }
+    const sum = Math.round((newPaidCash + newPaidCard) * 100) / 100;
+    const expected = Math.round(total * 100) / 100;
+    if (sum !== expected) {
+      return res.status(400).json({ error: `Сумма наличных и карты (${sum}) не совпадает с суммой заказа (${expected})` });
+    }
   }
 
   await transaction(async (tx) => {
     await tx.run(
-      'UPDATE orders SET payment_method = $1 WHERE id = $2',
-      [payment_method, order.id]
+      'UPDATE orders SET payment_method = $1, paid_cash = $2, paid_card = $3 WHERE id = $4',
+      [payment_method, newPaidCash, newPaidCard, order.id]
     );
 
     const day = await tx.get('SELECT * FROM register_days WHERE id = $1', [order.register_day_id]);
     if (!day) return;
 
-    if (oldMethod === 'cash') {
-      await tx.run(
-        'UPDATE register_days SET total_cash = GREATEST(0, total_cash - $1), expected_cash = GREATEST(0, expected_cash - $2) WHERE id = $3',
-        [total, total, day.id]
-      );
-    } else {
-      await tx.run(
-        'UPDATE register_days SET total_card = GREATEST(0, total_card - $1) WHERE id = $2',
-        [total, day.id]
-      );
-    }
+    // Дельта-подход: разница между старыми и новыми суммами
+    const cashDelta = newPaidCash - oldPaidCash;
+    const cardDelta = newPaidCard - oldPaidCard;
 
-    if (payment_method === 'cash') {
-      await tx.run(
-        'UPDATE register_days SET total_cash = total_cash + $1, expected_cash = expected_cash + $2 WHERE id = $3',
-        [total, total, day.id]
-      );
-    } else {
-      await tx.run(
-        'UPDATE register_days SET total_card = total_card + $1 WHERE id = $2',
-        [total, day.id]
-      );
-    }
+    await tx.run(
+      `UPDATE register_days SET
+        total_cash = GREATEST(0, total_cash + $1),
+        total_card = GREATEST(0, total_card + $2),
+        expected_cash = GREATEST(0, expected_cash + $3)
+      WHERE id = $4`,
+      [cashDelta, cardDelta, cashDelta, day.id]
+    );
   });
 
   const updated = await get(

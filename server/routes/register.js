@@ -41,8 +41,8 @@ router.get('/current/workshops', async (req, res) => {
   const rows = await all(`
     SELECT w.id, w.name,
       COALESCE(SUM(oi.total), 0) as revenue,
-      COALESCE(SUM(CASE WHEN o.payment_method = 'cash' THEN oi.total ELSE 0 END), 0) as cash,
-      COALESCE(SUM(CASE WHEN o.payment_method = 'card' THEN oi.total ELSE 0 END), 0) as card
+      COALESCE(SUM(oi.total * o.paid_cash / NULLIF(o.total, 0)), 0) as cash,
+      COALESCE(SUM(oi.total * o.paid_card / NULLIF(o.total, 0)), 0) as card
     FROM order_items oi
     JOIN orders o ON oi.order_id = o.id
     JOIN products p ON oi.product_id = p.id

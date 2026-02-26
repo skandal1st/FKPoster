@@ -59,7 +59,12 @@ export default function ReceiptModal({ order, onClose, printSettings }) {
         </div>
 
         <div style={{ textAlign: 'center', fontSize: 13, color: 'var(--text-muted)', marginBottom: 8 }}>
-          Оплата: {order.payment_method === 'cash' ? 'Наличные' : 'Карта'}
+          Оплата: {order.payment_method === 'cash' ? 'Наличные' : order.payment_method === 'card' ? 'Карта' : 'Смешанная'}
+          {order.payment_method === 'mixed' && (
+            <div style={{ marginTop: 4 }}>
+              Наличные: {Number(order.paid_cash || 0).toLocaleString()} ₽ / Карта: {Number(order.paid_card || 0).toLocaleString()} ₽
+            </div>
+          )}
         </div>
 
         <div className="modal-actions no-print">

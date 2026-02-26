@@ -95,12 +95,16 @@ export const usePosStore = create((set, get) => ({
     set({ currentOrder: order });
   },
 
-  closeOrder: async (paymentMethod, guestId = null) => {
+  closeOrder: async (paymentMethod, guestId = null, paidCash = null, paidCard = null) => {
     const { currentOrder } = get();
     if (!currentOrder) return;
     try {
       const body = { payment_method: paymentMethod };
       if (guestId) body.guest_id = guestId;
+      if (paymentMethod === 'mixed') {
+        body.paid_cash = paidCash;
+        body.paid_card = paidCard;
+      }
       const order = await api.post(`/orders/${currentOrder.id}/close`, body);
       set({ currentOrder: null });
       get().loadOpenOrders();

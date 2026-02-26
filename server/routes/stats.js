@@ -21,8 +21,8 @@ router.get('/sales', async (req, res) => {
     SELECT ${groupBy}::text as period,
            COUNT(*)::int as orders_count,
            SUM(o.total) as revenue,
-           SUM(CASE WHEN o.payment_method = 'cash' THEN o.total ELSE 0 END) as cash_total,
-           SUM(CASE WHEN o.payment_method = 'card' THEN o.total ELSE 0 END) as card_total
+           COALESCE(SUM(o.paid_cash), 0) as cash_total,
+           COALESCE(SUM(o.paid_card), 0) as card_total
     FROM orders o
     WHERE o.status = 'closed'
       AND o.closed_at::date >= $1 AND o.closed_at::date <= $2
@@ -58,8 +58,8 @@ router.get('/sales', async (req, res) => {
   const summary = await get(`
     SELECT COUNT(*)::int as total_orders,
            COALESCE(SUM(o.total), 0)::numeric as total_revenue,
-           COALESCE(SUM(CASE WHEN o.payment_method = 'cash' THEN o.total ELSE 0 END), 0)::numeric as total_cash,
-           COALESCE(SUM(CASE WHEN o.payment_method = 'card' THEN o.total ELSE 0 END), 0)::numeric as total_card
+           COALESCE(SUM(o.paid_cash), 0)::numeric as total_cash,
+           COALESCE(SUM(o.paid_card), 0)::numeric as total_card
     FROM orders o
     WHERE o.status = 'closed'
       AND o.closed_at::date >= $1 AND o.closed_at::date <= $2
@@ -364,8 +364,8 @@ router.get('/employees', async (req, res) => {
            COUNT(o.id)::int as orders_count,
            SUM(o.total) as revenue,
            ROUND(AVG(o.total))::int as avg_check,
-           SUM(CASE WHEN o.payment_method = 'cash' THEN o.total ELSE 0 END) as cash_total,
-           SUM(CASE WHEN o.payment_method = 'card' THEN o.total ELSE 0 END) as card_total
+           COALESCE(SUM(o.paid_cash), 0) as cash_total,
+           COALESCE(SUM(o.paid_card), 0) as card_total
     FROM orders o
     JOIN users u ON o.user_id = u.id
     WHERE o.status = 'closed' AND o.closed_at::date >= $1 AND o.closed_at::date <= $2 AND o.tenant_id = $3
@@ -468,8 +468,8 @@ router.get('/shift/:id', async (req, res) => {
   const workshopTotals = await all(`
     SELECT w.id, w.name,
       COALESCE(SUM(oi.total), 0) as revenue,
-      COALESCE(SUM(CASE WHEN o.payment_method = 'cash' THEN oi.total ELSE 0 END), 0) as cash,
-      COALESCE(SUM(CASE WHEN o.payment_method = 'card' THEN oi.total ELSE 0 END), 0) as card
+      COALESCE(SUM(oi.total * o.paid_cash / NULLIF(o.total, 0)), 0) as cash,
+      COALESCE(SUM(oi.total * o.paid_card / NULLIF(o.total, 0)), 0) as card
     FROM order_items oi
     JOIN orders o ON oi.order_id = o.id
     JOIN products p ON oi.product_id = p.id

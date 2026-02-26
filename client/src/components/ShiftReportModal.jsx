@@ -8,6 +8,8 @@ export default function ShiftReportModal({ shiftId, onClose }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState(null);
+  /** Для смешанной оплаты: { orderId, total, cashAmount } */
+  const [mixedEdit, setMixedEdit] = useState(null);
 
   const fetchShift = () => {
     return api.get(`/stats/shift/${shiftId}`).then((d) => {
@@ -20,11 +22,21 @@ export default function ShiftReportModal({ shiftId, onClose }) {
     fetchShift();
   }, [shiftId]);
 
-  const handlePaymentMethodChange = async (orderId, newMethod) => {
+  const handlePaymentMethodChange = async (orderId, newMethod, orderTotal, paidCash, paidCard) => {
+    if (newMethod === 'mixed' && paidCash == null) {
+      // Открыть мини-форму для ввода суммы наличных
+      setMixedEdit({ orderId, total: parseFloat(orderTotal) || 0, cashAmount: '' });
+      return;
+    }
     if (updatingId) return;
     setUpdatingId(orderId);
     try {
-      await api.patch(`/orders/${orderId}/payment-method`, { payment_method: newMethod });
+      const body = { payment_method: newMethod };
+      if (newMethod === 'mixed') {
+        body.paid_cash = paidCash;
+        body.paid_card = paidCard;
+      }
+      await api.patch(`/orders/${orderId}/payment-method`, body);
       await fetchShift();
       toast.success('Способ оплаты изменён');
     } catch (err) {
@@ -32,6 +44,19 @@ export default function ShiftReportModal({ shiftId, onClose }) {
     } finally {
       setUpdatingId(null);
     }
+  };
+
+  const handleMixedEditConfirm = () => {
+    if (!mixedEdit) return;
+    const cash = parseFloat(mixedEdit.cashAmount);
+    if (isNaN(cash) || cash < 0 || cash > mixedEdit.total) {
+      toast.error('Введите корректную сумму наличных');
+      return;
+    }
+    const card = Math.round((mixedEdit.total - cash) * 100) / 100;
+    const { orderId, total } = mixedEdit;
+    setMixedEdit(null);
+    handlePaymentMethodChange(orderId, 'mixed', total, cash, card);
   };
 
   if (loading) return (
@@ -153,13 +178,19 @@ export default function ShiftReportModal({ shiftId, onClose }) {
                   <select
                     className="form-input payment-method-select"
                     value={o.payment_method || 'cash'}
-                    onChange={(e) => handlePaymentMethodChange(o.id, e.target.value)}
+                    onChange={(e) => handlePaymentMethodChange(o.id, e.target.value, o.total)}
                     disabled={!!updatingId}
                     title="Изменить способ оплаты"
                   >
                     <option value="cash">Наличные</option>
                     <option value="card">Карта</option>
+                    <option value="mixed">Смешанная</option>
                   </select>
+                  {o.payment_method === 'mixed' && (
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                      Нал: {Number(o.paid_cash || 0).toLocaleString()} ₽ / Карта: {Number(o.paid_card || 0).toLocaleString()} ₽
+                    </div>
+                  )}
                 </td>
                 <td>{o.cashier_name || '—'}</td>
               </tr>
@@ -171,6 +202,42 @@ export default function ShiftReportModal({ shiftId, onClose }) {
           Способ оплаты можно изменить в колонке «Оплата» — пересчитаются итоги смены по наличным и карте.
         </p>
       </div>
+
+      {/* Мини-модал ввода суммы наличных для смешанной оплаты */}
+      {mixedEdit && (
+        <div className="modal-overlay" onClick={() => setMixedEdit(null)} style={{ zIndex: 1100 }}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 360 }}>
+            <div className="modal-header">
+              <h3 className="modal-title">Смешанная оплата</h3>
+              <button className="btn-icon" onClick={() => setMixedEdit(null)}><X size={18} /></button>
+            </div>
+            <div className="modal-body">
+              <p style={{ marginBottom: 12 }}>Сумма заказа: <strong>{mixedEdit.total} ₽</strong></p>
+              <div style={{ marginBottom: 10 }}>
+                <label style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>Сумма наличными:</label>
+                <input
+                  type="number"
+                  className="form-input"
+                  value={mixedEdit.cashAmount}
+                  onChange={(e) => setMixedEdit({ ...mixedEdit, cashAmount: e.target.value })}
+                  placeholder="0"
+                  min="0"
+                  max={mixedEdit.total}
+                  style={{ width: '100%', fontSize: 16 }}
+                  autoFocus
+                />
+              </div>
+              <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>
+                Картой: <strong>{Math.max(0, Math.round((mixedEdit.total - (parseFloat(mixedEdit.cashAmount) || 0)) * 100) / 100)} ₽</strong>
+              </div>
+            </div>
+            <div className="modal-footer" style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button className="btn btn-ghost" onClick={() => setMixedEdit(null)}>Отмена</button>
+              <button className="btn btn-warning" onClick={handleMixedEditConfirm}>Применить</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

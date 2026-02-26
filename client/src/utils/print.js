@@ -98,7 +98,7 @@ export function formatReceipt(order, tenant, printSettings) {
   }
 
   const totalFormatted = Number(order.total || 0).toFixed(2);
-  const paymentLabel = order.payment_method === 'cash' ? 'Наличные' : order.payment_method === 'card' ? 'Карта' : order.payment_method || '';
+  const paymentLabel = order.payment_method === 'cash' ? 'Наличные' : order.payment_method === 'card' ? 'Карта' : order.payment_method === 'mixed' ? 'Смешанная' : order.payment_method || '';
 
   let discountHtml = '';
   if (order.discount_amount > 0) {
@@ -130,6 +130,7 @@ export function formatReceipt(order, tenant, printSettings) {
       <span>${totalFormatted} ₽</span>
     </div>
     <div class="receipt-center receipt-muted" style="margin-top:4px;">Оплата: ${escapeHtml(paymentLabel)}</div>
+    ${order.payment_method === 'mixed' ? `<div class="receipt-center receipt-muted">Наличные: ${Number(order.paid_cash || 0).toFixed(2)}₽ / Карта: ${Number(order.paid_card || 0).toFixed(2)}₽</div>` : ''}
     <div class="receipt-double-divider"></div>
     <div class="receipt-center receipt-muted">${escapeHtml(footer)}</div>
   `;

@@ -30,6 +30,8 @@ export default function POS({ embedded = false, onClose }) {
   const [showMarkingScanner, setShowMarkingScanner] = useState(false);
   /** Метод оплаты, отложенный до завершения скана */
   const [pendingPayment, setPendingPayment] = useState(null);
+  /** Сумма наличных при смешанной оплате */
+  const [mixedCashAmount, setMixedCashAmount] = useState('');
   /** Выбранный гость для скидки */
   const [selectedGuest, setSelectedGuest] = useState(null);
 
@@ -102,9 +104,22 @@ export default function POS({ embedded = false, onClose }) {
   const handlePayConfirm = async () => {
     if (!paymentConfirm) return;
     const method = paymentConfirm;
+    const orderTotal = selectedGuest && discountAmount > 0 ? totalToPay : parseFloat(currentOrder.total);
+
+    let paidCash = null;
+    let paidCard = null;
+    if (method === 'mixed') {
+      paidCash = parseFloat(mixedCashAmount);
+      if (isNaN(paidCash) || paidCash < 0 || paidCash > orderTotal) {
+        toast.error('Введите корректную сумму наличных');
+        return;
+      }
+      paidCard = Math.round((orderTotal - paidCash) * 100) / 100;
+    }
+
     setPaymentConfirm(null);
     try {
-      const order = await closeOrder(method, selectedGuest?.id ?? null);
+      const order = await closeOrder(method, selectedGuest?.id ?? null, paidCash, paidCard);
       setShowReceipt(order);
       setSelectedGuest(null);
       toast.success('Заказ оплачен');
@@ -117,7 +132,7 @@ export default function POS({ embedded = false, onClose }) {
       }
     } catch (err) {
       if (err.requires_marking) {
-        setPendingPayment(method);
+        setPendingPayment({ method, paidCash, paidCard });
         setShowMarkingScanner(true);
       } else {
         toast.error(err.message);
@@ -128,10 +143,10 @@ export default function POS({ embedded = false, onClose }) {
   const handleMarkingScanComplete = async () => {
     setShowMarkingScanner(false);
     if (pendingPayment) {
-      const method = pendingPayment;
+      const { method, paidCash, paidCard } = typeof pendingPayment === 'object' ? pendingPayment : { method: pendingPayment, paidCash: null, paidCard: null };
       setPendingPayment(null);
       try {
-        const order = await closeOrder(method, selectedGuest?.id ?? null);
+        const order = await closeOrder(method, selectedGuest?.id ?? null, paidCash, paidCard);
         setShowReceipt(order);
         setSelectedGuest(null);
         toast.success('Заказ оплачен');
@@ -331,6 +346,9 @@ export default function POS({ embedded = false, onClose }) {
               <button className="btn btn-primary pos-pay-btn" onClick={() => handlePayClick('card')}>
                 <CreditCard size={18} /> Карта
               </button>
+              <button className="btn btn-warning pos-pay-btn" onClick={() => { setMixedCashAmount(''); handlePayClick('mixed'); }}>
+                <Banknote size={14} /><CreditCard size={14} /> Смешанная
+              </button>
             </div>
             {workshops.length > 0 && currentOrder.items?.length > 0 && (
               <button className="btn btn-ghost btn-sm" onClick={handleKitchenPrint} style={{ width: '100%', marginTop: 8 }}>
@@ -424,23 +442,54 @@ export default function POS({ embedded = false, onClose }) {
                 <X size={18} />
               </button>
             </div>
-            <p className="modal-body">
-              Оформить оплату <strong>{paymentConfirm === 'cash' ? 'наличными' : 'картой'}</strong> и закрыть стол?
-              <br />
-              <span style={{ fontSize: 18, fontWeight: 600, marginTop: 8, display: 'block' }}>
-                К оплате: {selectedGuest && discountAmount > 0 ? totalToPay : currentOrder.total} ₽
-              </span>
-            </p>
+            {paymentConfirm === 'mixed' ? (
+              <div className="modal-body">
+                <p style={{ marginBottom: 12 }}>
+                  К оплате: <strong>{selectedGuest && discountAmount > 0 ? totalToPay : currentOrder.total} ₽</strong>
+                </p>
+                <div style={{ marginBottom: 10 }}>
+                  <label style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>Сумма наличными:</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    value={mixedCashAmount}
+                    onChange={(e) => setMixedCashAmount(e.target.value)}
+                    placeholder="0"
+                    min="0"
+                    max={selectedGuest && discountAmount > 0 ? totalToPay : currentOrder.total}
+                    style={{ width: '100%', fontSize: 16 }}
+                    autoFocus
+                  />
+                </div>
+                <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>
+                  Картой: <strong>
+                    {(() => {
+                      const total = selectedGuest && discountAmount > 0 ? totalToPay : parseFloat(currentOrder.total);
+                      const cash = parseFloat(mixedCashAmount) || 0;
+                      return Math.max(0, Math.round((total - cash) * 100) / 100);
+                    })()} ₽
+                  </strong>
+                </div>
+              </div>
+            ) : (
+              <p className="modal-body">
+                Оформить оплату <strong>{paymentConfirm === 'cash' ? 'наличными' : 'картой'}</strong> и закрыть стол?
+                <br />
+                <span style={{ fontSize: 18, fontWeight: 600, marginTop: 8, display: 'block' }}>
+                  К оплате: {selectedGuest && discountAmount > 0 ? totalToPay : currentOrder.total} ₽
+                </span>
+              </p>
+            )}
             <div className="modal-footer" style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button type="button" className="btn btn-ghost" onClick={() => setPaymentConfirm(null)}>
                 Отмена
               </button>
               <button
                 type="button"
-                className={paymentConfirm === 'cash' ? 'btn btn-success' : 'btn btn-primary'}
+                className={paymentConfirm === 'cash' ? 'btn btn-success' : paymentConfirm === 'mixed' ? 'btn btn-warning' : 'btn btn-primary'}
                 onClick={handlePayConfirm}
               >
-                {paymentConfirm === 'cash' ? <Banknote size={18} /> : <CreditCard size={18} />}
+                {paymentConfirm === 'cash' ? <Banknote size={18} /> : paymentConfirm === 'mixed' ? <><Banknote size={14} /><CreditCard size={14} /></> : <CreditCard size={18} />}
                 {' '}Закрыть стол
               </button>
             </div>
