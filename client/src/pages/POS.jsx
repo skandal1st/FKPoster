@@ -346,10 +346,10 @@ export default function POS({ embedded = false, onClose }) {
               <button className="btn btn-primary pos-pay-btn" onClick={() => handlePayClick('card')}>
                 <CreditCard size={18} /> Карта
               </button>
-              <button className="btn btn-warning pos-pay-btn" onClick={() => { setMixedCashAmount(''); handlePayClick('mixed'); }}>
-                <Banknote size={14} /><CreditCard size={14} /> Смешанная
-              </button>
             </div>
+            <button className="btn btn-warning" onClick={() => { setMixedCashAmount(''); handlePayClick('mixed'); }} style={{ width: '100%', marginTop: 8 }}>
+              <Banknote size={14} /><CreditCard size={14} /> Смешанная
+            </button>
             {workshops.length > 0 && currentOrder.items?.length > 0 && (
               <button className="btn btn-ghost btn-sm" onClick={handleKitchenPrint} style={{ width: '100%', marginTop: 8 }}>
                 <Printer size={16} /> Печать на кухню
