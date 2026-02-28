@@ -2,6 +2,7 @@ const express = require('express');
 const { all, get, run } = require('../db');
 const { authMiddleware } = require('../middleware/auth');
 const { checkSubscription } = require('../middleware/subscription');
+const { emitEvent } = require('../utils/emitEvent');
 
 const router = express.Router();
 router.use(authMiddleware, checkSubscription);
@@ -31,6 +32,7 @@ router.post('/open', async (req, res) => {
     [req.user.id, opening_cash || 0, opening_cash || 0, req.tenantId]
   );
   const day = await get('SELECT * FROM register_days WHERE id = $1', [result.id]);
+  emitEvent(req, 'register:opened', day);
   res.json(day);
 });
 
@@ -81,6 +83,7 @@ router.post('/close', async (req, res) => {
     [req.user.id, actual_cash ?? day.expected_cash, day.id]
   );
   const updated = await get('SELECT * FROM register_days WHERE id = $1', [day.id]);
+  emitEvent(req, 'register:closed', updated);
   res.json(updated);
 });
 

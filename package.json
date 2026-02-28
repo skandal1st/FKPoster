@@ -6,9 +6,26 @@
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "cd server && npm run dev",
     "client": "cd client && npm run dev",
-    "install:all": "npm install && cd server && npm install && cd ../client && npm install"
+    "install:all": "npm install && cd server && npm install && cd ../client && npm install",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "cd server && npx vitest run && cd ../client && npx vitest run",
+    "test:server": "cd server && npx vitest run",
+    "test:client": "cd client && npx vitest run",
+    "test:watch": "cd server && npx vitest",
+    "test:coverage": "cd server && npx vitest run --coverage && cd ../client && npx vitest run --coverage"
   },
   "devDependencies": {
-    "concurrently": "^9.1.0"
+    "@eslint/js": "^9.39.3",
+    "concurrently": "^9.1.0",
+    "eslint": "^9.39.3",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "globals": "^17.3.0",
+    "prettier": "^3.8.1",
+    "vitest": "^4.0.18"
   }
 }

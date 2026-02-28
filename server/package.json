@@ -6,7 +6,10 @@
     "dev": "nodemon index.js",
     "start": "node index.js",
     "migrate": "node migrations/run.js",
-    "hash-password": "node scripts/hash-password.js"
+    "hash-password": "node scripts/hash-password.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -19,9 +22,13 @@
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.1",
-    "pg": "^8.18.0"
+    "pg": "^8.18.0",
+    "socket.io": "^4.8.3"
   },
   "devDependencies": {
-    "nodemon": "^3.1.0"
+    "@vitest/coverage-v8": "^4.0.18",
+    "nodemon": "^3.1.0",
+    "supertest": "^7.2.2",
+    "vitest": "^4.0.18"
   }
 }

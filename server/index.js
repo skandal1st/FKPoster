@@ -7,6 +7,7 @@ const path = require('path');
 const config = require('./config');
 const { getDb } = require('./db');
 const { subdomainMiddleware } = require('./middleware/subdomain');
+const { setupSocket } = require('./socket');
 
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
@@ -144,9 +145,11 @@ async function connectDb(retries = 10, delayMs = 2000) {
 
 async function start() {
   await connectDb();
-  app.listen(config.PORT, '0.0.0.0', () => {
+  const server = app.listen(config.PORT, '0.0.0.0', () => {
     console.log(`Server running on http://0.0.0.0:${config.PORT}`);
   });
+  const io = setupSocket(server);
+  app.set('io', io);
 }
 
 start().catch((err) => {

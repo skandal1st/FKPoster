@@ -3,6 +3,7 @@ const { all, get, run, transaction } = require('../db');
 const { authMiddleware } = require('../middleware/auth');
 const { checkSubscription } = require('../middleware/subscription');
 const { loadIntegrations } = require('../middleware/integration');
+const { emitEvent } = require('../utils/emitEvent');
 
 const router = express.Router();
 router.use(authMiddleware, checkSubscription, loadIntegrations);
@@ -74,6 +75,7 @@ router.post('/', async (req, res) => {
     return res.status(500).json({ error: 'Не удалось создать заказ' });
   }
   order.items = [];
+  emitEvent(req, 'order:created', order);
   res.json(order);
 });
 
@@ -135,6 +137,7 @@ router.post('/:id/items', async (req, res) => {
 
   const updated = await get('SELECT * FROM orders WHERE id = $1', [order.id]);
   updated.items = await all('SELECT * FROM order_items WHERE order_id = $1', [order.id]);
+  emitEvent(req, 'order:updated', updated);
   res.json(updated);
 });
 
@@ -154,6 +157,7 @@ router.put('/:id/items/:itemId', async (req, res) => {
 
   const updated = await get('SELECT * FROM orders WHERE id = $1', [req.params.id]);
   updated.items = await all('SELECT * FROM order_items WHERE order_id = $1', [req.params.id]);
+  emitEvent(req, 'order:updated', updated);
   res.json(updated);
 });
 
@@ -167,6 +171,7 @@ router.delete('/:id/items/:itemId', async (req, res) => {
   await run('UPDATE orders SET total = $1 WHERE id = $2', [totalRow.total, req.params.id]);
   const updated = await get('SELECT * FROM orders WHERE id = $1', [req.params.id]);
   updated.items = await all('SELECT * FROM order_items WHERE order_id = $1', [req.params.id]);
+  emitEvent(req, 'order:updated', updated);
   res.json(updated);
 });
 
@@ -314,6 +319,7 @@ router.post('/:id/close', async (req, res) => {
     LEFT JOIN workshops w ON c.workshop_id = w.id
     WHERE oi.order_id = $1
   `, [order.id]);
+  emitEvent(req, 'order:closed', updated);
   res.json(updated);
 });
 
@@ -322,6 +328,7 @@ router.post('/:id/cancel', async (req, res) => {
   if (!order) return res.status(400).json({ error: 'Заказ не найден или уже закрыт' });
 
   await run("UPDATE orders SET status = 'cancelled' WHERE id = $1", [order.id]);
+  emitEvent(req, 'order:cancelled', { id: order.id });
   res.json({ success: true });
 });
 
@@ -392,6 +399,7 @@ router.patch('/:id/payment-method', async (req, res) => {
     'SELECT o.*, t.number as table_number, t.label as table_label, h.name as hall_name FROM orders o LEFT JOIN tables t ON o.table_id = t.id LEFT JOIN halls h ON t.hall_id = h.id WHERE o.id = $1',
     [order.id]
   );
+  emitEvent(req, 'order:updated', updated);
   res.json(updated);
 });
 
