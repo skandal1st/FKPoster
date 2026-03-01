@@ -10,8 +10,12 @@ router.use(authMiddleware, checkSubscription, adminOnly);
 
 // GET /day-end — конец рабочего дня
 router.get('/day-end', async (req, res) => {
-  const tenant = await get('SELECT day_end_hour FROM tenants WHERE id = $1', [req.tenantId]);
-  res.json({ day_end_hour: tenant?.day_end_hour || 0 });
+  try {
+    const tenant = await get('SELECT day_end_hour FROM tenants WHERE id = $1', [req.tenantId]);
+    res.json({ day_end_hour: parseInt(tenant?.day_end_hour) || 0 });
+  } catch {
+    res.json({ day_end_hour: 0 });
+  }
 });
 
 // PUT /day-end — обновить конец рабочего дня
@@ -116,9 +120,14 @@ router.get('/calculate', async (req, res) => {
     return res.status(400).json({ error: 'Укажите период (from, to)' });
   }
 
-  // 0. Получить настройку конца рабочего дня
-  const tenant = await get('SELECT day_end_hour FROM tenants WHERE id = $1', [req.tenantId]);
-  const dayEndHour = tenant?.day_end_hour || 0;
+  // 0. Получить настройку конца рабочего дня (безопасно — колонка может не существовать)
+  let dayEndHour = 0;
+  try {
+    const tenant = await get('SELECT day_end_hour FROM tenants WHERE id = $1', [req.tenantId]);
+    dayEndHour = parseInt(tenant?.day_end_hour) || 0;
+  } catch {
+    dayEndHour = 0;
+  }
 
   // 1. Все сотрудники с настройками
   const employees = await all(`
@@ -132,7 +141,7 @@ router.get('/calculate', async (req, res) => {
 
   // 2. Даты смен каждого сотрудника за период
   const scheduleRows = await all(`
-    SELECT user_id, date::text as date
+    SELECT user_id, to_char(date, 'YYYY-MM-DD') as date
     FROM work_schedule
     WHERE tenant_id = $1 AND date >= $2::date AND date <= $3::date
     ORDER BY date
@@ -142,9 +151,8 @@ router.get('/calculate', async (req, res) => {
   const scheduleByUser = {};
   const daysMap = {};
   for (const row of scheduleRows) {
-    const d = row.date.slice(0, 10);
     if (!scheduleByUser[row.user_id]) scheduleByUser[row.user_id] = new Set();
-    scheduleByUser[row.user_id].add(d);
+    scheduleByUser[row.user_id].add(row.date);
     daysMap[row.user_id] = (daysMap[row.user_id] || 0) + 1;
   }
 
@@ -152,7 +160,7 @@ router.get('/calculate', async (req, res) => {
   // day_end_hour сдвигает границу дня: заказ в 01:30 при day_end_hour=2 считается за предыдущий день
   const dailyWorkshopRevenues = await all(`
     SELECT
-      (o.closed_at - INTERVAL '1 hour' * $4)::date::text as work_date,
+      to_char((o.closed_at - INTERVAL '1 hour' * $4)::date, 'YYYY-MM-DD') as work_date,
       w.id as workshop_id,
       w.name as workshop_name,
       COALESCE(SUM(oi.total), 0) as revenue
@@ -175,12 +183,11 @@ router.get('/calculate', async (req, res) => {
   // totalRevenueByWorkshop: { workshopId: { name, revenue } } — для итогов
   const totalRevenueByWorkshop = {};
   for (const row of dailyWorkshopRevenues) {
-    const d = row.work_date.slice(0, 10);
     const wid = row.workshop_id;
     const rev = parseFloat(row.revenue);
 
-    if (!dailyRevMap[d]) dailyRevMap[d] = {};
-    dailyRevMap[d][wid] = rev;
+    if (!dailyRevMap[row.work_date]) dailyRevMap[row.work_date] = {};
+    dailyRevMap[row.work_date][wid] = rev;
 
     if (!totalRevenueByWorkshop[wid]) totalRevenueByWorkshop[wid] = { name: row.workshop_name, revenue: 0 };
     totalRevenueByWorkshop[wid].revenue += rev;
