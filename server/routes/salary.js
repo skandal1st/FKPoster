@@ -115,6 +115,7 @@ router.put('/settings/:userId', async (req, res) => {
 
 // GET /calculate?from=YYYY-MM-DD&to=YYYY-MM-DD
 router.get('/calculate', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
   const { from, to } = req.query;
   if (!from || !to) {
     return res.status(400).json({ error: 'Укажите период (from, to)' });
