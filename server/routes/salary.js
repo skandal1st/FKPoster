@@ -273,19 +273,48 @@ router.get('/calculate', async (req, res) => {
     revenue: data.revenue,
   }));
 
-  // DEBUG: промежуточные данные для диагностики
+  // DEBUG: углублённая диагностика
+  const dbgOrders = await get(`
+    SELECT COUNT(*)::int as cnt FROM orders
+    WHERE tenant_id = $1 AND status = 'paid'
+      AND closed_at IS NOT NULL
+      AND closed_at::date >= $2::date AND closed_at::date <= $3::date
+  `, [req.tenantId, from, to]);
+
+  const dbgCatsWithWorkshop = await all(`
+    SELECT c.id, c.name, c.workshop_id, w.name as workshop_name
+    FROM categories c
+    LEFT JOIN workshops w ON w.id = c.workshop_id
+    WHERE c.tenant_id = $1 AND c.active = true
+  `, [req.tenantId]);
+
+  const dbgOldStyleRevenue = await all(`
+    SELECT w.id as workshop_id, w.name,
+      COALESCE(SUM(oi.total), 0) as revenue
+    FROM workshops w
+    LEFT JOIN categories c ON c.workshop_id = w.id
+    LEFT JOIN products p ON p.category_id = c.id
+    LEFT JOIN order_items oi ON oi.product_id = p.id
+    LEFT JOIN orders o ON o.id = oi.order_id
+      AND o.status = 'paid'
+      AND o.tenant_id = $1
+      AND o.closed_at::date >= $2::date
+      AND o.closed_at::date <= $3::date
+    WHERE w.tenant_id = $1 AND w.active = true
+    GROUP BY w.id, w.name
+  `, [req.tenantId, from, to]);
+
   const _debug = {
     dayEndHour,
+    paid_orders_in_period: dbgOrders?.cnt || 0,
+    categories_workshop_links: dbgCatsWithWorkshop.map(c => ({
+      id: c.id, name: c.name, workshop_id: c.workshop_id, workshop: c.workshop_name || 'НЕ ПРИВЯЗАН'
+    })),
+    old_style_revenue: dbgOldStyleRevenue.map(r => ({ ...r, revenue: parseFloat(r.revenue) })),
     scheduleRows_count: scheduleRows.length,
-    scheduleRows_sample: scheduleRows.slice(0, 3),
     dailyRevenues_count: dailyWorkshopRevenues.length,
-    dailyRevenues_sample: dailyWorkshopRevenues.slice(0, 3),
     dailyRevMap_dates: Object.keys(dailyRevMap),
-    scheduleDates_sample: Object.fromEntries(
-      Object.entries(scheduleByUser).slice(0, 2).map(([k, v]) => [k, [...v].slice(0, 3)])
-    ),
     rates_count: allRates.length,
-    rates_sample: allRates.slice(0, 3),
   };
   console.log('[salary/calculate] DEBUG:', JSON.stringify(_debug, null, 2));
 
