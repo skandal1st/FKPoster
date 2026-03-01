@@ -59,10 +59,13 @@ function SettingsTab() {
   const [workshops, setWorkshops] = useState([]);
   const [editModal, setEditModal] = useState(null);
   const [form, setForm] = useState({ daily_rate: 0, workshop_rates: [] });
+  const [dayEndHour, setDayEndHour] = useState(0);
+  const [dayEndSaving, setDayEndSaving] = useState(false);
 
   useEffect(() => {
     load();
     loadWorkshops();
+    loadDayEnd();
   }, []);
 
   const load = async () => {
@@ -78,6 +81,29 @@ function SettingsTab() {
       setWorkshops(await api.get('/workshops'));
     } catch (err) {
       toast.error(err.message);
+    }
+  };
+
+  const loadDayEnd = async () => {
+    try {
+      const data = await api.get('/salary/day-end');
+      setDayEndHour(data.day_end_hour || 0);
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
+  const saveDayEndHour = async (value) => {
+    const hour = Math.max(0, Math.min(12, parseInt(value) || 0));
+    setDayEndHour(hour);
+    setDayEndSaving(true);
+    try {
+      await api.put('/salary/day-end', { day_end_hour: hour });
+      toast.success('Режим работы сохранён');
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setDayEndSaving(false);
     }
   };
 
@@ -132,6 +158,32 @@ function SettingsTab() {
 
   return (
     <>
+      <div className="card" style={{ marginBottom: 16, padding: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <span style={{ fontWeight: 500 }}>Конец рабочего дня:</span>
+          <select
+            className="form-input"
+            style={{ width: 120 }}
+            value={dayEndHour}
+            onChange={(e) => saveDayEndHour(e.target.value)}
+            disabled={dayEndSaving}
+          >
+            <option value={0}>00:00</option>
+            <option value={1}>01:00</option>
+            <option value={2}>02:00</option>
+            <option value={3}>03:00</option>
+            <option value={4}>04:00</option>
+            <option value={5}>05:00</option>
+            <option value={6}>06:00</option>
+          </select>
+          <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>
+            {dayEndHour > 0
+              ? `Заказы до ${String(dayEndHour).padStart(2, '0')}:00 считаются за предыдущий день`
+              : 'Рабочий день заканчивается в полночь'}
+          </span>
+        </div>
+      </div>
+
       <div className="card">
         <table className="data-table">
           <thead>

@@ -9,7 +9,7 @@ router.use(authMiddleware);
 
 router.get('/', async (req, res) => {
   const tenant = await get(
-    'SELECT id, name, slug, logo_url, accent_color, created_at FROM tenants WHERE id = $1',
+    'SELECT id, name, slug, logo_url, accent_color, day_end_hour, created_at FROM tenants WHERE id = $1',
     [req.tenantId]
   );
   if (!tenant) return res.status(404).json({ error: 'Компания не найдена' });
@@ -17,16 +17,18 @@ router.get('/', async (req, res) => {
 });
 
 router.put('/', ownerOnly, async (req, res) => {
-  const { name, logo_url, accent_color } = req.body;
+  const { name, logo_url, accent_color, day_end_hour } = req.body;
   const tenant = await get('SELECT * FROM tenants WHERE id = $1', [req.tenantId]);
   if (!tenant) return res.status(404).json({ error: 'Компания не найдена' });
 
+  const newDayEndHour = day_end_hour !== undefined ? Math.max(0, Math.min(12, parseInt(day_end_hour) || 0)) : tenant.day_end_hour;
+
   await run(
-    'UPDATE tenants SET name = $1, logo_url = $2, accent_color = $3 WHERE id = $4',
-    [name || tenant.name, logo_url !== undefined ? logo_url : tenant.logo_url, accent_color || tenant.accent_color, req.tenantId]
+    'UPDATE tenants SET name = $1, logo_url = $2, accent_color = $3, day_end_hour = $4 WHERE id = $5',
+    [name || tenant.name, logo_url !== undefined ? logo_url : tenant.logo_url, accent_color || tenant.accent_color, newDayEndHour, req.tenantId]
   );
 
-  const updated = await get('SELECT id, name, slug, logo_url, accent_color FROM tenants WHERE id = $1', [req.tenantId]);
+  const updated = await get('SELECT id, name, slug, logo_url, accent_color, day_end_hour FROM tenants WHERE id = $1', [req.tenantId]);
   invalidateTenant(tenant.slug);
   res.json(updated);
 });

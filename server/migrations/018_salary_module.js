@@ -45,6 +45,9 @@ async function up() {
       created_at TIMESTAMP DEFAULT NOW()
     );
 
+    -- Конец рабочего дня (0 = полночь, 2 = 02:00 — заказы до этого часа считаются за предыдущий день)
+    ALTER TABLE tenants ADD COLUMN IF NOT EXISTS day_end_hour INTEGER NOT NULL DEFAULT 0;
+
     -- Индексы
     CREATE INDEX IF NOT EXISTS idx_salary_settings_tenant ON salary_settings(tenant_id);
     CREATE INDEX IF NOT EXISTS idx_salary_workshop_rates_user ON salary_workshop_rates(user_id);

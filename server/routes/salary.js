@@ -6,6 +6,22 @@ const { checkSubscription } = require('../middleware/subscription');
 const router = express.Router();
 router.use(authMiddleware, checkSubscription, adminOnly);
 
+// ========== РЕЖИМ РАБОТЫ ==========
+
+// GET /day-end — конец рабочего дня
+router.get('/day-end', async (req, res) => {
+  const tenant = await get('SELECT day_end_hour FROM tenants WHERE id = $1', [req.tenantId]);
+  res.json({ day_end_hour: tenant?.day_end_hour || 0 });
+});
+
+// PUT /day-end — обновить конец рабочего дня
+router.put('/day-end', async (req, res) => {
+  const { day_end_hour } = req.body;
+  const hour = Math.max(0, Math.min(12, parseInt(day_end_hour) || 0));
+  await run('UPDATE tenants SET day_end_hour = $1 WHERE id = $2', [hour, req.tenantId]);
+  res.json({ day_end_hour: hour });
+});
+
 // ========== НАСТРОЙКИ ==========
 
 // GET /settings — все сотрудники с их ставками и цеховыми процентами
@@ -100,6 +116,10 @@ router.get('/calculate', async (req, res) => {
     return res.status(400).json({ error: 'Укажите период (from, to)' });
   }
 
+  // 0. Получить настройку конца рабочего дня
+  const tenant = await get('SELECT day_end_hour FROM tenants WHERE id = $1', [req.tenantId]);
+  const dayEndHour = tenant?.day_end_hour || 0;
+
   // 1. Все сотрудники с настройками
   const employees = await all(`
     SELECT u.id as user_id, u.name,
@@ -110,40 +130,60 @@ router.get('/calculate', async (req, res) => {
     ORDER BY u.name
   `, [req.tenantId]);
 
-  // 2. Дни выходов за период
-  const daysWorked = await all(`
-    SELECT user_id, COUNT(*)::int as days_worked
+  // 2. Даты смен каждого сотрудника за период
+  const scheduleRows = await all(`
+    SELECT user_id, date::text as date
     FROM work_schedule
     WHERE tenant_id = $1 AND date >= $2::date AND date <= $3::date
-    GROUP BY user_id
+    ORDER BY date
   `, [req.tenantId, from, to]);
 
+  // scheduleByUser: { userId: Set<"YYYY-MM-DD"> }
+  const scheduleByUser = {};
   const daysMap = {};
-  for (const d of daysWorked) {
-    daysMap[d.user_id] = d.days_worked;
+  for (const row of scheduleRows) {
+    const d = row.date.slice(0, 10);
+    if (!scheduleByUser[row.user_id]) scheduleByUser[row.user_id] = new Set();
+    scheduleByUser[row.user_id].add(d);
+    daysMap[row.user_id] = (daysMap[row.user_id] || 0) + 1;
   }
 
-  // 3. Продажи по цехам за период (из оплаченных заказов)
-  const workshopRevenues = await all(`
-    SELECT w.id as workshop_id, w.name,
+  // 3. Продажи по цехам и ДНЯМ за период (из оплаченных заказов)
+  // day_end_hour сдвигает границу дня: заказ в 01:30 при day_end_hour=2 считается за предыдущий день
+  const dailyWorkshopRevenues = await all(`
+    SELECT
+      (o.closed_at - INTERVAL '1 hour' * $4)::date::text as work_date,
+      w.id as workshop_id,
+      w.name as workshop_name,
       COALESCE(SUM(oi.total), 0) as revenue
-    FROM workshops w
-    LEFT JOIN categories c ON c.workshop_id = w.id
-    LEFT JOIN products p ON p.category_id = c.id
-    LEFT JOIN order_items oi ON oi.product_id = p.id
-    LEFT JOIN orders o ON o.id = oi.order_id
-      AND o.status = 'paid'
+    FROM order_items oi
+    JOIN orders o ON o.id = oi.order_id
+    JOIN products p ON oi.product_id = p.id
+    JOIN categories c ON p.category_id = c.id
+    JOIN workshops w ON c.workshop_id = w.id
+    WHERE o.status = 'paid'
       AND o.tenant_id = $1
-      AND o.closed_at::date >= $2::date
-      AND o.closed_at::date <= $3::date
-    WHERE w.tenant_id = $1 AND w.active = true
-    GROUP BY w.id, w.name
-    ORDER BY w.name
-  `, [req.tenantId, from, to]);
+      AND w.tenant_id = $1
+      AND (o.closed_at - INTERVAL '1 hour' * $4)::date >= $2::date
+      AND (o.closed_at - INTERVAL '1 hour' * $4)::date <= $3::date
+    GROUP BY work_date, w.id, w.name
+    ORDER BY work_date, w.name
+  `, [req.tenantId, from, to, dayEndHour]);
 
-  const revenueMap = {};
-  for (const wr of workshopRevenues) {
-    revenueMap[wr.workshop_id] = parseFloat(wr.revenue);
+  // dailyRevMap: { "YYYY-MM-DD": { workshopId: revenue } }
+  const dailyRevMap = {};
+  // totalRevenueByWorkshop: { workshopId: { name, revenue } } — для итогов
+  const totalRevenueByWorkshop = {};
+  for (const row of dailyWorkshopRevenues) {
+    const d = row.work_date.slice(0, 10);
+    const wid = row.workshop_id;
+    const rev = parseFloat(row.revenue);
+
+    if (!dailyRevMap[d]) dailyRevMap[d] = {};
+    dailyRevMap[d][wid] = rev;
+
+    if (!totalRevenueByWorkshop[wid]) totalRevenueByWorkshop[wid] = { name: row.workshop_name, revenue: 0 };
+    totalRevenueByWorkshop[wid].revenue += rev;
   }
 
   // 4. Цеховые ставки всех сотрудников
@@ -173,21 +213,28 @@ router.get('/calculate', async (req, res) => {
     paidMap[p.user_id] = parseFloat(p.total_paid);
   }
 
-  // 6. Собираем результат
+  // 6. Собираем результат — процент начисляется только за дни, когда сотрудник на смене
   const result = employees.map((emp) => {
     const dailyRate = parseFloat(emp.daily_rate);
     const days = daysMap[emp.user_id] || 0;
     const dailyTotal = days * dailyRate;
+    const userScheduleDays = scheduleByUser[emp.user_id] || new Set();
 
     const userRates = ratesByUser[emp.user_id] || [];
+
+    // Для каждого цеха суммируем выручку только тех дней, когда сотрудник был на смене
     const workshopBonuses = userRates.map((r) => {
-      const revenue = revenueMap[r.workshop_id] || 0;
+      const wid = r.workshop_id;
       const pct = parseFloat(r.percentage);
-      const bonus = Math.round(revenue * pct) / 100;
+      let revenueOnShift = 0;
+      for (const day of userScheduleDays) {
+        revenueOnShift += (dailyRevMap[day] && dailyRevMap[day][wid]) || 0;
+      }
+      const bonus = Math.round(revenueOnShift * pct) / 100;
       return {
-        workshop_id: r.workshop_id,
+        workshop_id: wid,
         name: r.workshop_name,
-        revenue,
+        revenue: revenueOnShift,
         percentage: pct,
         bonus,
       };
@@ -211,13 +258,16 @@ router.get('/calculate', async (req, res) => {
     };
   });
 
+  // Итоги по цехам (общая выручка за весь период)
+  const workshopRevenues = Object.entries(totalRevenueByWorkshop).map(([wid, data]) => ({
+    workshop_id: parseInt(wid),
+    name: data.name,
+    revenue: data.revenue,
+  }));
+
   res.json({
     period: { from, to },
-    workshop_revenues: workshopRevenues.map((wr) => ({
-      workshop_id: wr.workshop_id,
-      name: wr.name,
-      revenue: parseFloat(wr.revenue),
-    })),
+    workshop_revenues: workshopRevenues,
     employees: result,
   });
 });
