@@ -1,15 +1,20 @@
 const { get } = require('../db');
+const { subscriptionByTenant, resourceCount } = require('../cache');
 
 async function checkSubscription(req, res, next) {
   if (!req.tenantId) return next();
 
-  const sub = await get(`
-    SELECT s.*, p.max_users, p.max_halls, p.max_products, p.name as plan_name, p.features as plan_features
-    FROM subscriptions s
-    JOIN plans p ON s.plan_id = p.id
-    WHERE s.tenant_id = $1 AND s.status IN ('active', 'trialing')
-    ORDER BY s.id DESC LIMIT 1
-  `, [req.tenantId]);
+  let sub = subscriptionByTenant.get(req.tenantId);
+  if (sub === undefined) {
+    sub = await get(`
+      SELECT s.*, p.max_users, p.max_halls, p.max_products, p.name as plan_name, p.features as plan_features
+      FROM subscriptions s
+      JOIN plans p ON s.plan_id = p.id
+      WHERE s.tenant_id = $1 AND s.status IN ('active', 'trialing')
+      ORDER BY s.id DESC LIMIT 1
+    `, [req.tenantId]);
+    subscriptionByTenant.set(req.tenantId, sub);
+  }
 
   if (!sub) {
     return res.status(402).json({ error: 'Подписка не активна. Обновите план.' });
@@ -39,7 +44,12 @@ function checkLimit(resource) {
     const maxVal = req.plan[config.column];
     if (!maxVal) return next();
 
-    const row = await get(`SELECT COUNT(*)::int as count FROM ${config.table} WHERE ${config.where}`, [req.tenantId]);
+    const cacheKey = `${req.tenantId}:${resource}`;
+    let row = resourceCount.get(cacheKey);
+    if (row === undefined) {
+      row = await get(`SELECT COUNT(*)::int as count FROM ${config.table} WHERE ${config.where}`, [req.tenantId]);
+      resourceCount.set(cacheKey, row);
+    }
     if (row.count >= maxVal) {
       return res.status(403).json({
         error: `Достигнут лимит плана: максимум ${maxVal} ${resource === 'users' ? 'пользователей' : resource === 'halls' ? 'залов' : 'товаров'}. Обновите план.`,

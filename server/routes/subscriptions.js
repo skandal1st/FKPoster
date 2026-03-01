@@ -1,6 +1,7 @@
 const express = require('express');
 const { all, get, run } = require('../db');
 const { authMiddleware, ownerOnly } = require('../middleware/auth');
+const { invalidateSubscription } = require('../cache');
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -55,6 +56,7 @@ router.post('/change-plan', ownerOnly, async (req, res) => {
     );
   }
 
+  invalidateSubscription(req.tenantId);
   res.json({ success: true, plan_name: plan.name });
 });
 

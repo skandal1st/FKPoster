@@ -13,6 +13,7 @@ FROM node:20-alpine
 WORKDIR /app
 COPY server/package.json server/package-lock.json ./
 RUN npm ci --omit=dev
+RUN npm install pm2 -g
 COPY server/ ./
 COPY --from=client-build /app/client/dist ./public
 
@@ -20,4 +21,4 @@ ENV NODE_ENV=production
 ENV PORT=3001
 EXPOSE 3001
 
-CMD ["node", "index.js"]
+CMD ["pm2-runtime", "ecosystem.config.js"]

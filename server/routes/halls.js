@@ -2,6 +2,7 @@ const express = require('express');
 const { all, get, run } = require('../db');
 const { authMiddleware, adminOnly } = require('../middleware/auth');
 const { checkSubscription, checkLimit } = require('../middleware/subscription');
+const { invalidateResourceCount } = require('../cache');
 
 const router = express.Router();
 router.use(authMiddleware, checkSubscription);
@@ -23,6 +24,7 @@ router.post('/', adminOnly, checkLimit('halls'), async (req, res) => {
     'INSERT INTO halls (name, grid_cols, grid_rows, tenant_id) VALUES ($1, $2, $3, $4) RETURNING id, name, grid_cols, grid_rows',
     [name, cols, rows, req.tenantId]
   );
+  invalidateResourceCount(req.tenantId, 'halls');
   res.json({ id: result.id, name, grid_cols: cols, grid_rows: rows, active: true });
 });
 
@@ -34,6 +36,7 @@ router.put('/:id', adminOnly, async (req, res) => {
 
 router.delete('/:id', adminOnly, async (req, res) => {
   await run('UPDATE halls SET active = false WHERE id = $1 AND tenant_id = $2', [req.params.id, req.tenantId]);
+  invalidateResourceCount(req.tenantId, 'halls');
   res.json({ success: true });
 });
 

@@ -2,6 +2,7 @@ const express = require('express');
 const { get, run } = require('../db');
 const { authMiddleware, ownerOnly } = require('../middleware/auth');
 const { checkSubscription } = require('../middleware/subscription');
+const { invalidateIntegration } = require('../cache');
 
 const router = express.Router();
 router.use(authMiddleware, checkSubscription);
@@ -88,6 +89,7 @@ router.put('/', ownerOnly, async (req, res) => {
     );
   }
 
+  invalidateIntegration(req.tenantId);
   res.json({ success: true });
 });
 

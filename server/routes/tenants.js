@@ -2,6 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const { all, get, run } = require('../db');
 const { authMiddleware, adminOnly, ownerOnly } = require('../middleware/auth');
+const { invalidateTenant } = require('../cache');
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -26,6 +27,7 @@ router.put('/', ownerOnly, async (req, res) => {
   );
 
   const updated = await get('SELECT id, name, slug, logo_url, accent_color FROM tenants WHERE id = $1', [req.tenantId]);
+  invalidateTenant(tenant.slug);
   res.json(updated);
 });
 

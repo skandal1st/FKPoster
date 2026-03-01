@@ -3,9 +3,14 @@ const config = require('./config');
 
 const pool = new Pool({
   connectionString: config.DATABASE_URL,
-  max: parseInt(process.env.PG_POOL_MAX || '50', 10),
+  max: parseInt(process.env.PG_POOL_MAX || '20', 10),
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,
+  connectionTimeoutMillis: 10000,
+  statement_timeout: 30000,
+});
+
+pool.on('error', (err) => {
+  console.error('Pool error:', err.message);
 });
 
 async function getDb() {

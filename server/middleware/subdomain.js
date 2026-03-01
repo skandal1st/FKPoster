@@ -1,5 +1,6 @@
 const { get } = require('../db');
 const config = require('../config');
+const { tenantBySlug } = require('../cache');
 
 async function subdomainMiddleware(req, res, next) {
   const host = (req.headers['x-forwarded-host'] || req.headers.host || '').split(':')[0].toLowerCase();
@@ -28,10 +29,14 @@ async function subdomainMiddleware(req, res, next) {
     return next();
   }
 
-  const tenant = await get(
-    'SELECT id, name, slug, logo_url, accent_color FROM tenants WHERE slug = $1',
-    [slug]
-  );
+  let tenant = tenantBySlug.get(slug);
+  if (tenant === undefined) {
+    tenant = await get(
+      'SELECT id, name, slug, logo_url, accent_color FROM tenants WHERE slug = $1',
+      [slug]
+    );
+    tenantBySlug.set(slug, tenant);
+  }
 
   if (!tenant) {
     // Для API запросов — JSON ошибка, для остального — пусть клиент разберётся

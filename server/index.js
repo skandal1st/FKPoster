@@ -67,12 +67,17 @@ app.use(express.json());
 // Subdomain middleware — определяем tenant по сабдомену
 app.use(subdomainMiddleware);
 
-// Rate limiting
+// Rate limiting — ключ по host:IP чтобы один tenant не блокировал остальных за nginx
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 500,
+  max: 1500,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => {
+    const host = (req.headers['x-forwarded-host'] || req.headers.host || '').split(':')[0];
+    const realIp = req.headers['x-real-ip'] || req.ip;
+    return `${host}:${realIp}`;
+  },
 });
 app.use('/api', apiLimiter);
 
@@ -81,6 +86,9 @@ const authLimiter = rateLimit({
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => {
+    return `auth:${req.headers['x-real-ip'] || req.ip}`;
+  },
 });
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
@@ -148,7 +156,7 @@ async function start() {
   const server = app.listen(config.PORT, '0.0.0.0', () => {
     console.log(`Server running on http://0.0.0.0:${config.PORT}`);
   });
-  const io = setupSocket(server);
+  const io = await setupSocket(server);
   app.set('io', io);
 }
 

@@ -2,8 +2,9 @@ const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
 const config = require('./config');
 const { get } = require('./db');
+const { userById } = require('./cache');
 
-function setupSocket(httpServer) {
+async function setupSocket(httpServer) {
   const baseDomain = config.BASE_DOMAIN;
 
   const io = new Server(httpServer, {
@@ -27,6 +28,21 @@ function setupSocket(httpServer) {
     },
   });
 
+  // Redis adapter для кластерного режима (PM2)
+  if (process.env.REDIS_URL) {
+    try {
+      const { createClient } = require('redis');
+      const { createAdapter } = require('@socket.io/redis-adapter');
+      const pubClient = createClient({ url: process.env.REDIS_URL });
+      const subClient = pubClient.duplicate();
+      await Promise.all([pubClient.connect(), subClient.connect()]);
+      io.adapter(createAdapter(pubClient, subClient));
+      console.log('Socket.io Redis adapter connected');
+    } catch (err) {
+      console.error('Socket.io Redis adapter failed, falling back to in-memory:', err.message);
+    }
+  }
+
   // JWT auth middleware for socket.io
   io.use(async (socket, next) => {
     const token = socket.handshake.auth.token;
@@ -36,10 +52,14 @@ function setupSocket(httpServer) {
 
     try {
       const payload = jwt.verify(token, config.JWT_SECRET);
-      const user = await get(
-        'SELECT id, email, name, role, tenant_id, chain_id FROM users WHERE id = $1 AND active = true',
-        [payload.id],
-      );
+      let user = userById.get(payload.id);
+      if (user === undefined) {
+        user = await get(
+          'SELECT id, email, name, role, tenant_id, chain_id FROM users WHERE id = $1 AND active = true',
+          [payload.id],
+        );
+        userById.set(payload.id, user);
+      }
       if (!user) {
         return next(new Error('Пользователь не найден'));
       }

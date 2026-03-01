@@ -1,13 +1,18 @@
 const { get } = require('../db');
+const { integrationByTenant } = require('../cache');
 
 async function loadIntegrations(req, res, next) {
   if (!req.tenantId) return next();
 
   try {
-    const integrations = await get(
-      'SELECT * FROM tenant_integrations WHERE tenant_id = $1',
-      [req.tenantId]
-    );
+    let integrations = integrationByTenant.get(req.tenantId);
+    if (integrations === undefined) {
+      integrations = await get(
+        'SELECT * FROM tenant_integrations WHERE tenant_id = $1',
+        [req.tenantId]
+      );
+      integrationByTenant.set(req.tenantId, integrations);
+    }
     req.integrations = integrations || {
       egais_enabled: false,
       chestniy_znak_enabled: false,

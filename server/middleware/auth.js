@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const { get } = require('../db');
 const config = require('../config');
+const { userById } = require('../cache');
 
 async function authMiddleware(req, res, next) {
   const header = req.headers.authorization;
@@ -11,10 +12,14 @@ async function authMiddleware(req, res, next) {
   try {
     const token = header.split(' ')[1];
     const payload = jwt.verify(token, config.JWT_SECRET);
-    const user = await get(
-      'SELECT id, email, username, name, role, tenant_id, chain_id FROM users WHERE id = $1 AND active = true',
-      [payload.id]
-    );
+    let user = userById.get(payload.id);
+    if (user === undefined) {
+      user = await get(
+        'SELECT id, email, username, name, role, tenant_id, chain_id FROM users WHERE id = $1 AND active = true',
+        [payload.id]
+      );
+      userById.set(payload.id, user);
+    }
     if (!user) {
       return res.status(401).json({ error: 'Пользователь не найден' });
     }

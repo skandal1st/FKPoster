@@ -2,6 +2,7 @@ const express = require('express');
 const { all, get, run } = require('../db');
 const { authMiddleware, adminOnly } = require('../middleware/auth');
 const { checkSubscription, checkLimit } = require('../middleware/subscription');
+const { invalidateResourceCount } = require('../cache');
 
 const router = express.Router();
 router.use(authMiddleware, checkSubscription);
@@ -109,6 +110,7 @@ router.post('/', adminOnly, checkLimit('products'), async (req, res) => {
      track_inventory ?? true, is_composite ?? false, output_amount || 1, recipe_description || '', min_quantity || 0, false, req.tenantId,
      barcode || null, marking_type || 'none', egais_alcocode || null, tobacco_gtin || null]
   );
+  invalidateResourceCount(req.tenantId, 'products');
   res.json({ id: result.id, name });
 });
 
@@ -188,6 +190,7 @@ router.put('/:id/ingredients', adminOnly, async (req, res) => {
 
 router.delete('/:id', adminOnly, async (req, res) => {
   await run('UPDATE products SET active = false WHERE id = $1 AND tenant_id = $2', [req.params.id, req.tenantId]);
+  invalidateResourceCount(req.tenantId, 'products');
   res.json({ success: true });
 });
 

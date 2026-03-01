@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const { all, get, run, transaction } = require('../db');
 const { authMiddleware, superadminOnly } = require('../middleware/auth');
 const config = require('../config');
+const { invalidateSubscription } = require('../cache');
 
 const router = express.Router();
 router.use(authMiddleware, superadminOnly);
@@ -124,6 +125,7 @@ router.put('/tenants/:id/subscription', async (req, res) => {
     }
   }
 
+  invalidateSubscription(tenantId);
   res.json({ success: true, plan_name: plan.name });
 });
 

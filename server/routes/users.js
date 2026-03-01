@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const { all, get, run } = require('../db');
 const { authMiddleware, adminOnly } = require('../middleware/auth');
 const { checkSubscription, checkLimit } = require('../middleware/subscription');
+const { invalidateUser, invalidateResourceCount } = require('../cache');
 
 const router = express.Router();
 router.use(authMiddleware, adminOnly, checkSubscription);
@@ -56,6 +57,7 @@ router.post('/', checkLimit('users'), async (req, res) => {
       'INSERT INTO users (email, username, password, name, role, tenant_id, pin_hash) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id',
       [autoUsername + '@pin.local', autoUsername, autoPassword, nameStr, role || 'cashier', req.tenantId, pinHash]
     );
+    invalidateResourceCount(req.tenantId, 'users');
     return res.json({ id: result.id, name: nameStr, role: role || 'cashier', has_pin: true });
   }
 
@@ -76,6 +78,7 @@ router.post('/', checkLimit('users'), async (req, res) => {
     'INSERT INTO users (email, username, password, name, role, tenant_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
     [loginStr, loginStr, hash, nameStr, role || 'cashier', req.tenantId]
   );
+  invalidateResourceCount(req.tenantId, 'users');
   res.json({ id: result.id, email: loginStr, name: nameStr, role: role || 'cashier' });
 });
 
@@ -107,11 +110,15 @@ router.put('/:id', async (req, res) => {
   if (role !== undefined) await run('UPDATE users SET role = $1 WHERE id = $2 AND tenant_id = $3', [role, req.params.id, req.tenantId]);
   if (active !== undefined) await run('UPDATE users SET active = $1 WHERE id = $2 AND tenant_id = $3', [active, req.params.id, req.tenantId]);
 
+  invalidateUser(parseInt(req.params.id));
+  if (active !== undefined) invalidateResourceCount(req.tenantId, 'users');
   res.json({ success: true });
 });
 
 router.delete('/:id', async (req, res) => {
   await run('UPDATE users SET active = false WHERE id = $1 AND tenant_id = $2', [req.params.id, req.tenantId]);
+  invalidateUser(parseInt(req.params.id));
+  invalidateResourceCount(req.tenantId, 'users');
   res.json({ success: true });
 });
 
