@@ -1,4 +1,6 @@
-async function up(pool) {
+const { pool } = require('../db');
+
+async function up() {
   await pool.query(`
     -- Заказы: фильтрация по статусу и дате
     CREATE INDEX IF NOT EXISTS idx_orders_tenant_status ON orders(tenant_id, status);

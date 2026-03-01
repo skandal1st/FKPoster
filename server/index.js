@@ -31,6 +31,8 @@ const guestRoutes = require('./routes/guests');
 const ingredientGroupRoutes = require('./routes/ingredientGroups');
 const workshopRoutes = require('./routes/workshops');
 const chainRoutes = require('./routes/chain');
+const scheduleRoutes = require('./routes/schedule');
+const salaryRoutes = require('./routes/salary');
 
 const app = express();
 
@@ -117,6 +119,8 @@ app.use('/api/guests', guestRoutes);
 app.use('/api/ingredient-groups', ingredientGroupRoutes);
 app.use('/api/workshops', workshopRoutes);
 app.use('/api/chain', chainRoutes);
+app.use('/api/schedule', scheduleRoutes);
+app.use('/api/salary', salaryRoutes);
 
 // Production: serve React build
 if (config.NODE_ENV === 'production') {

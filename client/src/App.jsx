@@ -34,6 +34,8 @@ import ChainTenants from './pages/chain/ChainTenants';
 import ChainSales from './pages/chain/ChainSales';
 import ChainComparison from './pages/chain/ChainComparison';
 import ChainProducts from './pages/chain/ChainProducts';
+import Schedule from './pages/admin/Schedule';
+import Salary from './pages/admin/Salary';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuthStore();
@@ -92,6 +94,8 @@ function SubdomainApp() {
         <Route path="admin/egais" element={<AdminRoute><EgaisDocuments /></AdminRoute>} />
         <Route path="admin/marked-items" element={<AdminRoute><MarkedItems /></AdminRoute>} />
         <Route path="admin/guests" element={<AdminRoute><Guests /></AdminRoute>} />
+        <Route path="admin/schedule" element={<AdminRoute><Schedule /></AdminRoute>} />
+        <Route path="admin/salary" element={<AdminRoute><Salary /></AdminRoute>} />
         <Route path="dashboard" element={<CashierAllowedRoute><Dashboard /></CashierAllowedRoute>} />
         <Route path="stats" element={<StatsRoute />} />
       </Route>
@@ -138,6 +142,8 @@ function MainDomainApp() {
         <Route path="admin/egais" element={<AdminRoute><EgaisDocuments /></AdminRoute>} />
         <Route path="admin/marked-items" element={<AdminRoute><MarkedItems /></AdminRoute>} />
         <Route path="admin/guests" element={<AdminRoute><Guests /></AdminRoute>} />
+        <Route path="admin/schedule" element={<AdminRoute><Schedule /></AdminRoute>} />
+        <Route path="admin/salary" element={<AdminRoute><Salary /></AdminRoute>} />
         <Route path="dashboard" element={<CashierAllowedRoute><Dashboard /></CashierAllowedRoute>} />
         <Route path="stats" element={<StatsRoute />} />
       </Route>

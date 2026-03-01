@@ -6,7 +6,7 @@ import {
   ShoppingCart, Map, LayoutGrid, Package, Truck, Settings,
   CreditCard, Users, BarChart3, LogOut, Boxes, ClipboardList, LayoutDashboard,
   Building2, FlaskConical, LogIn, ScanBarcode, Wine, Tag, UserCircle, FolderOpen, Warehouse,
-  ChevronLeft, ChevronRight, Link2
+  ChevronLeft, ChevronRight, Link2, Calendar, Wallet
 } from 'lucide-react';
 
 const SIDEBAR_COLLAPSED_KEY = 'sidebarCollapsed';
@@ -140,6 +140,12 @@ export default function Layout() {
               </NavLink>
               <NavLink to="/admin/guests" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Гости и скидки">
                 <UserCircle /><span className="sidebar-link-text">Гости и скидки</span>
+              </NavLink>
+              <NavLink to="/admin/schedule" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="График работы">
+                <Calendar /><span className="sidebar-link-text">График работы</span>
+              </NavLink>
+              <NavLink to="/admin/salary" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Зарплата">
+                <Wallet /><span className="sidebar-link-text">Зарплата</span>
               </NavLink>
             </div>
           )}

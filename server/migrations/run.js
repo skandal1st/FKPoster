@@ -20,6 +20,8 @@ async function runMigrations() {
     require('./014_chains'),
     require('./015_business_plan'),
     require('./016_mixed_payment'),
+    require('./017_performance_indexes'),
+    require('./018_salary_module'),
   ];
 
   for (const migration of migrations) {
