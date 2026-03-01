@@ -304,8 +304,20 @@ router.get('/calculate', async (req, res) => {
     GROUP BY w.id, w.name
   `, [req.tenantId, from, to]);
 
+  const dbgOrderStats = await all(`
+    SELECT status, COUNT(*)::int as cnt,
+      COUNT(closed_at)::int as has_closed_at,
+      MIN(to_char(closed_at, 'YYYY-MM-DD')) as min_closed,
+      MAX(to_char(closed_at, 'YYYY-MM-DD')) as max_closed,
+      MIN(to_char(created_at, 'YYYY-MM-DD')) as min_created,
+      MAX(to_char(created_at, 'YYYY-MM-DD')) as max_created
+    FROM orders WHERE tenant_id = $1
+    GROUP BY status
+  `, [req.tenantId]);
+
   const _debug = {
     dayEndHour,
+    order_stats: dbgOrderStats,
     paid_orders_in_period: dbgOrders?.cnt || 0,
     categories_workshop_links: dbgCatsWithWorkshop.map(c => ({
       id: c.id, name: c.name, workshop_id: c.workshop_id, workshop: c.workshop_name || 'НЕ ПРИВЯЗАН'
