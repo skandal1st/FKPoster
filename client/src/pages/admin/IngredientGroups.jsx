@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../../api';
 import toast from 'react-hot-toast';
 import { Plus, Pencil, Trash2, X, FolderOpen } from 'lucide-react';
+import ModalOverlay from '../../components/ModalOverlay';
 
 export default function IngredientGroups() {
   const [groups, setGroups] = useState([]);
@@ -136,7 +137,7 @@ export default function IngredientGroups() {
       </div>
 
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+        <ModalOverlay onClose={() => setShowModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="modal-title">{editing ? 'Редактировать группу' : 'Новая группа'}</h3>
@@ -160,7 +161,7 @@ export default function IngredientGroups() {
               <button type="button" className="btn btn-primary" onClick={save}>Сохранить</button>
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );

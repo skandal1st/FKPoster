@@ -3,6 +3,7 @@ import { api } from '../../api';
 import toast from 'react-hot-toast';
 import { LogIn, CreditCard, X, Building2, Link2, Plus } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
+import ModalOverlay from '../../components/ModalOverlay';
 
 function defaultPeriodEnd() {
   const d = new Date();
@@ -223,7 +224,7 @@ export default function SuperadminTenants() {
       )}
 
       {subscriptionModal && (
-        <div className="modal-overlay" onClick={() => setSubscriptionModal(null)}>
+        <ModalOverlay onClose={() => setSubscriptionModal(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420 }}>
             <div className="modal-header">
               <h3 className="modal-title">Подписка: {subscriptionModal.name}</h3>
@@ -264,11 +265,11 @@ export default function SuperadminTenants() {
               </div>
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {showChainModal && (
-        <div className="modal-overlay" onClick={() => setShowChainModal(false)}>
+        <ModalOverlay onClose={() => setShowChainModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 440 }}>
             <div className="modal-header">
               <h3 className="modal-title">Создать сеть</h3>
@@ -329,7 +330,7 @@ export default function SuperadminTenants() {
               </div>
             </form>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );

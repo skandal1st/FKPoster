@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../../api';
 import toast from 'react-hot-toast';
 import { RefreshCw, Check, X, ArrowDown, ArrowUp, FileText } from 'lucide-react';
+import ModalOverlay from '../../components/ModalOverlay';
 
 const TABS = [
   { key: 'incoming', label: 'Входящие ТТН' },
@@ -244,7 +245,7 @@ export default function EgaisDocuments() {
 
       {/* Модал деталей документа */}
       {selectedDoc && (
-        <div className="modal-overlay" onClick={() => setSelectedDoc(null)}>
+        <ModalOverlay onClose={() => setSelectedDoc(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 700 }}>
             <div className="modal-header">
               <h3 className="modal-title">{selectedDoc.doc_type} #{selectedDoc.id}</h3>
@@ -282,7 +283,7 @@ export default function EgaisDocuments() {
               <button className="btn btn-ghost" onClick={() => setSelectedDoc(null)}>Закрыть</button>
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );

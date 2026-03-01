@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../../api';
 import toast from 'react-hot-toast';
 import { Plus, Pencil, Trash2, X, User, BarChart3 } from 'lucide-react';
+import ModalOverlay from '../../components/ModalOverlay';
 
 function discountLabel(guest) {
   if (guest.discount_type === 'percent') {
@@ -258,7 +259,7 @@ export default function Guests() {
       )}
 
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+        <ModalOverlay onClose={() => setShowModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="modal-title">{editing ? 'Редактировать гостя' : 'Новый гость'}</h3>
@@ -325,7 +326,7 @@ export default function Guests() {
               <button className="btn btn-primary" onClick={save}>Сохранить</button>
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );

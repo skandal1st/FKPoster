@@ -3,6 +3,7 @@ import { api } from '../../api';
 import toast from 'react-hot-toast';
 import { Plus, Pencil, Trash2, X, FlaskConical, AlertTriangle } from 'lucide-react';
 import TechCardModal from '../../components/TechCardModal';
+import ModalOverlay from '../../components/ModalOverlay';
 
 export default function Products() {
   const [products, setProducts] = useState([]);
@@ -148,7 +149,7 @@ export default function Products() {
 
       {/* Product modal */}
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+        <ModalOverlay onClose={() => setShowModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="modal-title">{editing ? 'Редактировать' : 'Новый товар'}</h3>
@@ -236,7 +237,7 @@ export default function Products() {
               <button className="btn btn-primary" onClick={save}>Сохранить</button>
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {/* Tech card modal */}

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { api } from '../api';
 import toast from 'react-hot-toast';
 import { X, Plus, Trash2, Save } from 'lucide-react';
+import ModalOverlay from './ModalOverlay';
 
 export default function TechCardModal({ product, allIngredients, onClose, onSaved }) {
   const [ingredients, setIngredients] = useState([]);
@@ -149,7 +150,7 @@ export default function TechCardModal({ product, allIngredients, onClose, onSave
   if (!product) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <ModalOverlay onClose={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 720 }}>
         {/* Header */}
         <div className="modal-header">
@@ -314,6 +315,6 @@ export default function TechCardModal({ product, allIngredients, onClose, onSave
           </button>
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 }

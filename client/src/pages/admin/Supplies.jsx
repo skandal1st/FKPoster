@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { Plus, X, ChevronDown, ChevronRight, Download, ScanBarcode } from 'lucide-react';
 import { exportToCsv } from '../../utils/exportCsv';
 import MarkingScanner from '../../components/MarkingScanner';
+import ModalOverlay from '../../components/ModalOverlay';
 
 export default function Supplies() {
   const [supplies, setSupplies] = useState([]);
@@ -195,7 +196,7 @@ export default function Supplies() {
       </div>
 
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+        <ModalOverlay onClose={() => setShowModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 700 }}>
             <div className="modal-header">
               <h3 className="modal-title">Новая поставка</h3>
@@ -294,7 +295,7 @@ export default function Supplies() {
               </div>
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {scanSupply && (

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../../api';
 import toast from 'react-hot-toast';
 import { Plus, Pencil, Trash2, X } from 'lucide-react';
+import ModalOverlay from '../../components/ModalOverlay';
 
 export default function Categories() {
   const [categories, setCategories] = useState([]);
@@ -92,7 +93,7 @@ export default function Categories() {
       </div>
 
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+        <ModalOverlay onClose={() => setShowModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="modal-title">{editing ? 'Редактировать' : 'Новая категория'}</h3>
@@ -126,7 +127,7 @@ export default function Categories() {
               <button className="btn btn-primary" onClick={save}>Сохранить</button>
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );

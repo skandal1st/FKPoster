@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { X } from 'lucide-react';
+import ModalOverlay from './ModalOverlay';
 import toast from 'react-hot-toast';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
@@ -60,17 +61,17 @@ export default function ShiftReportModal({ shiftId, onClose }) {
   };
 
   if (loading) return (
-    <div className="modal-overlay" onClick={onClose}>
+    <ModalOverlay onClose={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 800 }}>
         <div className="spinner" />
       </div>
-    </div>
+    </ModalOverlay>
   );
 
   if (!data) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <ModalOverlay onClose={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 800, maxHeight: '90vh', overflow: 'auto' }}>
         <div className="modal-header">
           <h3 className="modal-title">
@@ -205,7 +206,7 @@ export default function ShiftReportModal({ shiftId, onClose }) {
 
       {/* Мини-модал ввода суммы наличных для смешанной оплаты */}
       {mixedEdit && (
-        <div className="modal-overlay" onClick={() => setMixedEdit(null)} style={{ zIndex: 1100 }}>
+        <ModalOverlay onClose={() => setMixedEdit(null)} style={{ zIndex: 1100 }}>
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 360 }}>
             <div className="modal-header">
               <h3 className="modal-title">Смешанная оплата</h3>
@@ -236,8 +237,8 @@ export default function ShiftReportModal({ shiftId, onClose }) {
               <button className="btn btn-warning" onClick={handleMixedEditConfirm}>Применить</button>
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
-    </div>
+    </ModalOverlay>
   );
 }

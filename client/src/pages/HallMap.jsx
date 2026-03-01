@@ -6,6 +6,7 @@ import { Plus, Trash2, X, GripVertical, Users, Pencil } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import POS from './POS';
 import { getTableDisplayName } from '../utils/tableDisplay';
+import ModalOverlay from '../components/ModalOverlay';
 import './HallMap.css';
 
 const CELL_SIZE = 130;
@@ -476,7 +477,7 @@ export default function HallMap({ readOnly = false }) {
       )}
 
       {showAddHall && (
-        <div className="modal-overlay" onClick={() => setShowAddHall(false)}>
+        <ModalOverlay onClose={() => setShowAddHall(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="modal-title">Новый зал</h3>
@@ -502,11 +503,11 @@ export default function HallMap({ readOnly = false }) {
               </button>
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {editingTable && (
-        <div className="modal-overlay" onClick={() => setEditingTable(null)}>
+        <ModalOverlay onClose={() => setEditingTable(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="modal-title">Редактировать столик</h3>
@@ -569,11 +570,11 @@ export default function HallMap({ readOnly = false }) {
               </button>
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {showAddTable && (
-        <div className="modal-overlay" onClick={() => setShowAddTable(false)}>
+        <ModalOverlay onClose={() => setShowAddTable(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="modal-title">Новый столик</h3>
@@ -636,7 +637,7 @@ export default function HallMap({ readOnly = false }) {
               </button>
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );

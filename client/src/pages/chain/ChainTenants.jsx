@@ -3,6 +3,7 @@ import { api } from '../../api';
 import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
 import { LogIn, Plus, Unlink, X, Building2, Search, Link2 } from 'lucide-react';
+import ModalOverlay from '../../components/ModalOverlay';
 
 export default function ChainTenants() {
   const [tenants, setTenants] = useState([]);
@@ -168,7 +169,7 @@ export default function ChainTenants() {
 
       {/* Модалка: создать новое заведение */}
       {showCreateModal && (
-        <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
+        <ModalOverlay onClose={() => setShowCreateModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 440 }}>
             <div className="modal-header">
               <h3 className="modal-title">Создать заведение</h3>
@@ -220,12 +221,12 @@ export default function ChainTenants() {
               </div>
             </form>
           </div>
-        </div>
+        </ModalOverlay>
       )}
 
       {/* Модалка: добавить существующее заведение */}
       {showLinkModal && (
-        <div className="modal-overlay" onClick={() => setShowLinkModal(false)}>
+        <ModalOverlay onClose={() => setShowLinkModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
             <div className="modal-header">
               <h3 className="modal-title">Добавить существующее заведение</h3>
@@ -283,7 +284,7 @@ export default function ChainTenants() {
               )}
             </div>
           </div>
-        </div>
+        </ModalOverlay>
       )}
     </div>
   );
