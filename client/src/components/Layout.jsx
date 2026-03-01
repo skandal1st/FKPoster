@@ -1,19 +1,22 @@
 import { useState, useEffect } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { api } from '../api';
 import {
-  ShoppingCart, Map, LayoutGrid, Package, Truck, Settings,
-  CreditCard, Users, BarChart3, LogOut, Boxes, ClipboardList, LayoutDashboard,
-  Building2, FlaskConical, LogIn, ScanBarcode, Wine, Tag, UserCircle, FolderOpen, Warehouse,
-  ChevronLeft, ChevronRight, Link2, Calendar, Wallet
+  Map, Package, Settings,
+  CreditCard, Users, BarChart3, LogOut, Boxes, LayoutDashboard,
+  Building2, LogIn, ScanBarcode, Wine, Tag, UserCircle,
+  ChevronLeft, ChevronRight, Link2
 } from 'lucide-react';
+import { CATALOG_TABS, STOCK_TABS, STAFF_TABS } from '../constants/tabGroups';
 
 const SIDEBAR_COLLAPSED_KEY = 'sidebarCollapsed';
 
 export default function Layout() {
   const { user, tenant, chain, logout, exitImpersonation, exitChainImpersonation, impersonating, chainImpersonating } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isGroupActive = (tabs) => tabs.some((t) => t.path === location.pathname);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true');
 
   const toggleSidebar = () => {
@@ -104,14 +107,11 @@ export default function Layout() {
           {isAdmin && (
             <div className="sidebar-section">
               <div className="sidebar-section-title">Админ</div>
-              <NavLink to="/admin/categories" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Категории">
-                <LayoutGrid /><span className="sidebar-link-text">Категории</span>
+              <NavLink to="/admin/products" className={() => `sidebar-link ${isGroupActive(CATALOG_TABS) ? 'active' : ''}`} title="Каталог">
+                <Package /><span className="sidebar-link-text">Каталог</span>
               </NavLink>
-              <NavLink to="/admin/workshops" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Цеха">
-                <Warehouse /><span className="sidebar-link-text">Цеха</span>
-              </NavLink>
-              <NavLink to="/admin/products" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Товары">
-                <Package /><span className="sidebar-link-text">Товары</span>
+              <NavLink to="/admin/inventory" className={() => `sidebar-link ${isGroupActive(STOCK_TABS) ? 'active' : ''}`} title="Склад">
+                <Boxes /><span className="sidebar-link-text">Склад</span>
                 {lowStockCount > 0 && (
                   <span className="sidebar-link-badge" style={{
                     marginLeft: 'auto', background: 'var(--danger)', color: '#fff',
@@ -120,32 +120,11 @@ export default function Layout() {
                   }}>{lowStockCount}</span>
                 )}
               </NavLink>
-              <NavLink to="/admin/ingredients" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Ингредиенты">
-                <FlaskConical /><span className="sidebar-link-text">Ингредиенты</span>
-              </NavLink>
-              <NavLink to="/admin/ingredient-groups" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Группы ингредиентов">
-                <FolderOpen /><span className="sidebar-link-text">Группы ингредиентов</span>
-              </NavLink>
-              <NavLink to="/admin/inventory" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Остатки">
-                <Boxes /><span className="sidebar-link-text">Остатки</span>
-              </NavLink>
-              <NavLink to="/admin/supplies" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Поставки">
-                <Truck /><span className="sidebar-link-text">Поставки</span>
-              </NavLink>
-              <NavLink to="/admin/inventory-check" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Инвентаризация">
-                <ClipboardList /><span className="sidebar-link-text">Инвентаризация</span>
-              </NavLink>
-              <NavLink to="/admin/users" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Пользователи">
-                <Users /><span className="sidebar-link-text">Пользователи</span>
+              <NavLink to="/admin/users" className={() => `sidebar-link ${isGroupActive(STAFF_TABS) ? 'active' : ''}`} title="Персонал">
+                <Users /><span className="sidebar-link-text">Персонал</span>
               </NavLink>
               <NavLink to="/admin/guests" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Гости и скидки">
                 <UserCircle /><span className="sidebar-link-text">Гости и скидки</span>
-              </NavLink>
-              <NavLink to="/admin/schedule" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="График работы">
-                <Calendar /><span className="sidebar-link-text">График работы</span>
-              </NavLink>
-              <NavLink to="/admin/salary" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Зарплата">
-                <Wallet /><span className="sidebar-link-text">Зарплата</span>
               </NavLink>
             </div>
           )}

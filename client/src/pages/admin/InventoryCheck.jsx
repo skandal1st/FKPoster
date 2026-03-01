@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { api } from '../../api';
 import toast from 'react-hot-toast';
 import { ClipboardList, ArrowLeft, Save, CheckCircle, Eye } from 'lucide-react';
+import TabNav from '../../components/TabNav';
+import { STOCK_TABS } from '../../constants/tabGroups';
 
 export default function InventoryCheck() {
   const [list, setList] = useState([]);
@@ -159,6 +161,7 @@ export default function InventoryCheck() {
       <div className="page-header">
         <h1 className="page-title">Инвентаризация</h1>
       </div>
+      <TabNav tabs={STOCK_TABS} />
 
       <div className="card" style={{ maxWidth: 400, marginBottom: 24, padding: 20 }}>
         {openInv ? (

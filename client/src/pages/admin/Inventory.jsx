@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { api } from '../../api';
 import { AlertTriangle, Download } from 'lucide-react';
 import { exportToCsv } from '../../utils/exportCsv';
+import TabNav from '../../components/TabNav';
+import { STOCK_TABS } from '../../constants/tabGroups';
 
 export default function Inventory() {
   const [data, setData] = useState({ items: [], total_value: 0, categories: [] });
@@ -37,6 +39,7 @@ export default function Inventory() {
           </button>
         </div>
       </div>
+      <TabNav tabs={STOCK_TABS} />
 
       <div className="grid-4" style={{ marginBottom: 24 }}>
         <div className="stat-card">

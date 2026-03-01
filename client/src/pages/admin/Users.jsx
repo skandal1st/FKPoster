@@ -3,6 +3,8 @@ import { api } from '../../api';
 import toast from 'react-hot-toast';
 import { Plus, Pencil, Trash2, X } from 'lucide-react';
 import ModalOverlay from '../../components/ModalOverlay';
+import TabNav from '../../components/TabNav';
+import { STAFF_TABS } from '../../constants/tabGroups';
 
 const roleLabel = (r) => {
   if (r === 'owner') return 'Владелец';
@@ -73,6 +75,7 @@ export default function Users() {
           <Plus size={16} /> Добавить
         </button>
       </div>
+      <TabNav tabs={STAFF_TABS} />
 
       <div className="card">
         <table className="data-table">

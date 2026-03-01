@@ -2,6 +2,8 @@ import { useEffect, useState, useMemo } from 'react';
 import { api } from '../../api';
 import toast from 'react-hot-toast';
 import { ChevronLeft, ChevronRight, Save } from 'lucide-react';
+import TabNav from '../../components/TabNav';
+import { STAFF_TABS } from '../../constants/tabGroups';
 
 const MONTHS_RU = [
   'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
@@ -168,6 +170,7 @@ export default function Schedule() {
           )}
         </div>
       </div>
+      <TabNav tabs={STAFF_TABS} />
 
       <div className="card" style={{ overflowX: 'auto' }}>
         <table className="data-table schedule-table" style={{ minWidth: daysCount * 36 + 200 }}>

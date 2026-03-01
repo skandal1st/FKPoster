@@ -3,6 +3,8 @@ import { api } from '../../api';
 import toast from 'react-hot-toast';
 import { Plus, Pencil, Trash2, X, AlertTriangle } from 'lucide-react';
 import ModalOverlay from '../../components/ModalOverlay';
+import TabNav from '../../components/TabNav';
+import { CATALOG_TABS } from '../../constants/tabGroups';
 
 export default function Ingredients() {
   const [ingredients, setIngredients] = useState([]);
@@ -82,6 +84,7 @@ export default function Ingredients() {
           <Plus size={16} /> Добавить
         </button>
       </div>
+      <TabNav tabs={CATALOG_TABS} />
 
       <div className="card">
         <div style={{ marginBottom: 16, fontSize: 14, color: 'var(--text-muted)' }}>

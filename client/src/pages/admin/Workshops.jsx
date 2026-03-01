@@ -3,6 +3,8 @@ import { api } from '../../api';
 import toast from 'react-hot-toast';
 import { Plus, Pencil, Trash2, X } from 'lucide-react';
 import ModalOverlay from '../../components/ModalOverlay';
+import TabNav from '../../components/TabNav';
+import { CATALOG_TABS } from '../../constants/tabGroups';
 
 export default function Workshops() {
   const [workshops, setWorkshops] = useState([]);
@@ -59,6 +61,7 @@ export default function Workshops() {
           <Plus size={16} /> Добавить
         </button>
       </div>
+      <TabNav tabs={CATALOG_TABS} />
 
       <div className="card">
         <table className="data-table">

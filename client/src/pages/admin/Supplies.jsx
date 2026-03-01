@@ -5,6 +5,8 @@ import { Plus, X, ChevronDown, ChevronRight, Download, ScanBarcode } from 'lucid
 import { exportToCsv } from '../../utils/exportCsv';
 import MarkingScanner from '../../components/MarkingScanner';
 import ModalOverlay from '../../components/ModalOverlay';
+import TabNav from '../../components/TabNav';
+import { STOCK_TABS } from '../../constants/tabGroups';
 
 export default function Supplies() {
   const [supplies, setSupplies] = useState([]);
@@ -135,6 +137,7 @@ export default function Supplies() {
           </button>
         </div>
       </div>
+      <TabNav tabs={STOCK_TABS} />
 
       <div className="card">
         <table className="data-table">

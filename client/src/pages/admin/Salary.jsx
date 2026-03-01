@@ -3,6 +3,8 @@ import { api } from '../../api';
 import toast from 'react-hot-toast';
 import { X, Plus, Trash2, Pencil, ChevronDown, ChevronUp, Wallet } from 'lucide-react';
 import ModalOverlay from '../../components/ModalOverlay';
+import TabNav from '../../components/TabNav';
+import { STAFF_TABS } from '../../constants/tabGroups';
 
 const TABS = [
   { key: 'settings', label: 'Настройки' },
@@ -32,6 +34,7 @@ export default function Salary() {
       <div className="page-header">
         <h1 className="page-title">Зарплата</h1>
       </div>
+      <TabNav tabs={STAFF_TABS} />
 
       <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
         {TABS.map((t) => (
