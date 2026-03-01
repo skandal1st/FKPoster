@@ -7,6 +7,7 @@ export const usePosStore = create((set, get) => ({
   tables: [],
   halls: [],
   currentOrder: null,
+  pendingTableId: null,
   openOrders: [],
   registerDay: null,
   guests: [],
@@ -64,10 +65,12 @@ export const usePosStore = create((set, get) => ({
 
   createOrder: async (tableId) => {
     const order = await api.post('/orders', { table_id: tableId });
-    set({ currentOrder: order });
+    set({ currentOrder: order, pendingTableId: null });
     get().loadOpenOrders();
     return order;
   },
+
+  setPendingTable: (tableId) => set({ pendingTableId: tableId, currentOrder: null }),
 
   selectOrder: async (orderId) => {
     const order = await api.get(`/orders/${orderId}`);
@@ -75,7 +78,13 @@ export const usePosStore = create((set, get) => ({
   },
 
   addItem: async (productId, quantity = 1) => {
-    const { currentOrder } = get();
+    let { currentOrder, pendingTableId } = get();
+    if (!currentOrder && pendingTableId) {
+      const newOrder = await api.post('/orders', { table_id: pendingTableId });
+      set({ currentOrder: newOrder, pendingTableId: null });
+      currentOrder = newOrder;
+      get().loadOpenOrders();
+    }
     if (!currentOrder) return;
     const order = await api.post(`/orders/${currentOrder.id}/items`, { product_id: productId, quantity });
     set({ currentOrder: order });
@@ -130,7 +139,7 @@ export const usePosStore = create((set, get) => ({
     get().loadOpenOrders();
   },
 
-  clearCurrentOrder: () => set({ currentOrder: null }),
+  clearCurrentOrder: () => set({ currentOrder: null, pendingTableId: null }),
 
   reset: () => set({
     categories: [],
@@ -138,6 +147,7 @@ export const usePosStore = create((set, get) => ({
     tables: [],
     halls: [],
     currentOrder: null,
+    pendingTableId: null,
     openOrders: [],
     registerDay: null,
     guests: [],

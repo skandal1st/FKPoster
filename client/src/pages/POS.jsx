@@ -12,7 +12,7 @@ import './POS.css';
 
 export default function POS({ embedded = false, onClose }) {
   const {
-    categories, products, tables, openOrders, currentOrder, registerDay, guests, workshops, printSettings,
+    categories, products, tables, openOrders, currentOrder, pendingTableId, registerDay, guests, workshops, printSettings,
     loadCategories, loadProducts, loadTables, loadOpenOrders, loadRegisterDay, loadGuests, loadWorkshops, loadPrintSettings,
     createOrder, selectOrder, addItem, removeItem, closeOrder, cancelOrder, clearCurrentOrder,
   } = usePosStore();
@@ -86,7 +86,7 @@ export default function POS({ embedded = false, onClose }) {
   };
 
   const handleAddProduct = async (product) => {
-    if (!currentOrder) {
+    if (!currentOrder && !pendingTableId) {
       toast.error('Сначала создайте заказ');
       return;
     }
@@ -177,7 +177,9 @@ export default function POS({ embedded = false, onClose }) {
           <h3 className="pos-embedded-title">
             {currentOrder
               ? getTableDisplayName({ label: currentOrder.table_label, number: currentOrder.table_number, fallback: currentOrder.id })
-              : 'Заказ'}
+              : pendingTableId
+                ? 'Новый заказ'
+                : 'Заказ'}
           </h3>
           <button type="button" className="btn-icon pos-embedded-close" onClick={onClose} aria-label="Закрыть">
             <X size={20} />
@@ -256,7 +258,9 @@ export default function POS({ embedded = false, onClose }) {
           <h3>
             {currentOrder
               ? `Заказ #${currentOrder.id}${currentOrder.table_number ? ` (${getTableDisplayName({ label: currentOrder.table_label, number: currentOrder.table_number })})` : ''}`
-              : 'Нет активного заказа'
+              : pendingTableId
+                ? 'Новый заказ — добавьте товар'
+                : 'Нет активного заказа'
             }
           </h3>
           {currentOrder && !embedded && (
@@ -368,9 +372,19 @@ export default function POS({ embedded = false, onClose }) {
             </button>
           </div>
         )}
-        {embedded && !currentOrder && (
+        {embedded && !currentOrder && !pendingTableId && (
           <div className="pos-order-footer">
             <p className="pos-embedded-empty">Заказ закрыт</p>
+            <button type="button" className="btn btn-ghost" onClick={onClose} style={{ width: '100%' }}>
+              Назад к залу
+            </button>
+          </div>
+        )}
+        {embedded && !currentOrder && pendingTableId && (
+          <div className="pos-order-footer">
+            <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 20 }}>
+              Выберите товар для создания заказа
+            </p>
             <button type="button" className="btn btn-ghost" onClick={onClose} style={{ width: '100%' }}>
               Назад к залу
             </button>

@@ -116,6 +116,14 @@ router.get('/products', async (req, res) => {
     ORDER BY total_revenue DESC
   `, [dateFrom, dateTo, req.tenantId]);
 
+  for (const p of products) {
+    p.total_revenue = parseFloat(p.total_revenue || 0);
+    p.total_cost = parseFloat(p.total_cost || 0);
+  }
+  for (const c of categories) {
+    c.total_revenue = parseFloat(c.total_revenue || 0);
+  }
+
   res.json({ products, categories });
 });
 

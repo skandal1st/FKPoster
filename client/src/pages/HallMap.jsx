@@ -38,6 +38,7 @@ export default function HallMap({ readOnly = false }) {
     createOrder,
     selectOrder,
     clearCurrentOrder,
+    setPendingTable,
   } = usePosStore();
   const { user } = useAuthStore();
   const [selectedHall, setSelectedHall] = useState(null);
@@ -118,7 +119,7 @@ export default function HallMap({ readOnly = false }) {
       if (order) {
         await selectOrder(order.id);
       } else {
-        await createOrder(table.id);
+        setPendingTable(table.id);
       }
       setShowPosPanel(true);
     } catch (err) {
