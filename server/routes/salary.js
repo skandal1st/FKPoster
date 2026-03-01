@@ -272,8 +272,25 @@ router.get('/calculate', async (req, res) => {
     revenue: data.revenue,
   }));
 
+  // DEBUG: промежуточные данные для диагностики
+  const _debug = {
+    dayEndHour,
+    scheduleRows_count: scheduleRows.length,
+    scheduleRows_sample: scheduleRows.slice(0, 3),
+    dailyRevenues_count: dailyWorkshopRevenues.length,
+    dailyRevenues_sample: dailyWorkshopRevenues.slice(0, 3),
+    dailyRevMap_dates: Object.keys(dailyRevMap),
+    scheduleDates_sample: Object.fromEntries(
+      Object.entries(scheduleByUser).slice(0, 2).map(([k, v]) => [k, [...v].slice(0, 3)])
+    ),
+    rates_count: allRates.length,
+    rates_sample: allRates.slice(0, 3),
+  };
+  console.log('[salary/calculate] DEBUG:', JSON.stringify(_debug, null, 2));
+
   res.json({
     period: { from, to },
+    _debug,
     workshop_revenues: workshopRevenues,
     employees: result,
   });
