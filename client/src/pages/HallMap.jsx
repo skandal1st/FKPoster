@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { api } from '../api';
 import { usePosStore } from '../store/posStore';
 import toast from 'react-hot-toast';
-import { Plus, Trash2, X, GripVertical, Users, Pencil } from 'lucide-react';
+import { Plus, Trash2, X, GripVertical, Users, Pencil, Lock } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import POS from './POS';
 import { getTableDisplayName } from '../utils/tableDisplay';
@@ -64,6 +64,7 @@ export default function HallMap({ readOnly = false }) {
   const isAdmin = user?.role === 'admin' || user?.role === 'owner';
 
   const currentHall = halls.find((h) => h.id === selectedHall) || null;
+  const isHallLocked = !!currentHall?.locked_by_plan;
   const cols = currentHall ? (currentHall.grid_cols ?? 6) : 6;
   const rows = currentHall ? (currentHall.grid_rows ?? 4) : 4;
 
@@ -111,6 +112,10 @@ export default function HallMap({ readOnly = false }) {
 
   const handleTableClick = async (table) => {
     if (!readOnly) return;
+    if (isHallLocked) {
+      toast.error('Зал заблокирован по лимиту тарифа');
+      return;
+    }
     if (!registerDay) {
       toast.error('Откройте кассовый день для создания заказов');
       return;
@@ -287,9 +292,11 @@ export default function HallMap({ readOnly = false }) {
         <h1 className="page-title">{readOnly ? 'Зал' : 'Карта зала'}</h1>
         {!readOnly && isAdmin && (
           <div className="hall-header-actions">
-            <button className="btn btn-ghost" onClick={() => setShowAddTable(true)}>
-              <Plus size={16} /> Столик
-            </button>
+            {!isHallLocked && (
+              <button className="btn btn-ghost" onClick={() => setShowAddTable(true)}>
+                <Plus size={16} /> Столик
+              </button>
+            )}
             <button className="btn btn-primary" onClick={() => setShowAddHall(true)}>
               <Plus size={16} /> Зал
             </button>
@@ -301,16 +308,18 @@ export default function HallMap({ readOnly = false }) {
         {halls.map((hall) => (
           <div
             key={hall.id}
-            className={`hall-tab ${selectedHall === hall.id ? 'active' : ''}`}
+            className={`hall-tab ${selectedHall === hall.id ? 'active' : ''}${hall.locked_by_plan ? ' hall-tab--locked' : ''}`}
           >
             <button
               type="button"
               className="hall-tab-label"
               onClick={() => setSelectedHall(hall.id)}
+              style={hall.locked_by_plan ? { opacity: 0.6 } : undefined}
             >
+              {hall.locked_by_plan && <Lock size={12} style={{ marginRight: 4, verticalAlign: 'middle' }} />}
               {hall.name}
             </button>
-            {!readOnly && isAdmin && (
+            {!readOnly && isAdmin && !hall.locked_by_plan && (
               <button
                 type="button"
                 className="hall-tab-delete"
@@ -323,6 +332,24 @@ export default function HallMap({ readOnly = false }) {
           </div>
         ))}
       </div>
+
+      {isHallLocked && (
+        <div style={{
+          padding: '10px 16px',
+          marginBottom: 12,
+          borderRadius: 8,
+          background: 'rgba(239,68,68,0.1)',
+          border: '1px solid rgba(239,68,68,0.3)',
+          color: 'var(--danger)',
+          fontSize: 13,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+        }}>
+          <Lock size={14} />
+          Зал заблокирован — лимит тарифа. Данные сохранены, обновите план для доступа.
+        </div>
+      )}
 
       {/* Легенда как в дизайне */}
       <div className="hall-legend">
@@ -392,16 +419,17 @@ export default function HallMap({ readOnly = false }) {
             return (
               <div
                 key={table.id}
-                role={readOnly ? 'button' : undefined}
-                className={`hall-table hall-table--grid ${order ? 'occupied' : 'free'} ${isDragging ? 'dragging' : ''} ${readOnly ? 'hall-table--clickable' : ''}`}
+                role={readOnly && !isHallLocked ? 'button' : undefined}
+                className={`hall-table hall-table--grid ${order ? 'occupied' : 'free'} ${isDragging ? 'dragging' : ''} ${readOnly && !isHallLocked ? 'hall-table--clickable' : ''}`}
                 style={{
                   left: pos.x,
                   top: pos.y,
                   width: CELL_SIZE,
                   height: CELL_SIZE,
+                  ...(isHallLocked ? { opacity: 0.4, pointerEvents: 'none' } : {}),
                 }}
-                onPointerDown={readOnly ? undefined : (e) => handlePointerDown(e, table)}
-                onClick={readOnly ? () => handleTableClick(table) : undefined}
+                onPointerDown={readOnly || isHallLocked ? undefined : (e) => handlePointerDown(e, table)}
+                onClick={readOnly && !isHallLocked ? () => handleTableClick(table) : undefined}
               >
                 {!readOnly && isAdmin && (
                   <GripVertical className="hall-table-grip" aria-hidden />
@@ -415,7 +443,7 @@ export default function HallMap({ readOnly = false }) {
                 {order && (
                   <div className="hall-table-sum">{Number(order.total).toFixed(0)} ₽</div>
                 )}
-                {!readOnly && isAdmin && !order && (
+                {!readOnly && isAdmin && !order && !isHallLocked && (
                   <>
                     <button
                       type="button"

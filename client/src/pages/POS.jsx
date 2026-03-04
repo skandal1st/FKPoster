@@ -422,7 +422,7 @@ export default function POS({ embedded = false, onClose }) {
               <button className="btn-icon" onClick={() => setShowTablePicker(false)}><X size={18} /></button>
             </div>
             <div className="grid-3">
-              {tables.map((table) => {
+              {tables.filter((t) => !t.locked_by_plan).map((table) => {
                 const hasOrder = openOrders.some((o) => o.table_id === table.id);
                 return (
                   <button

@@ -12,6 +12,12 @@ router.get('/', async (req, res) => {
     'SELECT id, name, active, COALESCE(grid_cols, 6) AS grid_cols, COALESCE(grid_rows, 4) AS grid_rows FROM halls WHERE active = true AND tenant_id = $1 ORDER BY id',
     [req.tenantId]
   );
+  const maxHalls = req.plan?.max_halls;
+  if (maxHalls && halls.length > maxHalls) {
+    halls.forEach((hall, idx) => {
+      hall.locked_by_plan = idx >= maxHalls;
+    });
+  }
   res.json(halls);
 });
 
@@ -51,6 +57,20 @@ router.get('/:id/tables', async (req, res) => {
 router.post('/:id/tables', adminOnly, async (req, res) => {
   const { number, grid_x, grid_y, seats, shape, width, height, label } = req.body;
   const hallId = req.params.id;
+
+  // Check if hall is locked by plan
+  const maxHalls = req.plan?.max_halls;
+  if (maxHalls) {
+    const hallIds = await all(
+      'SELECT id FROM halls WHERE active = true AND tenant_id = $1 ORDER BY id',
+      [req.tenantId]
+    );
+    const allowedIds = hallIds.slice(0, maxHalls).map((h) => h.id);
+    if (!allowedIds.includes(Number(hallId))) {
+      return res.status(403).json({ error: 'Зал заблокирован по лимиту тарифа. Обновите план.' });
+    }
+  }
+
   const hall = await get('SELECT grid_cols, grid_rows FROM halls WHERE id = $1 AND tenant_id = $2', [hallId, req.tenantId]);
   const cols = hall ? (hall.grid_cols ?? 6) : 6;
   const rows = hall ? (hall.grid_rows ?? 4) : 4;

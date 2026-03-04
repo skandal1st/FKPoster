@@ -76,6 +76,22 @@ router.get('/', async (req, res) => {
     WHERE t.active = true AND h.active = true AND t.tenant_id = $1
     ORDER BY h.id, t.number
   `, [req.tenantId]);
+
+  // Mark tables in locked halls
+  const maxHalls = req.plan?.max_halls;
+  if (maxHalls) {
+    const hallIds = await all(
+      'SELECT id FROM halls WHERE active = true AND tenant_id = $1 ORDER BY id',
+      [req.tenantId]
+    );
+    const lockedIds = new Set(hallIds.slice(maxHalls).map((h) => h.id));
+    if (lockedIds.size > 0) {
+      for (const t of tables) {
+        if (lockedIds.has(t.hall_id)) t.locked_by_plan = true;
+      }
+    }
+  }
+
   res.json(tables);
 });
 

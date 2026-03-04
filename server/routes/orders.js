@@ -61,6 +61,22 @@ router.post('/', checkLimit('orders'), async (req, res) => {
   }
 
   if (table_id) {
+    // Check if table's hall is locked by plan
+    const maxHalls = req.plan?.max_halls;
+    if (maxHalls) {
+      const table = await get('SELECT hall_id FROM tables WHERE id = $1 AND tenant_id = $2', [table_id, req.tenantId]);
+      if (table && table.hall_id) {
+        const hallIds = await all(
+          'SELECT id FROM halls WHERE active = true AND tenant_id = $1 ORDER BY id',
+          [req.tenantId]
+        );
+        const allowedIds = hallIds.slice(0, maxHalls).map((h) => h.id);
+        if (!allowedIds.includes(table.hall_id)) {
+          return res.status(403).json({ error: 'Зал заблокирован по лимиту тарифа. Обновите план.' });
+        }
+      }
+    }
+
     const existing = await get("SELECT id FROM orders WHERE table_id = $1 AND status = 'open' AND tenant_id = $2", [table_id, req.tenantId]);
     if (existing) {
       return res.status(400).json({ error: 'На этом столике уже есть открытый заказ', order_id: existing.id });
