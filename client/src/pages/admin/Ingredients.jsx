@@ -5,8 +5,10 @@ import { Plus, Pencil, Trash2, X, AlertTriangle } from 'lucide-react';
 import ModalOverlay from '../../components/ModalOverlay';
 import TabNav from '../../components/TabNav';
 import { CATALOG_TABS } from '../../constants/tabGroups';
+import { useAuthStore } from '../../store/authStore';
 
 export default function Ingredients() {
+  const hasCostPrice = useAuthStore((s) => s.plan?.features?.cost_price === true);
   const [ingredients, setIngredients] = useState([]);
   const [categories, setCategories] = useState([]);
   const [groups, setGroups] = useState([]);
@@ -96,7 +98,7 @@ export default function Ingredients() {
               <th>Название</th>
               <th>Категория</th>
               <th>Группа</th>
-              <th>Себестоимость</th>
+              {hasCostPrice && <th>Себестоимость</th>}
               <th>Остаток</th>
               <th></th>
             </tr>
@@ -112,7 +114,7 @@ export default function Ingredients() {
                 <td style={{ color: ing.group_name ? 'var(--text-primary)' : 'var(--text-muted)' }}>
                   {ing.group_name || '—'}
                 </td>
-                <td>{ing.cost_price} ₽</td>
+                {hasCostPrice && <td>{ing.cost_price} ₽</td>}
                 <td>
                   {ing.track_inventory ? (
                     <>
@@ -160,10 +162,12 @@ export default function Ingredients() {
               </select>
             </div>
             <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Себестоимость</label>
-                <input className="form-input" type="number" step="0.01" value={form.cost_price} onChange={(e) => setForm({ ...form, cost_price: e.target.value })} />
-              </div>
+              {hasCostPrice && (
+                <div className="form-group">
+                  <label className="form-label">Себестоимость</label>
+                  <input className="form-input" type="number" step="0.01" value={form.cost_price} onChange={(e) => setForm({ ...form, cost_price: e.target.value })} />
+                </div>
+              )}
               <div className="form-group">
                 <label className="form-label">Ед. измерения</label>
                 <select className="form-input" value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })}>

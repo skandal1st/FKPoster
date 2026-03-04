@@ -48,11 +48,26 @@ router.post('/login', async (req, res) => {
     chain = await get('SELECT id, name FROM chains WHERE id = $1', [user.chain_id]);
   }
 
+  let plan = null;
+  if (user.tenant_id) {
+    const sub = await get(
+      `SELECT p.features, p.max_orders_monthly, p.name as plan_name
+       FROM subscriptions s JOIN plans p ON s.plan_id = p.id
+       WHERE s.tenant_id = $1 AND s.status IN ('active','trialing')
+       ORDER BY s.id DESC LIMIT 1`,
+      [user.tenant_id]
+    );
+    if (sub) {
+      plan = { features: sub.features || {}, limits: { max_orders_monthly: sub.max_orders_monthly }, plan_name: sub.plan_name };
+    }
+  }
+
   res.json({
     token,
     user: { id: user.id, email: user.email, name: user.name, role: user.role, tenant_id: user.tenant_id, chain_id: user.chain_id || null },
     tenant,
     chain,
+    plan,
   });
 });
 
@@ -233,10 +248,25 @@ router.post('/pin-login', async (req, res) => {
     [user.tenant_id]
   );
 
+  let plan = null;
+  if (user.tenant_id) {
+    const sub = await get(
+      `SELECT p.features, p.max_orders_monthly, p.name as plan_name
+       FROM subscriptions s JOIN plans p ON s.plan_id = p.id
+       WHERE s.tenant_id = $1 AND s.status IN ('active','trialing')
+       ORDER BY s.id DESC LIMIT 1`,
+      [user.tenant_id]
+    );
+    if (sub) {
+      plan = { features: sub.features || {}, limits: { max_orders_monthly: sub.max_orders_monthly }, plan_name: sub.plan_name };
+    }
+  }
+
   res.json({
     token,
     user: { id: user.id, email: user.email, name: user.name, role: user.role, tenant_id: user.tenant_id },
     tenant,
+    plan,
   });
 });
 
@@ -265,6 +295,21 @@ router.get('/me', authMiddleware, async (req, res) => {
   if (req.user.chain_id) {
     chain = await get('SELECT id, name FROM chains WHERE id = $1', [req.user.chain_id]);
   }
+
+  let plan = null;
+  if (req.user.tenant_id) {
+    const sub = await get(
+      `SELECT p.features, p.max_orders_monthly, p.name as plan_name
+       FROM subscriptions s JOIN plans p ON s.plan_id = p.id
+       WHERE s.tenant_id = $1 AND s.status IN ('active','trialing')
+       ORDER BY s.id DESC LIMIT 1`,
+      [req.user.tenant_id]
+    );
+    if (sub) {
+      plan = { features: sub.features || {}, limits: { max_orders_monthly: sub.max_orders_monthly }, plan_name: sub.plan_name };
+    }
+  }
+
   res.json({
     user: {
       id: req.user.id, email: req.user.email, name: req.user.name, role: req.user.role,
@@ -274,6 +319,7 @@ router.get('/me', authMiddleware, async (req, res) => {
     },
     tenant,
     chain,
+    plan,
   });
 });
 

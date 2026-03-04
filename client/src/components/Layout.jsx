@@ -13,7 +13,7 @@ import { CATALOG_TABS, STOCK_TABS, STAFF_TABS } from '../constants/tabGroups';
 const SIDEBAR_COLLAPSED_KEY = 'sidebarCollapsed';
 
 export default function Layout() {
-  const { user, tenant, chain, logout, exitImpersonation, exitChainImpersonation, impersonating, chainImpersonating } = useAuthStore();
+  const { user, tenant, chain, plan, logout, exitImpersonation, exitChainImpersonation, impersonating, chainImpersonating } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
   const isGroupActive = (tabs) => tabs.some((t) => t.path === location.pathname);
@@ -29,15 +29,19 @@ export default function Layout() {
   const isAdmin = user?.role === 'admin' || user?.role === 'owner';
   const isOwner = user?.role === 'owner';
   const isCashier = user?.role === 'cashier';
+  const hasReports = plan?.features?.reports === true;
+  const hasInventory = plan?.features?.inventory === true;
   const [lowStockCount, setLowStockCount] = useState(0);
   const [integrations, setIntegrations] = useState(null);
 
   useEffect(() => {
     if (isAdmin) {
-      api.get('/products/low-stock').then((d) => setLowStockCount(d.count)).catch(() => {});
+      if (hasInventory) {
+        api.get('/products/low-stock').then((d) => setLowStockCount(d.count)).catch(() => {});
+      }
       api.get('/integrations').then(setIntegrations).catch(() => {});
     }
-  }, [isAdmin]);
+  }, [isAdmin, hasInventory]);
 
   const hasMarking = integrations && (integrations.egais_enabled || integrations.chestniy_znak_enabled);
 
@@ -110,16 +114,18 @@ export default function Layout() {
               <NavLink to="/admin/products" className={() => `sidebar-link ${isGroupActive(CATALOG_TABS) ? 'active' : ''}`} title="Каталог">
                 <Package /><span className="sidebar-link-text">Каталог</span>
               </NavLink>
-              <NavLink to="/admin/inventory" className={() => `sidebar-link ${isGroupActive(STOCK_TABS) ? 'active' : ''}`} title="Склад">
-                <Boxes /><span className="sidebar-link-text">Склад</span>
-                {lowStockCount > 0 && (
-                  <span className="sidebar-link-badge" style={{
-                    marginLeft: 'auto', background: 'var(--danger)', color: '#fff',
-                    borderRadius: '50%', width: 20, height: 20, display: 'inline-flex',
-                    alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700
-                  }}>{lowStockCount}</span>
-                )}
-              </NavLink>
+              {hasInventory && (
+                <NavLink to="/admin/inventory" className={() => `sidebar-link ${isGroupActive(STOCK_TABS) ? 'active' : ''}`} title="Склад">
+                  <Boxes /><span className="sidebar-link-text">Склад</span>
+                  {lowStockCount > 0 && (
+                    <span className="sidebar-link-badge" style={{
+                      marginLeft: 'auto', background: 'var(--danger)', color: '#fff',
+                      borderRadius: '50%', width: 20, height: 20, display: 'inline-flex',
+                      alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700
+                    }}>{lowStockCount}</span>
+                  )}
+                </NavLink>
+              )}
               <NavLink to="/admin/users" className={() => `sidebar-link ${isGroupActive(STAFF_TABS) ? 'active' : ''}`} title="Персонал">
                 <Users /><span className="sidebar-link-text">Персонал</span>
               </NavLink>
@@ -148,19 +154,21 @@ export default function Layout() {
             </div>
           )}
 
-          <div className="sidebar-section">
-            <div className="sidebar-section-title">Аналитика</div>
-            {(isAdmin || isCashier) && (
-              <NavLink to="/dashboard" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Дашборд">
-                <LayoutDashboard /><span className="sidebar-link-text">Дашборд</span>
-              </NavLink>
-            )}
-            {!isCashier && (
-              <NavLink to="/stats" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Статистика">
-                <BarChart3 /><span className="sidebar-link-text">Статистика</span>
-              </NavLink>
-            )}
-          </div>
+          {hasReports && (
+            <div className="sidebar-section">
+              <div className="sidebar-section-title">Аналитика</div>
+              {(isAdmin || isCashier) && (
+                <NavLink to="/dashboard" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Дашборд">
+                  <LayoutDashboard /><span className="sidebar-link-text">Дашборд</span>
+                </NavLink>
+              )}
+              {!isCashier && (
+                <NavLink to="/stats" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Статистика">
+                  <BarChart3 /><span className="sidebar-link-text">Статистика</span>
+                </NavLink>
+              )}
+            </div>
+          )}
 
           {(isAdmin || isOwner) && (
             <div className="sidebar-section">

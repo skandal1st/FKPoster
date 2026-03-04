@@ -22,6 +22,7 @@ async function runMigrations() {
     require('./016_mixed_payment'),
     require('./017_performance_indexes'),
     require('./018_salary_module'),
+    require('./019_free_plan_limits'),
   ];
 
   for (const migration of migrations) {

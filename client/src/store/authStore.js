@@ -8,6 +8,7 @@ export const useAuthStore = create((set) => ({
   user: null,
   tenant: null,
   chain: null,
+  plan: null,
   token: localStorage.getItem('token'),
   loading: true,
   impersonating: false,
@@ -20,7 +21,7 @@ export const useAuthStore = create((set) => ({
       sessionStorage.setItem('superadmin_token', data.token);
     }
     if (data.tenant) applyBranding(data.tenant);
-    set({ user: data.user, tenant: data.tenant, chain: data.chain || null, token: data.token });
+    set({ user: data.user, tenant: data.tenant, chain: data.chain || null, plan: data.plan || null, token: data.token });
     useSocketStore.getState().connect(data.token);
   },
 
@@ -36,7 +37,7 @@ export const useAuthStore = create((set) => ({
     const data = await api.post('/auth/pin-login', { user_id: userId, pin });
     localStorage.setItem('token', data.token);
     if (data.tenant) applyBranding(data.tenant);
-    set({ user: data.user, tenant: data.tenant, token: data.token });
+    set({ user: data.user, tenant: data.tenant, plan: data.plan || null, token: data.token });
     useSocketStore.getState().connect(data.token);
   },
 
@@ -47,15 +48,15 @@ export const useAuthStore = create((set) => ({
     sessionStorage.removeItem('chain_token');
     resetBranding();
     usePosStore.getState().reset();
-    set({ user: null, tenant: null, chain: null, token: null, impersonating: false, chainImpersonating: false });
+    set({ user: null, tenant: null, chain: null, plan: null, token: null, impersonating: false, chainImpersonating: false });
   },
 
-  setImpersonation: (token, user, tenant) => {
+  setImpersonation: (token, user, tenant, plan) => {
     const current = localStorage.getItem('token');
     if (current) sessionStorage.setItem('superadmin_token', current);
     localStorage.setItem('token', token);
     if (tenant) applyBranding(tenant);
-    set({ user, tenant, chain: null, token, impersonating: true, chainImpersonating: false });
+    set({ user, tenant, chain: null, plan: plan || null, token, impersonating: true, chainImpersonating: false });
     useSocketStore.getState().disconnect();
     useSocketStore.getState().connect(token);
   },
@@ -67,28 +68,28 @@ export const useAuthStore = create((set) => ({
     if (!saved) {
       localStorage.removeItem('token');
       resetBranding();
-      set({ user: null, tenant: null, chain: null, token: null, loading: false, impersonating: false, chainImpersonating: false });
+      set({ user: null, tenant: null, chain: null, plan: null, token: null, loading: false, impersonating: false, chainImpersonating: false });
       return;
     }
     localStorage.setItem('token', saved);
     resetBranding();
-    set({ user: null, tenant: null, chain: null, token: null, loading: true, impersonating: false, chainImpersonating: false });
+    set({ user: null, tenant: null, chain: null, plan: null, token: null, loading: true, impersonating: false, chainImpersonating: false });
     try {
       const data = await api.get('/auth/me');
-      set({ user: data.user, tenant: data.tenant, chain: data.chain || null, loading: false });
+      set({ user: data.user, tenant: data.tenant, chain: data.chain || null, plan: data.plan || null, loading: false });
       useSocketStore.getState().connect(saved);
     } catch {
       localStorage.removeItem('token');
-      set({ user: null, tenant: null, chain: null, token: null, loading: false });
+      set({ user: null, tenant: null, chain: null, plan: null, token: null, loading: false });
     }
   },
 
-  setChainImpersonation: (token, user, tenant) => {
+  setChainImpersonation: (token, user, tenant, plan) => {
     const current = localStorage.getItem('token');
     if (current) sessionStorage.setItem('chain_token', current);
     localStorage.setItem('token', token);
     if (tenant) applyBranding(tenant);
-    set({ user, tenant, chain: null, token, impersonating: false, chainImpersonating: true });
+    set({ user, tenant, chain: null, plan: plan || null, token, impersonating: false, chainImpersonating: true });
     useSocketStore.getState().disconnect();
     useSocketStore.getState().connect(token);
   },
@@ -100,19 +101,19 @@ export const useAuthStore = create((set) => ({
     if (!saved) {
       localStorage.removeItem('token');
       resetBranding();
-      set({ user: null, tenant: null, chain: null, token: null, loading: false, impersonating: false, chainImpersonating: false });
+      set({ user: null, tenant: null, chain: null, plan: null, token: null, loading: false, impersonating: false, chainImpersonating: false });
       return;
     }
     localStorage.setItem('token', saved);
     resetBranding();
-    set({ user: null, tenant: null, chain: null, token: null, loading: true, impersonating: false, chainImpersonating: false });
+    set({ user: null, tenant: null, chain: null, plan: null, token: null, loading: true, impersonating: false, chainImpersonating: false });
     try {
       const data = await api.get('/auth/me');
-      set({ user: data.user, tenant: data.tenant, chain: data.chain || null, loading: false });
+      set({ user: data.user, tenant: data.tenant, chain: data.chain || null, plan: data.plan || null, loading: false });
       useSocketStore.getState().connect(saved);
     } catch {
       localStorage.removeItem('token');
-      set({ user: null, tenant: null, chain: null, token: null, loading: false });
+      set({ user: null, tenant: null, chain: null, plan: null, token: null, loading: false });
     }
   },
 
@@ -129,6 +130,7 @@ export const useAuthStore = create((set) => ({
         user: data.user,
         tenant: data.tenant,
         chain: data.chain || null,
+        plan: data.plan || null,
         loading: false,
         impersonating: !!data.user?.superadmin_impersonating,
         chainImpersonating: !!data.user?.chain_impersonating,
@@ -136,7 +138,7 @@ export const useAuthStore = create((set) => ({
       useSocketStore.getState().connect(token);
     } catch {
       localStorage.removeItem('token');
-      set({ user: null, tenant: null, chain: null, token: null, loading: false, impersonating: false, chainImpersonating: false });
+      set({ user: null, tenant: null, chain: null, plan: null, token: null, loading: false, impersonating: false, chainImpersonating: false });
     }
   },
 

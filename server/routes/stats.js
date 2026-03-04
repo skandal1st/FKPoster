@@ -1,12 +1,12 @@
 const express = require('express');
 const { all, get } = require('../db');
 const { authMiddleware, adminOnly } = require('../middleware/auth');
-const { checkSubscription } = require('../middleware/subscription');
+const { checkSubscription, checkFeature } = require('../middleware/subscription');
 
 const router = express.Router();
 router.use(authMiddleware, checkSubscription);
 
-router.get('/sales', async (req, res) => {
+router.get('/sales', checkFeature('reports'), async (req, res) => {
   const { from, to, group } = req.query;
   const dateFrom = from || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
   const dateTo = to || new Date().toISOString().split('T')[0];
@@ -81,7 +81,7 @@ router.get('/sales', async (req, res) => {
   res.json({ sales, summary });
 });
 
-router.get('/products', async (req, res) => {
+router.get('/products', checkFeature('reports'), async (req, res) => {
   const { from, to } = req.query;
   const dateFrom = from || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
   const dateTo = to || new Date().toISOString().split('T')[0];
@@ -127,7 +127,7 @@ router.get('/products', async (req, res) => {
   res.json({ products, categories });
 });
 
-router.get('/inventory', adminOnly, async (req, res) => {
+router.get('/inventory', adminOnly, checkFeature('inventory'), async (req, res) => {
   const { category_id } = req.query;
   let where = 'WHERE p.active = true AND p.track_inventory = true AND p.tenant_id = $1';
   const params = [req.tenantId];
@@ -154,7 +154,7 @@ router.get('/inventory', adminOnly, async (req, res) => {
   res.json({ items, total_value, categories });
 });
 
-router.get('/dashboard', async (req, res) => {
+router.get('/dashboard', checkFeature('reports'), async (req, res) => {
   const today = new Date().toISOString().split('T')[0];
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
@@ -243,7 +243,7 @@ router.get('/dashboard', async (req, res) => {
 });
 
 // Анализ себестоимости
-router.get('/cost-analysis', async (req, res) => {
+router.get('/cost-analysis', checkFeature('cost_price'), async (req, res) => {
   const { from, to } = req.query;
   const dateFrom = from || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
   const dateTo = to || new Date().toISOString().split('T')[0];
@@ -308,7 +308,7 @@ router.get('/cost-analysis', async (req, res) => {
 });
 
 // Посещаемость
-router.get('/traffic', async (req, res) => {
+router.get('/traffic', checkFeature('reports'), async (req, res) => {
   const { from, to } = req.query;
   const dateFrom = from || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
   const dateTo = to || new Date().toISOString().split('T')[0];
@@ -362,7 +362,7 @@ router.get('/traffic', async (req, res) => {
 });
 
 // Статистика сотрудников
-router.get('/employees', async (req, res) => {
+router.get('/employees', checkFeature('reports'), async (req, res) => {
   const { from, to } = req.query;
   const dateFrom = from || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
   const dateTo = to || new Date().toISOString().split('T')[0];
@@ -391,7 +391,7 @@ router.get('/employees', async (req, res) => {
 });
 
 // Анализ скидок
-router.get('/discounts', async (req, res) => {
+router.get('/discounts', checkFeature('reports'), async (req, res) => {
   const { from, to } = req.query;
   const dateFrom = from || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
   const dateTo = to || new Date().toISOString().split('T')[0];

@@ -1,10 +1,10 @@
 const express = require('express');
 const { all, get, run, transaction } = require('../db');
 const { authMiddleware, adminOnly } = require('../middleware/auth');
-const { checkSubscription } = require('../middleware/subscription');
+const { checkSubscription, checkFeature } = require('../middleware/subscription');
 
 const router = express.Router();
-router.use(authMiddleware, adminOnly, checkSubscription);
+router.use(authMiddleware, adminOnly, checkSubscription, checkFeature('inventory'));
 
 router.get('/', async (req, res) => {
   const supplies = await all(

@@ -1,19 +1,22 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import SalesTab from './stats/SalesTab';
 import CostTab from './stats/CostTab';
 import TrafficTab from './stats/TrafficTab';
 import EmployeesTab from './stats/EmployeesTab';
 import DiscountsTab from './stats/DiscountsTab';
+import { useAuthStore } from '../store/authStore';
 
-const TABS = [
+const ALL_TABS = [
   { id: 'sales', label: 'Продажи' },
-  { id: 'cost', label: 'Себестоимость' },
+  { id: 'cost', label: 'Себестоимость', feature: 'cost_price' },
   { id: 'traffic', label: 'Посещаемость' },
   { id: 'employees', label: 'Сотрудники' },
   { id: 'discounts', label: 'Скидки' },
 ];
 
 export default function Stats() {
+  const plan = useAuthStore((s) => s.plan);
+  const tabs = useMemo(() => ALL_TABS.filter((t) => !t.feature || plan?.features?.[t.feature]), [plan]);
   const [activeTab, setActiveTab] = useState('sales');
   const [from, setFrom] = useState(() => {
     const d = new Date();
@@ -34,7 +37,7 @@ export default function Stats() {
       </div>
 
       <div className="stats-tabs">
-        {TABS.map((tab) => (
+        {tabs.map((tab) => (
           <button
             key={tab.id}
             className={`stats-tab${activeTab === tab.id ? ' active' : ''}`}

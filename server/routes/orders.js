@@ -1,9 +1,10 @@
 const express = require('express');
 const { all, get, run, transaction } = require('../db');
 const { authMiddleware } = require('../middleware/auth');
-const { checkSubscription } = require('../middleware/subscription');
+const { checkSubscription, checkLimit } = require('../middleware/subscription');
 const { loadIntegrations } = require('../middleware/integration');
 const { emitEvent } = require('../utils/emitEvent');
+const { invalidateResourceCount } = require('../cache');
 
 const router = express.Router();
 router.use(authMiddleware, checkSubscription, loadIntegrations);
@@ -51,7 +52,7 @@ router.get('/:id', async (req, res) => {
   res.json(order);
 });
 
-router.post('/', async (req, res) => {
+router.post('/', checkLimit('orders'), async (req, res) => {
   const { table_id } = req.body;
 
   const day = await get("SELECT id FROM register_days WHERE status = 'open' AND tenant_id = $1", [req.tenantId]);
@@ -75,6 +76,7 @@ router.post('/', async (req, res) => {
     return res.status(500).json({ error: 'Не удалось создать заказ' });
   }
   order.items = [];
+  invalidateResourceCount(req.tenantId, 'orders');
   emitEvent(req, 'order:created', order);
   res.json(order);
 });

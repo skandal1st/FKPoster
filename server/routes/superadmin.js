@@ -52,10 +52,23 @@ router.post('/impersonate', async (req, res) => {
     { expiresIn: '8h' }
   );
 
+  let plan = null;
+  const sub = await get(
+    `SELECT p.features, p.max_orders_monthly, p.name as plan_name
+     FROM subscriptions s JOIN plans p ON s.plan_id = p.id
+     WHERE s.tenant_id = $1 AND s.status IN ('active','trialing')
+     ORDER BY s.id DESC LIMIT 1`,
+    [tenant_id]
+  );
+  if (sub) {
+    plan = { features: sub.features || {}, limits: { max_orders_monthly: sub.max_orders_monthly }, plan_name: sub.plan_name };
+  }
+
   res.json({
     token,
     user: { id: req.user.id, email: req.user.email, name: req.user.name, role: 'owner', tenant_id: Number(tenant_id) },
     tenant,
+    plan,
   });
 });
 

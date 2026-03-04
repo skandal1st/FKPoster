@@ -4,8 +4,10 @@ import { AlertTriangle, Download } from 'lucide-react';
 import { exportToCsv } from '../../utils/exportCsv';
 import TabNav from '../../components/TabNav';
 import { STOCK_TABS } from '../../constants/tabGroups';
+import { useAuthStore } from '../../store/authStore';
 
 export default function Inventory() {
+  const hasCostPrice = useAuthStore((s) => s.plan?.features?.cost_price === true);
   const [data, setData] = useState({ items: [], total_value: 0, categories: [] });
   const [categoryId, setCategoryId] = useState('');
 
@@ -41,12 +43,14 @@ export default function Inventory() {
       </div>
       <TabNav tabs={STOCK_TABS} />
 
-      <div className="grid-4" style={{ marginBottom: 24 }}>
-        <div className="stat-card">
-          <div className="stat-label">Общая стоимость запасов</div>
-          <div className="stat-value">{Math.round(data.total_value).toLocaleString()} ₽</div>
+      {hasCostPrice && (
+        <div className="grid-4" style={{ marginBottom: 24 }}>
+          <div className="stat-card">
+            <div className="stat-label">Общая стоимость запасов</div>
+            <div className="stat-value">{Math.round(data.total_value).toLocaleString()} ₽</div>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="card">
         <table className="data-table">
@@ -57,8 +61,8 @@ export default function Inventory() {
               <th>Ед.</th>
               <th>Остаток</th>
               <th>Мин.</th>
-              <th>Себест.</th>
-              <th>Стоимость</th>
+              {hasCostPrice && <th>Себест.</th>}
+              {hasCostPrice && <th>Стоимость</th>}
             </tr>
           </thead>
           <tbody>
@@ -75,12 +79,12 @@ export default function Inventory() {
                 <td>{i.unit}</td>
                 <td>{i.quantity}</td>
                 <td>{i.min_quantity > 0 ? i.min_quantity : '—'}</td>
-                <td>{i.cost_price} ₽</td>
-                <td>{Math.round(i.stock_value)} ₽</td>
+                {hasCostPrice && <td>{i.cost_price} ₽</td>}
+                {hasCostPrice && <td>{Math.round(i.stock_value)} ₽</td>}
               </tr>
             ))}
           </tbody>
-          {data.items.length > 0 && (
+          {data.items.length > 0 && hasCostPrice && (
             <tfoot>
               <tr style={{ fontWeight: 700 }}>
                 <td colSpan={6}>Итого</td>

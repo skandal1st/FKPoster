@@ -26,6 +26,8 @@ export default function TenantSettings() {
   const [autoPrintReceipt, setAutoPrintReceipt] = useState(false);
   const [savingPrint, setSavingPrint] = useState(false);
 
+  const [orderUsage, setOrderUsage] = useState(null);
+
   useEffect(() => {
     if (tenant) {
       setName(tenant.name || '');
@@ -34,6 +36,7 @@ export default function TenantSettings() {
     }
     api.get('/subscription').then((d) => {
       setSubscription(d.subscription);
+      if (d.usage) setOrderUsage(d.usage);
     }).catch(() => {});
     Promise.all([
       api.get('/users').then(d => d.length).catch(() => 0),
@@ -165,12 +168,17 @@ export default function TenantSettings() {
                 <li>Пользователей: до {subscription.max_users}</li>
                 <li>Залы: до {subscription.max_halls}</li>
                 <li>Товары: до {subscription.max_products}</li>
+                {subscription.max_orders_monthly && (
+                  <li>Заказов в месяц: до {subscription.max_orders_monthly}</li>
+                )}
                 {(() => {
                   const f = subscription.features;
                   if (f == null) return null;
                   const FEATURE_NAMES = {
                     basic: 'Базовые функции',
-                    reports: 'Отчёты',
+                    reports: 'Аналитика и отчёты',
+                    inventory: 'Склад',
+                    cost_price: 'Себестоимость',
                     api: 'API',
                     chain_management: 'Управление сетью',
                   };
@@ -186,6 +194,38 @@ export default function TenantSettings() {
               {usage && (
                 <div style={{ paddingTop: 12, borderTop: '1px solid var(--border-color)', fontSize: 13, color: 'var(--text-muted)' }}>
                   Использовано: {usage.users} пользователей, {usage.halls} залов, {usage.products} товаров
+                </div>
+              )}
+
+              {subscription.max_orders_monthly && orderUsage != null && (
+                <div style={{ paddingTop: 12, marginTop: 12, borderTop: '1px solid var(--border-color)' }}>
+                  {(() => {
+                    const used = orderUsage.monthly_orders || 0;
+                    const max = subscription.max_orders_monthly;
+                    const pct = Math.min(100, Math.round((used / max) * 100));
+                    const isDanger = pct >= 80;
+                    return (
+                      <>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 6 }}>
+                          <span style={{ color: isDanger ? 'var(--danger)' : 'var(--text-secondary)' }}>
+                            Заказов в этом месяце: {used} из {max}
+                          </span>
+                          <span style={{ color: isDanger ? 'var(--danger)' : 'var(--text-muted)', fontWeight: isDanger ? 700 : 400 }}>
+                            {pct}%
+                          </span>
+                        </div>
+                        <div style={{ height: 6, borderRadius: 3, background: 'var(--bg-tertiary)', overflow: 'hidden' }}>
+                          <div style={{
+                            width: `${pct}%`,
+                            height: '100%',
+                            borderRadius: 3,
+                            background: isDanger ? 'var(--danger)' : 'var(--accent)',
+                            transition: 'width 0.3s',
+                          }} />
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               )}
 

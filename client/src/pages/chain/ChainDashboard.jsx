@@ -21,7 +21,7 @@ export default function ChainDashboard() {
   const handleEnter = async (tenantId) => {
     try {
       const res = await api.post('/chain/impersonate', { tenant_id: tenantId });
-      useAuthStore.getState().setChainImpersonation(res.token, res.user, res.tenant);
+      useAuthStore.getState().setChainImpersonation(res.token, res.user, res.tenant, res.plan);
       window.location.href = '/dashboard';
     } catch (e) {
       toast.error(e.message);

@@ -6,8 +6,10 @@ import TechCardModal from '../../components/TechCardModal';
 import ModalOverlay from '../../components/ModalOverlay';
 import TabNav from '../../components/TabNav';
 import { CATALOG_TABS } from '../../constants/tabGroups';
+import { useAuthStore } from '../../store/authStore';
 
 export default function Products() {
+  const hasCostPrice = useAuthStore((s) => s.plan?.features?.cost_price === true);
   const [products, setProducts] = useState([]);
   const [ingredients, setIngredients] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -94,7 +96,7 @@ export default function Products() {
               <th>Название</th>
               <th>Категория</th>
               <th>Цена</th>
-              <th>Себест.</th>
+              {hasCostPrice && <th>Себест.</th>}
               <th>Остаток</th>
               <th>Тип</th>
               <th></th>
@@ -109,7 +111,7 @@ export default function Products() {
                   {p.category_name}
                 </td>
                 <td>{p.price} ₽</td>
-                <td>{p.cost_price} ₽</td>
+                {hasCostPrice && <td>{p.cost_price} ₽</td>}
                 <td>
                   {p.track_inventory ? (
                     <>
@@ -173,10 +175,12 @@ export default function Products() {
                 <label className="form-label">Цена</label>
                 <input className="form-input" type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
               </div>
-              <div className="form-group">
-                <label className="form-label">Себестоимость</label>
-                <input className="form-input" type="number" value={form.cost_price} onChange={(e) => setForm({ ...form, cost_price: e.target.value })} />
-              </div>
+              {hasCostPrice && (
+                <div className="form-group">
+                  <label className="form-label">Себестоимость</label>
+                  <input className="form-input" type="number" value={form.cost_price} onChange={(e) => setForm({ ...form, cost_price: e.target.value })} />
+                </div>
+              )}
             </div>
             <div className="form-row">
               <div className="form-group">

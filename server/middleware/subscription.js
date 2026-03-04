@@ -7,7 +7,7 @@ async function checkSubscription(req, res, next) {
   let sub = subscriptionByTenant.get(req.tenantId);
   if (sub === undefined) {
     sub = await get(`
-      SELECT s.*, p.max_users, p.max_halls, p.max_products, p.name as plan_name, p.features as plan_features
+      SELECT s.*, p.max_users, p.max_halls, p.max_products, p.max_orders_monthly, p.name as plan_name, p.features as plan_features
       FROM subscriptions s
       JOIN plans p ON s.plan_id = p.id
       WHERE s.tenant_id = $1 AND s.status IN ('active', 'trialing')
@@ -36,6 +36,7 @@ function checkLimit(resource) {
       users: { column: 'max_users', table: 'users', where: 'tenant_id = $1 AND active = true' },
       halls: { column: 'max_halls', table: 'halls', where: 'tenant_id = $1 AND active = true' },
       products: { column: 'max_products', table: 'products', where: 'tenant_id = $1 AND active = true' },
+      orders: { column: 'max_orders_monthly', table: 'orders', where: "tenant_id = $1 AND created_at >= date_trunc('month', NOW())" },
     };
 
     const config = limits[resource];
@@ -52,7 +53,7 @@ function checkLimit(resource) {
     }
     if (row.count >= maxVal) {
       return res.status(403).json({
-        error: `Достигнут лимит плана: максимум ${maxVal} ${resource === 'users' ? 'пользователей' : resource === 'halls' ? 'залов' : 'товаров'}. Обновите план.`,
+        error: `Достигнут лимит плана: максимум ${maxVal} ${resource === 'users' ? 'пользователей' : resource === 'halls' ? 'залов' : resource === 'orders' ? 'заказов в месяц' : 'товаров'}. Обновите план.`,
         limit: maxVal,
         current: row.count,
       });

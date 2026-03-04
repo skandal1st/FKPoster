@@ -58,6 +58,12 @@ function CashierAllowedRoute({ children }) {
   return children;
 }
 
+function FeatureRoute({ feature, children }) {
+  const plan = useAuthStore((s) => s.plan);
+  if (!plan?.features?.[feature]) return <Navigate to="/" replace />;
+  return children;
+}
+
 function StatsRoute() {
   const { user } = useAuthStore();
   if (user?.role === 'cashier') return <Navigate to="/dashboard" replace />;
@@ -84,11 +90,11 @@ function SubdomainApp() {
         <Route path="admin/products" element={<AdminRoute><Products /></AdminRoute>} />
         <Route path="admin/ingredients" element={<AdminRoute><Ingredients /></AdminRoute>} />
         <Route path="admin/ingredient-groups" element={<AdminRoute><IngredientGroups /></AdminRoute>} />
-        <Route path="admin/supplies" element={<AdminRoute><Supplies /></AdminRoute>} />
+        <Route path="admin/supplies" element={<AdminRoute><FeatureRoute feature="inventory"><Supplies /></FeatureRoute></AdminRoute>} />
         <Route path="admin/register" element={<Register />} />
         <Route path="admin/users" element={<AdminRoute><Users /></AdminRoute>} />
-        <Route path="admin/inventory" element={<AdminRoute><Inventory /></AdminRoute>} />
-        <Route path="admin/inventory-check" element={<AdminRoute><InventoryCheck /></AdminRoute>} />
+        <Route path="admin/inventory" element={<AdminRoute><FeatureRoute feature="inventory"><Inventory /></FeatureRoute></AdminRoute>} />
+        <Route path="admin/inventory-check" element={<AdminRoute><FeatureRoute feature="inventory"><InventoryCheck /></FeatureRoute></AdminRoute>} />
         <Route path="admin/settings" element={<AdminRoute><TenantSettings /></AdminRoute>} />
         <Route path="admin/integrations" element={<AdminRoute><IntegrationSettings /></AdminRoute>} />
         <Route path="admin/egais" element={<AdminRoute><EgaisDocuments /></AdminRoute>} />
@@ -96,8 +102,8 @@ function SubdomainApp() {
         <Route path="admin/guests" element={<AdminRoute><Guests /></AdminRoute>} />
         <Route path="admin/schedule" element={<AdminRoute><Schedule /></AdminRoute>} />
         <Route path="admin/salary" element={<AdminRoute><Salary /></AdminRoute>} />
-        <Route path="dashboard" element={<CashierAllowedRoute><Dashboard /></CashierAllowedRoute>} />
-        <Route path="stats" element={<StatsRoute />} />
+        <Route path="dashboard" element={<CashierAllowedRoute><FeatureRoute feature="reports"><Dashboard /></FeatureRoute></CashierAllowedRoute>} />
+        <Route path="stats" element={<FeatureRoute feature="reports"><StatsRoute /></FeatureRoute>} />
       </Route>
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
@@ -132,11 +138,11 @@ function MainDomainApp() {
         <Route path="admin/products" element={<AdminRoute><Products /></AdminRoute>} />
         <Route path="admin/ingredients" element={<AdminRoute><Ingredients /></AdminRoute>} />
         <Route path="admin/ingredient-groups" element={<AdminRoute><IngredientGroups /></AdminRoute>} />
-        <Route path="admin/supplies" element={<AdminRoute><Supplies /></AdminRoute>} />
+        <Route path="admin/supplies" element={<AdminRoute><FeatureRoute feature="inventory"><Supplies /></FeatureRoute></AdminRoute>} />
         <Route path="admin/register" element={<Register />} />
         <Route path="admin/users" element={<AdminRoute><Users /></AdminRoute>} />
-        <Route path="admin/inventory" element={<AdminRoute><Inventory /></AdminRoute>} />
-        <Route path="admin/inventory-check" element={<AdminRoute><InventoryCheck /></AdminRoute>} />
+        <Route path="admin/inventory" element={<AdminRoute><FeatureRoute feature="inventory"><Inventory /></FeatureRoute></AdminRoute>} />
+        <Route path="admin/inventory-check" element={<AdminRoute><FeatureRoute feature="inventory"><InventoryCheck /></FeatureRoute></AdminRoute>} />
         <Route path="admin/settings" element={<AdminRoute><TenantSettings /></AdminRoute>} />
         <Route path="admin/integrations" element={<AdminRoute><IntegrationSettings /></AdminRoute>} />
         <Route path="admin/egais" element={<AdminRoute><EgaisDocuments /></AdminRoute>} />
@@ -144,8 +150,8 @@ function MainDomainApp() {
         <Route path="admin/guests" element={<AdminRoute><Guests /></AdminRoute>} />
         <Route path="admin/schedule" element={<AdminRoute><Schedule /></AdminRoute>} />
         <Route path="admin/salary" element={<AdminRoute><Salary /></AdminRoute>} />
-        <Route path="dashboard" element={<CashierAllowedRoute><Dashboard /></CashierAllowedRoute>} />
-        <Route path="stats" element={<StatsRoute />} />
+        <Route path="dashboard" element={<CashierAllowedRoute><FeatureRoute feature="reports"><Dashboard /></FeatureRoute></CashierAllowedRoute>} />
+        <Route path="stats" element={<FeatureRoute feature="reports"><StatsRoute /></FeatureRoute>} />
       </Route>
     </Routes>
   );

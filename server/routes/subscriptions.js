@@ -9,18 +9,27 @@ router.use(authMiddleware);
 router.get('/', async (req, res) => {
   const subscription = await get(`
     SELECT s.*, p.name as plan_name, p.price as plan_price,
-           p.max_users, p.max_halls, p.max_products, p.features
+           p.max_users, p.max_halls, p.max_products, p.max_orders_monthly, p.features
     FROM subscriptions s
     JOIN plans p ON s.plan_id = p.id
     WHERE s.tenant_id = $1
     ORDER BY s.id DESC LIMIT 1
   `, [req.tenantId]);
 
+  let usage = {};
+  if (subscription && subscription.max_orders_monthly) {
+    const orderCount = await get(
+      `SELECT COUNT(*)::int as count FROM orders WHERE tenant_id = $1 AND created_at >= date_trunc('month', NOW())`,
+      [req.tenantId]
+    );
+    usage.monthly_orders = orderCount ? orderCount.count : 0;
+  }
+
   const plans = await all(`
     SELECT DISTINCT ON (name) * FROM plans WHERE active = true ORDER BY name, id
   `);
   const plansSorted = plans.sort((a, b) => (parseFloat(a.price) || 0) - (parseFloat(b.price) || 0));
-  res.json({ subscription, plans: plansSorted });
+  res.json({ subscription, plans: plansSorted, usage });
 });
 
 router.post('/change-plan', ownerOnly, async (req, res) => {

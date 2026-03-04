@@ -5,8 +5,10 @@ import { Plus, Pencil, Trash2, X, FolderOpen } from 'lucide-react';
 import ModalOverlay from '../../components/ModalOverlay';
 import TabNav from '../../components/TabNav';
 import { CATALOG_TABS } from '../../constants/tabGroups';
+import { useAuthStore } from '../../store/authStore';
 
 export default function IngredientGroups() {
+  const hasCostPrice = useAuthStore((s) => s.plan?.features?.cost_price === true);
   const [groups, setGroups] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -121,7 +123,7 @@ export default function IngredientGroups() {
                     <td style={{ paddingLeft: 40, fontSize: 13 }}>{m.name}</td>
                     <td style={{ fontSize: 13 }}>{m.unit}</td>
                     <td style={{ fontSize: 13 }}>—</td>
-                    <td style={{ fontSize: 13 }}>{Number(m.quantity).toFixed(1)} {m.unit} (себест. {Number(m.cost_price).toFixed(2)} ₽)</td>
+                    <td style={{ fontSize: 13 }}>{Number(m.quantity).toFixed(1)} {m.unit}{hasCostPrice ? ` (себест. ${Number(m.cost_price).toFixed(2)} ₽)` : ''}</td>
                     <td></td>
                   </tr>
                 ))}
