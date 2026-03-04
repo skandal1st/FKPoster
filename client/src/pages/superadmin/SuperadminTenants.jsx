@@ -116,6 +116,9 @@ export default function SuperadminTenants() {
               <thead>
                 <tr>
                   <th>Название</th>
+                  <th>Город</th>
+                  <th>Администратор</th>
+                  <th>Телефон</th>
                   <th>Slug</th>
                   <th>План</th>
                   <th>Статус подписки</th>
@@ -131,6 +134,9 @@ export default function SuperadminTenants() {
                         {t.name}
                       </span>
                     </td>
+                    <td>{t.city || '—'}</td>
+                    <td>{t.owner_name || '—'}</td>
+                    <td>{t.owner_phone || '—'}</td>
                     <td><code style={{ fontSize: 13 }}>{t.slug}</code></td>
                     <td>{t.plan_name || '—'}</td>
                     <td>

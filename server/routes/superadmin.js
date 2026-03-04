@@ -12,9 +12,10 @@ router.use(authMiddleware, superadminOnly);
 /** Список заведений с подпиской (одна строка на заведение, подписка — последняя активная) */
 router.get('/tenants', async (req, res) => {
   const tenants = await all(`
-    SELECT t.id, t.name, t.slug, t.created_at,
+    SELECT t.id, t.name, t.slug, t.city, t.created_at,
            s.id AS subscription_id, s.status AS subscription_status, s.current_period_end,
-           p.name AS plan_name, p.price AS plan_price
+           p.name AS plan_name, p.price AS plan_price,
+           owner.name AS owner_name, owner.phone AS owner_phone
     FROM tenants t
     LEFT JOIN LATERAL (
       SELECT id, tenant_id, status, current_period_end, plan_id
@@ -24,6 +25,11 @@ router.get('/tenants', async (req, res) => {
       LIMIT 1
     ) s ON true
     LEFT JOIN plans p ON p.id = s.plan_id
+    LEFT JOIN LATERAL (
+      SELECT name, phone FROM users
+      WHERE tenant_id = t.id AND role = 'owner' AND active = true
+      ORDER BY id LIMIT 1
+    ) owner ON true
     ORDER BY t.name
   `);
   res.json(tenants);

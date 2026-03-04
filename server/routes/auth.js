@@ -72,7 +72,7 @@ router.post('/login', async (req, res) => {
 });
 
 router.post('/register', async (req, res) => {
-  const { company_name, name, email, password, slug: requestedSlug } = req.body;
+  const { company_name, name, email, password, slug: requestedSlug, phone, city } = req.body;
   if (!company_name || !name || !email || !password) {
     return res.status(400).json({ error: 'Заполните все поля' });
   }
@@ -104,15 +104,15 @@ router.post('/register', async (req, res) => {
 
   const result = await transaction(async (tx) => {
     const tenantRes = await tx.run(
-      'INSERT INTO tenants (name, slug) VALUES ($1, $2) RETURNING id',
-      [company_name, slug]
+      'INSERT INTO tenants (name, slug, city) VALUES ($1, $2, $3) RETURNING id',
+      [company_name, slug, city || null]
     );
     const tenantId = tenantRes.id;
 
     const hash = await bcrypt.hash(password, 10);
     const userRes = await tx.run(
-      'INSERT INTO users (email, username, password, name, role, tenant_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
-      [email, email, hash, name, 'owner', tenantId]
+      'INSERT INTO users (email, username, password, name, role, tenant_id, phone) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id',
+      [email, email, hash, name, 'owner', tenantId, phone || null]
     );
     const userId = userRes.id;
 

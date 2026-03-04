@@ -23,6 +23,7 @@ async function runMigrations() {
     require('./017_performance_indexes'),
     require('./018_salary_module'),
     require('./019_free_plan_limits'),
+    require('./020_phone_city'),
   ];
 
   for (const migration of migrations) {
