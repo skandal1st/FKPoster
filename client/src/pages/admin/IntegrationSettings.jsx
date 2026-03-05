@@ -15,6 +15,16 @@ export default function IntegrationSettings() {
     chestniy_znak_token: '',
     chestniy_znak_omsid: '',
     chestniy_znak_environment: 'sandbox',
+    edo_enabled: false,
+    edo_provider: '',
+    edo_sbis_login: '',
+    edo_sbis_password: '',
+    edo_sbis_app_client_id: '',
+    edo_sbis_app_secret: '',
+    edo_diadoc_api_key: '',
+    edo_diadoc_login: '',
+    edo_diadoc_password: '',
+    edo_diadoc_box_id: '',
   });
   const [testResults, setTestResults] = useState({});
 
@@ -32,6 +42,16 @@ export default function IntegrationSettings() {
         chestniy_znak_token: data.chestniy_znak_token || '',
         chestniy_znak_omsid: data.chestniy_znak_omsid || '',
         chestniy_znak_environment: data.chestniy_znak_environment || 'sandbox',
+        edo_enabled: data.edo_enabled || false,
+        edo_provider: data.edo_provider || '',
+        edo_sbis_login: data.edo_sbis_login || '',
+        edo_sbis_password: data.edo_sbis_password || '',
+        edo_sbis_app_client_id: data.edo_sbis_app_client_id || '',
+        edo_sbis_app_secret: data.edo_sbis_app_secret || '',
+        edo_diadoc_api_key: data.edo_diadoc_api_key || '',
+        edo_diadoc_login: data.edo_diadoc_login || '',
+        edo_diadoc_password: data.edo_diadoc_password || '',
+        edo_diadoc_box_id: data.edo_diadoc_box_id || '',
       });
     } catch (err) {
       toast.error(err.message);
@@ -73,6 +93,17 @@ export default function IntegrationSettings() {
       toast(result.success ? 'API доступен' : result.message, { icon: result.success ? '✓' : 'ℹ' });
     } catch (err) {
       setTestResults((prev) => ({ ...prev, cz: { success: false, message: err.message } }));
+      toast.error(err.message);
+    }
+  };
+
+  const testEdo = async () => {
+    try {
+      const result = await api.post('/edo/test-connection');
+      setTestResults((prev) => ({ ...prev, edo: result }));
+      toast(result.success ? 'Подключение установлено' : result.message, { icon: result.success ? '✓' : 'ℹ' });
+    } catch (err) {
+      setTestResults((prev) => ({ ...prev, edo: { success: false, message: err.message } }));
       toast.error(err.message);
     }
   };
@@ -211,6 +242,148 @@ export default function IntegrationSettings() {
                 {testResults.cz.success ? <Wifi size={14} /> : <WifiOff size={14} />}
                 {' '}{testResults.cz.message}
               </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* ЭДО (СБИС / Диадок) */}
+      <div className="card" style={{ marginTop: 20 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <h2 style={{ margin: 0, fontSize: 18 }}>ЭДО (электронный документооборот)</h2>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={form.edo_enabled}
+              onChange={(e) => setForm({ ...form, edo_enabled: e.target.checked })}
+            />
+            Включено
+          </label>
+        </div>
+
+        {form.edo_enabled && (
+          <>
+            <div className="form-group">
+              <label className="form-label">Провайдер ЭДО</label>
+              <select
+                className="form-input"
+                value={form.edo_provider}
+                onChange={(e) => setForm({ ...form, edo_provider: e.target.value })}
+              >
+                <option value="">Выберите провайдер</option>
+                <option value="sbis">СБИС</option>
+                <option value="diadoc">Диадок (Контур)</option>
+              </select>
+            </div>
+
+            {form.edo_provider === 'sbis' && (
+              <>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Логин СБИС</label>
+                    <input
+                      className="form-input"
+                      value={form.edo_sbis_login}
+                      onChange={(e) => setForm({ ...form, edo_sbis_login: e.target.value })}
+                      placeholder="Логин"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Пароль СБИС</label>
+                    <input
+                      className="form-input"
+                      type="password"
+                      value={form.edo_sbis_password}
+                      onChange={(e) => setForm({ ...form, edo_sbis_password: e.target.value })}
+                      placeholder="Пароль"
+                    />
+                  </div>
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">App Client ID</label>
+                    <input
+                      className="form-input"
+                      value={form.edo_sbis_app_client_id}
+                      onChange={(e) => setForm({ ...form, edo_sbis_app_client_id: e.target.value })}
+                      placeholder="Идентификатор приложения"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">App Secret</label>
+                    <input
+                      className="form-input"
+                      type="password"
+                      value={form.edo_sbis_app_secret}
+                      onChange={(e) => setForm({ ...form, edo_sbis_app_secret: e.target.value })}
+                      placeholder="Секрет приложения"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {form.edo_provider === 'diadoc' && (
+              <>
+                <div className="form-group">
+                  <label className="form-label">API ключ Диадок</label>
+                  <input
+                    className="form-input"
+                    type="password"
+                    value={form.edo_diadoc_api_key}
+                    onChange={(e) => setForm({ ...form, edo_diadoc_api_key: e.target.value })}
+                    placeholder="API ключ (получить в ЛК Контур)"
+                  />
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Логин Диадок</label>
+                    <input
+                      className="form-input"
+                      value={form.edo_diadoc_login}
+                      onChange={(e) => setForm({ ...form, edo_diadoc_login: e.target.value })}
+                      placeholder="Логин"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Пароль Диадок</label>
+                    <input
+                      className="form-input"
+                      type="password"
+                      value={form.edo_diadoc_password}
+                      onChange={(e) => setForm({ ...form, edo_diadoc_password: e.target.value })}
+                      placeholder="Пароль"
+                    />
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Box ID</label>
+                  <input
+                    className="form-input"
+                    value={form.edo_diadoc_box_id}
+                    onChange={(e) => setForm({ ...form, edo_diadoc_box_id: e.target.value })}
+                    placeholder="Идентификатор ящика (из настроек Диадок)"
+                  />
+                </div>
+              </>
+            )}
+
+            {form.edo_provider && (
+              <>
+                <button className="btn btn-ghost btn-sm" onClick={testEdo} style={{ marginTop: 8 }}>
+                  <Wifi size={14} /> Тест подключения
+                </button>
+                {testResults.edo && (
+                  <div style={{
+                    marginTop: 8, padding: '8px 12px', borderRadius: 4, fontSize: 13,
+                    background: testResults.edo.success ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
+                    color: testResults.edo.success ? 'var(--success)' : 'var(--text-secondary)',
+                  }}>
+                    {testResults.edo.success ? <Wifi size={14} /> : <WifiOff size={14} />}
+                    {' '}{testResults.edo.message}
+                  </div>
+                )}
+              </>
             )}
           </>
         )}

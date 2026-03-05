@@ -129,9 +129,57 @@ function buildQueryAP({ fsrarId, registerType = 'reg2' }) {
 </ns:Documents>`;
 }
 
+// Исходящая ТТН (для межзаведенческого перемещения)
+function buildOutgoingWayBill({ fsrarId, consigneeFsrarId, items, number, note = '' }) {
+  const identity = `WB_${Date.now()}`;
+  const today = new Date().toISOString().split('T')[0];
+
+  const itemsXml = items.map((item, i) => `
+      <wb:Position>
+        <wb:Identity>${i + 1}</wb:Identity>
+        <wb:Product>
+          <pref:AlcCode>${escapeXml(item.alcocode)}</pref:AlcCode>
+        </wb:Product>
+        <wb:Quantity>${item.quantity}</wb:Quantity>
+        <wb:Price>${item.price || 0}</wb:Price>
+        <wb:FARegId>${escapeXml(item.informARegId || '')}</wb:FARegId>
+        <wb:InformF2RegId>${escapeXml(item.informBRegId || '')}</wb:InformF2RegId>
+      </wb:Position>`).join('');
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<ns:Documents Version="1" xmlns:ns="http://fsrar.ru/WEGAIS/WB_DOC_SINGLE_01"
+  xmlns:wb="http://fsrar.ru/WEGAIS/TTNSingle_v4"
+  xmlns:pref="http://fsrar.ru/WEGAIS/ProductRef_v2">
+  <ns:Owner>
+    <ns:FSRAR_ID>${escapeXml(fsrarId)}</ns:FSRAR_ID>
+  </ns:Owner>
+  <ns:Document>
+    <ns:WayBill>
+      <wb:Identity>${escapeXml(identity)}</wb:Identity>
+      <wb:Header>
+        <wb:NUMBER>${escapeXml(number || identity)}</wb:NUMBER>
+        <wb:Date>${today}</wb:Date>
+        <wb:ShippingDate>${today}</wb:ShippingDate>
+        <wb:Type>WBInvoiceFromMe</wb:Type>
+        <wb:Shipper>
+          <wb:ClientRegId>${escapeXml(fsrarId)}</wb:ClientRegId>
+        </wb:Shipper>
+        <wb:Consignee>
+          <wb:ClientRegId>${escapeXml(consigneeFsrarId)}</wb:ClientRegId>
+        </wb:Consignee>
+        <wb:Note>${escapeXml(note)}</wb:Note>
+      </wb:Header>
+      <wb:Content>${itemsXml}
+      </wb:Content>
+    </ns:WayBill>
+  </ns:Document>
+</ns:Documents>`;
+}
+
 module.exports = {
   buildWayBillAct,
   buildTransferToShop,
   buildActWriteOff,
   buildQueryAP,
+  buildOutgoingWayBill,
 };

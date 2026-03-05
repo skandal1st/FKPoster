@@ -24,13 +24,39 @@ router.get('/', async (req, res) => {
       chestniy_znak_token: null,
       chestniy_znak_omsid: null,
       chestniy_znak_environment: 'sandbox',
+      edo_enabled: false,
+      edo_provider: null,
+      edo_sbis_login: null,
+      edo_sbis_password: null,
+      edo_sbis_app_client_id: null,
+      edo_sbis_app_secret: null,
+      edo_diadoc_api_key: null,
+      edo_diadoc_login: null,
+      edo_diadoc_password: null,
+      edo_diadoc_box_id: null,
     };
   }
 
-  // Не отправляем токен ЧЗ в открытом виде
+  // Не отправляем токены/пароли в открытом виде
   if (integrations.chestniy_znak_token) {
     integrations.chestniy_znak_token_set = true;
     integrations.chestniy_znak_token = '••••••••';
+  }
+  if (integrations.edo_sbis_password) {
+    integrations.edo_sbis_password_set = true;
+    integrations.edo_sbis_password = '••••••••';
+  }
+  if (integrations.edo_sbis_app_secret) {
+    integrations.edo_sbis_app_secret_set = true;
+    integrations.edo_sbis_app_secret = '••••••••';
+  }
+  if (integrations.edo_diadoc_api_key) {
+    integrations.edo_diadoc_api_key_set = true;
+    integrations.edo_diadoc_api_key = '••••••••';
+  }
+  if (integrations.edo_diadoc_password) {
+    integrations.edo_diadoc_password_set = true;
+    integrations.edo_diadoc_password = '••••••••';
   }
 
   res.json(integrations);
@@ -41,6 +67,9 @@ router.put('/', ownerOnly, async (req, res) => {
   const {
     egais_enabled, egais_utm_host, egais_utm_port, egais_fsrar_id,
     chestniy_znak_enabled, chestniy_znak_token, chestniy_znak_omsid, chestniy_znak_environment,
+    edo_enabled, edo_provider,
+    edo_sbis_login, edo_sbis_password, edo_sbis_app_client_id, edo_sbis_app_secret,
+    edo_diadoc_api_key, edo_diadoc_login, edo_diadoc_password, edo_diadoc_box_id,
   } = req.body;
 
   const existing = await get(
@@ -48,26 +77,38 @@ router.put('/', ownerOnly, async (req, res) => {
     [req.tenantId]
   );
 
-  if (existing) {
-    // Если токен = маска, не обновляем его
-    const tokenUpdate = chestniy_znak_token && !chestniy_znak_token.includes('••••')
-      ? chestniy_znak_token
-      : undefined;
+  // Фильтр: если значение = маска, не обновляем
+  const notMask = (v) => v && !String(v).includes('••••') ? v : undefined;
 
+  if (existing) {
     let sql = `UPDATE tenant_integrations SET
       egais_enabled = $1, egais_utm_host = $2, egais_utm_port = $3, egais_fsrar_id = $4,
       chestniy_znak_enabled = $5, chestniy_znak_omsid = $6, chestniy_znak_environment = $7,
+      edo_enabled = $8, edo_provider = $9, edo_sbis_login = $10,
+      edo_sbis_app_client_id = $11, edo_diadoc_login = $12, edo_diadoc_box_id = $13,
       updated_at = NOW()`;
     const params = [
       egais_enabled ?? false, egais_utm_host || 'localhost', egais_utm_port || 8080,
       egais_fsrar_id || null,
       chestniy_znak_enabled ?? false, chestniy_znak_omsid || null,
       chestniy_znak_environment || 'sandbox',
+      edo_enabled ?? false, edo_provider || null, edo_sbis_login || null,
+      edo_sbis_app_client_id || null, edo_diadoc_login || null, edo_diadoc_box_id || null,
     ];
 
-    if (tokenUpdate !== undefined) {
-      sql += `, chestniy_znak_token = $${params.length + 1}`;
-      params.push(tokenUpdate);
+    // Секретные поля — обновляем только если не маска
+    const secrets = [
+      ['chestniy_znak_token', notMask(chestniy_znak_token)],
+      ['edo_sbis_password', notMask(edo_sbis_password)],
+      ['edo_sbis_app_secret', notMask(edo_sbis_app_secret)],
+      ['edo_diadoc_api_key', notMask(edo_diadoc_api_key)],
+      ['edo_diadoc_password', notMask(edo_diadoc_password)],
+    ];
+    for (const [col, val] of secrets) {
+      if (val !== undefined) {
+        sql += `, ${col} = $${params.length + 1}`;
+        params.push(val);
+      }
     }
 
     sql += ` WHERE tenant_id = $${params.length + 1}`;
@@ -77,14 +118,20 @@ router.put('/', ownerOnly, async (req, res) => {
   } else {
     await run(
       `INSERT INTO tenant_integrations (tenant_id, egais_enabled, egais_utm_host, egais_utm_port, egais_fsrar_id,
-        chestniy_znak_enabled, chestniy_znak_token, chestniy_znak_omsid, chestniy_znak_environment)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        chestniy_znak_enabled, chestniy_znak_token, chestniy_znak_omsid, chestniy_znak_environment,
+        edo_enabled, edo_provider, edo_sbis_login, edo_sbis_password, edo_sbis_app_client_id, edo_sbis_app_secret,
+        edo_diadoc_api_key, edo_diadoc_login, edo_diadoc_password, edo_diadoc_box_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)`,
       [
         req.tenantId,
         egais_enabled ?? false, egais_utm_host || 'localhost', egais_utm_port || 8080,
         egais_fsrar_id || null,
-        chestniy_znak_enabled ?? false, chestniy_znak_token || null,
+        chestniy_znak_enabled ?? false, notMask(chestniy_znak_token) || null,
         chestniy_znak_omsid || null, chestniy_znak_environment || 'sandbox',
+        edo_enabled ?? false, edo_provider || null, edo_sbis_login || null,
+        notMask(edo_sbis_password) || null, edo_sbis_app_client_id || null, notMask(edo_sbis_app_secret) || null,
+        notMask(edo_diadoc_api_key) || null, edo_diadoc_login || null,
+        notMask(edo_diadoc_password) || null, edo_diadoc_box_id || null,
       ]
     );
   }

@@ -28,11 +28,32 @@ export default function TenantSettings() {
 
   const [orderUsage, setOrderUsage] = useState(null);
 
+  // Legal entity
+  const [legalForm, setLegalForm] = useState({
+    legal_name: '', inn: '', kpp: '', ogrn: '',
+    legal_address: '', actual_address: '', director_name: '',
+    bank_name: '', bank_bik: '', bank_account: '', bank_corr_account: '',
+  });
+  const [savingLegal, setSavingLegal] = useState(false);
+
   useEffect(() => {
     if (tenant) {
       setName(tenant.name || '');
       setLogoUrl(tenant.logo_url || '');
       setAccentColor(tenant.accent_color || '#6366f1');
+      setLegalForm({
+        legal_name: tenant.legal_name || '',
+        inn: tenant.inn || '',
+        kpp: tenant.kpp || '',
+        ogrn: tenant.ogrn || '',
+        legal_address: tenant.legal_address || '',
+        actual_address: tenant.actual_address || '',
+        director_name: tenant.director_name || '',
+        bank_name: tenant.bank_name || '',
+        bank_bik: tenant.bank_bik || '',
+        bank_account: tenant.bank_account || '',
+        bank_corr_account: tenant.bank_corr_account || '',
+      });
     }
     api.get('/subscription').then((d) => {
       setSubscription(d.subscription);
@@ -68,6 +89,20 @@ export default function TenantSettings() {
       toast.error(err.message);
     } finally {
       setSavingPrint(false);
+    }
+  };
+
+  const handleSaveLegal = async (e) => {
+    e.preventDefault();
+    setSavingLegal(true);
+    try {
+      const updated = await api.put('/tenant', legalForm);
+      setTenant(updated);
+      toast.success('Реквизиты сохранены');
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setSavingLegal(false);
     }
   };
 
@@ -238,6 +273,69 @@ export default function TenantSettings() {
           )}
         </div>
       </div>
+
+      {isOwner && (
+        <div className="card" style={{ marginTop: 24 }}>
+          <h3 style={{ marginBottom: 16 }}>Реквизиты юрлица</h3>
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16 }}>
+            Необходимы для формирования УПД, актов и работы с ЭДО.
+          </p>
+          <form onSubmit={handleSaveLegal}>
+            <div className="form-group">
+              <label className="form-label">Полное наименование организации</label>
+              <input className="form-input" value={legalForm.legal_name} onChange={(e) => setLegalForm({ ...legalForm, legal_name: e.target.value })} placeholder='ООО "Кальянная"' />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+              <div className="form-group">
+                <label className="form-label">ИНН</label>
+                <input className="form-input" value={legalForm.inn} onChange={(e) => setLegalForm({ ...legalForm, inn: e.target.value })} maxLength={12} placeholder="1234567890" />
+              </div>
+              <div className="form-group">
+                <label className="form-label">КПП</label>
+                <input className="form-input" value={legalForm.kpp} onChange={(e) => setLegalForm({ ...legalForm, kpp: e.target.value })} maxLength={9} placeholder="123456789" />
+              </div>
+              <div className="form-group">
+                <label className="form-label">ОГРН</label>
+                <input className="form-input" value={legalForm.ogrn} onChange={(e) => setLegalForm({ ...legalForm, ogrn: e.target.value })} maxLength={15} placeholder="1234567890123" />
+              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Юридический адрес</label>
+              <input className="form-input" value={legalForm.legal_address} onChange={(e) => setLegalForm({ ...legalForm, legal_address: e.target.value })} placeholder="г. Москва, ул. Примерная, д. 1" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Фактический адрес</label>
+              <input className="form-input" value={legalForm.actual_address} onChange={(e) => setLegalForm({ ...legalForm, actual_address: e.target.value })} placeholder="г. Москва, ул. Примерная, д. 1" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Руководитель (ФИО)</label>
+              <input className="form-input" value={legalForm.director_name} onChange={(e) => setLegalForm({ ...legalForm, director_name: e.target.value })} placeholder="Иванов Иван Иванович" />
+            </div>
+            <h4 style={{ marginTop: 16, marginBottom: 12 }}>Банковские реквизиты</h4>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div className="form-group">
+                <label className="form-label">Банк</label>
+                <input className="form-input" value={legalForm.bank_name} onChange={(e) => setLegalForm({ ...legalForm, bank_name: e.target.value })} placeholder="ПАО Сбербанк" />
+              </div>
+              <div className="form-group">
+                <label className="form-label">БИК</label>
+                <input className="form-input" value={legalForm.bank_bik} onChange={(e) => setLegalForm({ ...legalForm, bank_bik: e.target.value })} maxLength={9} placeholder="044525225" />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Расчётный счёт</label>
+                <input className="form-input" value={legalForm.bank_account} onChange={(e) => setLegalForm({ ...legalForm, bank_account: e.target.value })} maxLength={20} placeholder="40702810000000000000" />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Корр. счёт</label>
+                <input className="form-input" value={legalForm.bank_corr_account} onChange={(e) => setLegalForm({ ...legalForm, bank_corr_account: e.target.value })} maxLength={20} placeholder="30101810400000000225" />
+              </div>
+            </div>
+            <button className="btn btn-primary" type="submit" disabled={savingLegal} style={{ marginTop: 8 }}>
+              {savingLegal ? 'Сохранение...' : 'Сохранить реквизиты'}
+            </button>
+          </form>
+        </div>
+      )}
 
       <div className="card" style={{ marginTop: 24 }}>
         <h3 style={{ marginBottom: 16 }}>Настройки печати</h3>

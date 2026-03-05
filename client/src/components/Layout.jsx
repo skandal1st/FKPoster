@@ -6,7 +6,7 @@ import {
   Map, Package, Settings,
   CreditCard, Users, BarChart3, LogOut, Boxes, LayoutDashboard,
   Building2, LogIn, ScanBarcode, Wine, Tag, UserCircle,
-  ChevronLeft, ChevronRight, Link2
+  ChevronLeft, ChevronRight, Link2, FileText, BookUser, PackageCheck, Truck
 } from 'lucide-react';
 import { CATALOG_TABS, STOCK_TABS, STAFF_TABS } from '../constants/tabGroups';
 
@@ -44,6 +44,8 @@ export default function Layout() {
   }, [isAdmin, hasInventory]);
 
   const hasMarking = integrations && (integrations.egais_enabled || integrations.chestniy_znak_enabled);
+  const hasEdo = integrations && integrations.edo_enabled;
+  const hasChainFeature = plan?.features?.chain_management === true;
 
   const handleExitImpersonation = async () => {
     await exitImpersonation();
@@ -154,6 +156,25 @@ export default function Layout() {
             </div>
           )}
 
+          {isAdmin && (hasEdo || hasMarking) && (
+            <div className="sidebar-section">
+              <div className="sidebar-section-title">Документооборот</div>
+              {hasEdo && (
+                <NavLink to="/admin/edo" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="ЭДО документы">
+                  <FileText /><span className="sidebar-link-text">ЭДО документы</span>
+                </NavLink>
+              )}
+              <NavLink to="/admin/counterparties" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Контрагенты">
+                <BookUser /><span className="sidebar-link-text">Контрагенты</span>
+              </NavLink>
+              {(hasEdo || hasMarking) && (
+                <NavLink to="/admin/receiving" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Приёмка">
+                  <PackageCheck /><span className="sidebar-link-text">Приёмка</span>
+                </NavLink>
+              )}
+            </div>
+          )}
+
           {hasReports && (
             <div className="sidebar-section">
               <div className="sidebar-section-title">Аналитика</div>
@@ -192,6 +213,9 @@ export default function Layout() {
               </NavLink>
               <NavLink to="/chain/tenants" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Заведения сети">
                 <Building2 /><span className="sidebar-link-text">Заведения сети</span>
+              </NavLink>
+              <NavLink to="/chain/transfers" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Перемещения">
+                <Truck /><span className="sidebar-link-text">Перемещения</span>
               </NavLink>
             </div>
           )}

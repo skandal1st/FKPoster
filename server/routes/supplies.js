@@ -22,7 +22,7 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-  const { supplier, note, items } = req.body;
+  const { supplier, note, items, counterparty_id, edo_document_id, egais_document_id, chain_transfer_id } = req.body;
   if (!items || items.length === 0) {
     return res.status(400).json({ error: 'Добавьте хотя бы одну позицию' });
   }
@@ -34,8 +34,10 @@ router.post('/', async (req, res) => {
     }
 
     const supplyRes = await tx.run(
-      'INSERT INTO supplies (supplier, note, total, user_id, tenant_id) VALUES ($1, $2, $3, $4, $5) RETURNING id',
-      [supplier || '', note || '', total, req.user.id, req.tenantId]
+      `INSERT INTO supplies (supplier, note, total, user_id, tenant_id, counterparty_id, edo_document_id, egais_document_id, chain_transfer_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
+      [supplier || '', note || '', total, req.user.id, req.tenantId,
+       counterparty_id || null, edo_document_id || null, egais_document_id || null, chain_transfer_id || null]
     );
     const supplyId = supplyRes.id;
 

@@ -24,6 +24,7 @@ async function runMigrations() {
     require('./018_salary_module'),
     require('./019_free_plan_limits'),
     require('./020_phone_city'),
+    require('./021_edo_integration'),
   ];
 
   for (const migration of migrations) {

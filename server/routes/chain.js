@@ -512,4 +512,228 @@ router.get('/stats/products', async (req, res) => {
   });
 });
 
+// ==================== Перемещения между заведениями ====================
+
+/** Создать перемещение */
+router.post('/transfers', async (req, res) => {
+  const chainId = req.chainId;
+  const { from_tenant_id, to_tenant_id, items, note, has_alcohol } = req.body;
+
+  if (!from_tenant_id || !to_tenant_id) {
+    return res.status(400).json({ error: 'Укажите заведение-отправитель и заведение-получатель' });
+  }
+  if (from_tenant_id === to_tenant_id) {
+    return res.status(400).json({ error: 'Отправитель и получатель не могут совпадать' });
+  }
+  if (!items || items.length === 0) {
+    return res.status(400).json({ error: 'Добавьте хотя бы одну позицию' });
+  }
+
+  // Проверяем что оба заведения в сети
+  const fromLink = await get('SELECT id FROM chain_tenants WHERE chain_id = $1 AND tenant_id = $2', [chainId, from_tenant_id]);
+  const toLink = await get('SELECT id FROM chain_tenants WHERE chain_id = $1 AND tenant_id = $2', [chainId, to_tenant_id]);
+  if (!fromLink || !toLink) {
+    return res.status(400).json({ error: 'Оба заведения должны быть в сети' });
+  }
+
+  const result = await transaction(async (tx) => {
+    const transferNumber = `TR-${chainId}-${Date.now()}`;
+    const transferRes = await tx.run(
+      `INSERT INTO chain_transfers (chain_id, from_tenant_id, to_tenant_id, status, transfer_number, has_alcohol, note, created_by)
+       VALUES ($1, $2, $3, 'draft', $4, $5, $6, $7) RETURNING id`,
+      [chainId, from_tenant_id, to_tenant_id, transferNumber, has_alcohol || false, note || null, req.user.id]
+    );
+
+    for (const item of items) {
+      await tx.run(
+        `INSERT INTO chain_transfer_items (transfer_id, product_id, product_name, quantity, unit, unit_cost, egais_alcocode)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [transferRes.id, item.product_id || null, item.product_name, item.quantity,
+         item.unit || 'шт', item.unit_cost || null, item.egais_alcocode || null]
+      );
+    }
+
+    return { id: transferRes.id, transfer_number: transferNumber };
+  });
+
+  res.json(result);
+});
+
+/** Список перемещений */
+router.get('/transfers', async (req, res) => {
+  const chainId = req.chainId;
+  const { status } = req.query;
+
+  let sql = `
+    SELECT ct.*,
+      ft.name as from_tenant_name, tt.name as to_tenant_name,
+      u.name as created_by_name
+    FROM chain_transfers ct
+    JOIN tenants ft ON ft.id = ct.from_tenant_id
+    JOIN tenants tt ON tt.id = ct.to_tenant_id
+    LEFT JOIN users u ON u.id = ct.created_by
+    WHERE ct.chain_id = $1`;
+  const params = [chainId];
+
+  if (status) {
+    sql += ' AND ct.status = $2';
+    params.push(status);
+  }
+
+  sql += ' ORDER BY ct.created_at DESC';
+  const transfers = await all(sql, params);
+  res.json(transfers);
+});
+
+/** Детали перемещения */
+router.get('/transfers/:id', async (req, res) => {
+  const chainId = req.chainId;
+  const transfer = await get(
+    `SELECT ct.*,
+      ft.name as from_tenant_name, tt.name as to_tenant_name,
+      u.name as created_by_name
+     FROM chain_transfers ct
+     JOIN tenants ft ON ft.id = ct.from_tenant_id
+     JOIN tenants tt ON tt.id = ct.to_tenant_id
+     LEFT JOIN users u ON u.id = ct.created_by
+     WHERE ct.id = $1 AND ct.chain_id = $2`,
+    [req.params.id, chainId]
+  );
+  if (!transfer) return res.status(404).json({ error: 'Перемещение не найдено' });
+
+  transfer.items = await all(
+    'SELECT * FROM chain_transfer_items WHERE transfer_id = $1',
+    [transfer.id]
+  );
+
+  res.json(transfer);
+});
+
+/** Одобрить перемещение (получатель) */
+router.post('/transfers/:id/approve', async (req, res) => {
+  const chainId = req.chainId;
+  const transfer = await get(
+    'SELECT * FROM chain_transfers WHERE id = $1 AND chain_id = $2',
+    [req.params.id, chainId]
+  );
+  if (!transfer) return res.status(404).json({ error: 'Перемещение не найдено' });
+  if (transfer.status !== 'draft') {
+    return res.status(400).json({ error: 'Перемещение можно одобрить только в статусе "черновик"' });
+  }
+
+  await run("UPDATE chain_transfers SET status = 'approved' WHERE id = $1", [transfer.id]);
+  res.json({ success: true, status: 'approved' });
+});
+
+/** Отметить отправку (отправитель) */
+router.post('/transfers/:id/ship', async (req, res) => {
+  const chainId = req.chainId;
+  const transfer = await get(
+    'SELECT * FROM chain_transfers WHERE id = $1 AND chain_id = $2',
+    [req.params.id, chainId]
+  );
+  if (!transfer) return res.status(404).json({ error: 'Перемещение не найдено' });
+  if (transfer.status !== 'approved') {
+    return res.status(400).json({ error: 'Перемещение можно отправить только в статусе "одобрено"' });
+  }
+
+  // Списываем остатки у отправителя
+  const items = await all('SELECT * FROM chain_transfer_items WHERE transfer_id = $1', [transfer.id]);
+  await transaction(async (tx) => {
+    for (const item of items) {
+      if (item.product_id) {
+        await tx.run(
+          'UPDATE products SET quantity = GREATEST(0, quantity - $1) WHERE id = $2 AND tenant_id = $3',
+          [item.quantity, item.product_id, transfer.from_tenant_id]
+        );
+      }
+    }
+    await tx.run("UPDATE chain_transfers SET status = 'in_transit' WHERE id = $1", [transfer.id]);
+  });
+
+  res.json({ success: true, status: 'in_transit' });
+});
+
+/** Подтвердить получение (получатель) */
+router.post('/transfers/:id/receive', async (req, res) => {
+  const chainId = req.chainId;
+  const { received_items } = req.body;
+
+  const transfer = await get(
+    'SELECT * FROM chain_transfers WHERE id = $1 AND chain_id = $2',
+    [req.params.id, chainId]
+  );
+  if (!transfer) return res.status(404).json({ error: 'Перемещение не найдено' });
+  if (transfer.status !== 'in_transit') {
+    return res.status(400).json({ error: 'Можно подтвердить получение только для перемещений в пути' });
+  }
+
+  const items = await all('SELECT * FROM chain_transfer_items WHERE transfer_id = $1', [transfer.id]);
+
+  await transaction(async (tx) => {
+    for (const item of items) {
+      const receivedQty = received_items
+        ? (received_items.find(ri => ri.id === item.id)?.received_quantity ?? item.quantity)
+        : item.quantity;
+
+      // Обновляем принятое количество
+      await tx.run(
+        'UPDATE chain_transfer_items SET received_quantity = $1 WHERE id = $2',
+        [receivedQty, item.id]
+      );
+
+      // Ищем соответствующий товар у получателя по имени
+      if (item.product_id) {
+        const receiverProduct = await tx.get(
+          'SELECT id FROM products WHERE tenant_id = $1 AND name = $2 AND active = true LIMIT 1',
+          [transfer.to_tenant_id, item.product_name]
+        );
+        if (receiverProduct) {
+          await tx.run(
+            'UPDATE products SET quantity = quantity + $1 WHERE id = $2 AND tenant_id = $3',
+            [receivedQty, receiverProduct.id, transfer.to_tenant_id]
+          );
+        }
+      }
+    }
+
+    await tx.run("UPDATE chain_transfers SET status = 'completed' WHERE id = $1", [transfer.id]);
+  });
+
+  res.json({ success: true, status: 'completed' });
+});
+
+/** Отменить перемещение */
+router.post('/transfers/:id/cancel', async (req, res) => {
+  const chainId = req.chainId;
+  const transfer = await get(
+    'SELECT * FROM chain_transfers WHERE id = $1 AND chain_id = $2',
+    [req.params.id, chainId]
+  );
+  if (!transfer) return res.status(404).json({ error: 'Перемещение не найдено' });
+  if (transfer.status === 'completed') {
+    return res.status(400).json({ error: 'Нельзя отменить завершённое перемещение' });
+  }
+
+  // Если товар уже был отправлен, возвращаем остатки отправителю
+  if (transfer.status === 'in_transit') {
+    const items = await all('SELECT * FROM chain_transfer_items WHERE transfer_id = $1', [transfer.id]);
+    await transaction(async (tx) => {
+      for (const item of items) {
+        if (item.product_id) {
+          await tx.run(
+            'UPDATE products SET quantity = quantity + $1 WHERE id = $2 AND tenant_id = $3',
+            [item.quantity, item.product_id, transfer.from_tenant_id]
+          );
+        }
+      }
+      await tx.run("UPDATE chain_transfers SET status = 'cancelled' WHERE id = $1", [transfer.id]);
+    });
+  } else {
+    await run("UPDATE chain_transfers SET status = 'cancelled' WHERE id = $1", [transfer.id]);
+  }
+
+  res.json({ success: true, status: 'cancelled' });
+});
+
 module.exports = router;

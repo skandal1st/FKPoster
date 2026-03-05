@@ -36,6 +36,10 @@ import ChainComparison from './pages/chain/ChainComparison';
 import ChainProducts from './pages/chain/ChainProducts';
 import Schedule from './pages/admin/Schedule';
 import Salary from './pages/admin/Salary';
+import EdoDocumentsPage from './pages/admin/EdoDocuments';
+import Counterparties from './pages/admin/Counterparties';
+import Receiving from './pages/admin/Receiving';
+import ChainTransfers from './pages/chain/ChainTransfers';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuthStore();
@@ -102,6 +106,10 @@ function SubdomainApp() {
         <Route path="admin/guests" element={<AdminRoute><Guests /></AdminRoute>} />
         <Route path="admin/schedule" element={<AdminRoute><Schedule /></AdminRoute>} />
         <Route path="admin/salary" element={<AdminRoute><Salary /></AdminRoute>} />
+        <Route path="admin/edo" element={<AdminRoute><FeatureRoute feature="edo"><EdoDocumentsPage /></FeatureRoute></AdminRoute>} />
+        <Route path="admin/counterparties" element={<AdminRoute><Counterparties /></AdminRoute>} />
+        <Route path="admin/receiving" element={<AdminRoute><Receiving /></AdminRoute>} />
+        <Route path="chain/transfers" element={<AdminRoute><ChainTransfers /></AdminRoute>} />
         <Route path="dashboard" element={<CashierAllowedRoute><FeatureRoute feature="reports"><Dashboard /></FeatureRoute></CashierAllowedRoute>} />
         <Route path="stats" element={<FeatureRoute feature="reports"><StatsRoute /></FeatureRoute>} />
       </Route>
@@ -150,6 +158,10 @@ function MainDomainApp() {
         <Route path="admin/guests" element={<AdminRoute><Guests /></AdminRoute>} />
         <Route path="admin/schedule" element={<AdminRoute><Schedule /></AdminRoute>} />
         <Route path="admin/salary" element={<AdminRoute><Salary /></AdminRoute>} />
+        <Route path="admin/edo" element={<AdminRoute><FeatureRoute feature="edo"><EdoDocumentsPage /></FeatureRoute></AdminRoute>} />
+        <Route path="admin/counterparties" element={<AdminRoute><Counterparties /></AdminRoute>} />
+        <Route path="admin/receiving" element={<AdminRoute><Receiving /></AdminRoute>} />
+        <Route path="chain/transfers" element={<AdminRoute><ChainTransfers /></AdminRoute>} />
         <Route path="dashboard" element={<CashierAllowedRoute><FeatureRoute feature="reports"><Dashboard /></FeatureRoute></CashierAllowedRoute>} />
         <Route path="stats" element={<FeatureRoute feature="reports"><StatsRoute /></FeatureRoute>} />
       </Route>

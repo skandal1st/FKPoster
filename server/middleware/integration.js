@@ -38,4 +38,14 @@ function requireChestniyZnak(req, res, next) {
   next();
 }
 
-module.exports = { loadIntegrations, requireEgais, requireChestniyZnak };
+function requireEdo(req, res, next) {
+  if (!req.integrations || !req.integrations.edo_enabled) {
+    return res.status(403).json({ error: 'Интеграция ЭДО не включена' });
+  }
+  if (!req.integrations.edo_provider) {
+    return res.status(403).json({ error: 'Не выбран провайдер ЭДО (СБИС или Диадок)' });
+  }
+  next();
+}
+
+module.exports = { loadIntegrations, requireEgais, requireChestniyZnak, requireEdo };

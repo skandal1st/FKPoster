@@ -9,7 +9,10 @@ router.use(authMiddleware);
 
 router.get('/', async (req, res) => {
   const tenant = await get(
-    'SELECT id, name, slug, logo_url, accent_color, day_end_hour, created_at FROM tenants WHERE id = $1',
+    `SELECT id, name, slug, logo_url, accent_color, day_end_hour, created_at,
+      legal_name, inn, kpp, ogrn, legal_address, actual_address, director_name,
+      bank_name, bank_bik, bank_account, bank_corr_account
+     FROM tenants WHERE id = $1`,
     [req.tenantId]
   );
   if (!tenant) return res.status(404).json({ error: 'Компания не найдена' });
@@ -17,18 +20,47 @@ router.get('/', async (req, res) => {
 });
 
 router.put('/', ownerOnly, async (req, res) => {
-  const { name, logo_url, accent_color, day_end_hour } = req.body;
+  const { name, logo_url, accent_color, day_end_hour,
+    legal_name, inn, kpp, ogrn, legal_address, actual_address, director_name,
+    bank_name, bank_bik, bank_account, bank_corr_account } = req.body;
   const tenant = await get('SELECT * FROM tenants WHERE id = $1', [req.tenantId]);
   if (!tenant) return res.status(404).json({ error: 'Компания не найдена' });
 
   const newDayEndHour = day_end_hour !== undefined ? Math.max(0, Math.min(12, parseInt(day_end_hour) || 0)) : tenant.day_end_hour;
 
   await run(
-    'UPDATE tenants SET name = $1, logo_url = $2, accent_color = $3, day_end_hour = $4 WHERE id = $5',
-    [name || tenant.name, logo_url !== undefined ? logo_url : tenant.logo_url, accent_color || tenant.accent_color, newDayEndHour, req.tenantId]
+    `UPDATE tenants SET name = $1, logo_url = $2, accent_color = $3, day_end_hour = $4,
+      legal_name = $5, inn = $6, kpp = $7, ogrn = $8,
+      legal_address = $9, actual_address = $10, director_name = $11,
+      bank_name = $12, bank_bik = $13, bank_account = $14, bank_corr_account = $15
+     WHERE id = $16`,
+    [
+      name || tenant.name,
+      logo_url !== undefined ? logo_url : tenant.logo_url,
+      accent_color || tenant.accent_color,
+      newDayEndHour,
+      legal_name !== undefined ? legal_name : tenant.legal_name,
+      inn !== undefined ? inn : tenant.inn,
+      kpp !== undefined ? kpp : tenant.kpp,
+      ogrn !== undefined ? ogrn : tenant.ogrn,
+      legal_address !== undefined ? legal_address : tenant.legal_address,
+      actual_address !== undefined ? actual_address : tenant.actual_address,
+      director_name !== undefined ? director_name : tenant.director_name,
+      bank_name !== undefined ? bank_name : tenant.bank_name,
+      bank_bik !== undefined ? bank_bik : tenant.bank_bik,
+      bank_account !== undefined ? bank_account : tenant.bank_account,
+      bank_corr_account !== undefined ? bank_corr_account : tenant.bank_corr_account,
+      req.tenantId,
+    ]
   );
 
-  const updated = await get('SELECT id, name, slug, logo_url, accent_color, day_end_hour FROM tenants WHERE id = $1', [req.tenantId]);
+  const updated = await get(
+    `SELECT id, name, slug, logo_url, accent_color, day_end_hour,
+      legal_name, inn, kpp, ogrn, legal_address, actual_address, director_name,
+      bank_name, bank_bik, bank_account, bank_corr_account
+     FROM tenants WHERE id = $1`,
+    [req.tenantId]
+  );
   invalidateTenant(tenant.slug);
   res.json(updated);
 });
