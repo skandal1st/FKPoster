@@ -122,11 +122,11 @@ async function up() {
   await run(`ALTER TABLE supplies ADD COLUMN IF NOT EXISTS egais_document_id INTEGER`);
   await run(`ALTER TABLE supplies ADD COLUMN IF NOT EXISTS chain_transfer_id INTEGER`);
 
-  // Feature gating: добавить 'edo' в features для pro и business планов
+  // Feature gating: добавить 'edo' в features для pro и Бизнес планов
   await run(`
     UPDATE plans SET features = features || '{"edo": true}'::jsonb
     WHERE features IS NOT NULL AND features::text != 'null'
-      AND (LOWER(name) IN ('pro', 'business') OR LOWER(code) IN ('pro', 'business'))
+      AND LOWER(name) IN ('pro', 'бизнес', 'business')
   `);
 
   console.log('Migration 021_edo_integration complete');
