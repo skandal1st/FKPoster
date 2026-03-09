@@ -11,6 +11,7 @@ export default function TenantSettings() {
   const [name, setName] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
   const [accentColor, setAccentColor] = useState('#6366f1');
+  const [showTableTimer, setShowTableTimer] = useState(true);
   const [saving, setSaving] = useState(false);
   const [subscription, setSubscription] = useState(null);
   const [usage, setUsage] = useState(null);
@@ -41,6 +42,7 @@ export default function TenantSettings() {
       setName(tenant.name || '');
       setLogoUrl(tenant.logo_url || '');
       setAccentColor(tenant.accent_color || '#6366f1');
+      setShowTableTimer(tenant.show_table_timer !== false);
       setLegalForm({
         legal_name: tenant.legal_name || '',
         inn: tenant.inn || '',
@@ -132,7 +134,7 @@ export default function TenantSettings() {
     e.preventDefault();
     setSaving(true);
     try {
-      const updated = await api.put('/tenant', { name, logo_url: logoUrl, accent_color: accentColor });
+      const updated = await api.put('/tenant', { name, logo_url: logoUrl, accent_color: accentColor, show_table_timer: showTableTimer });
       setTenant(updated);
       toast.success('Настройки сохранены');
     } catch (err) {
@@ -171,6 +173,15 @@ export default function TenantSettings() {
                 />
                 <input className="form-input" value={accentColor} onChange={(e) => setAccentColor(e.target.value)} style={{ width: 120 }} />
               </div>
+            </div>
+            <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input
+                type="checkbox"
+                id="showTableTimer"
+                checked={showTableTimer}
+                onChange={(e) => setShowTableTimer(e.target.checked)}
+              />
+              <label htmlFor="showTableTimer" style={{ cursor: 'pointer' }}>Показывать таймер на занятых столиках</label>
             </div>
             <button className="btn btn-primary" type="submit" disabled={saving}>
               {saving ? 'Сохранение...' : 'Сохранить'}

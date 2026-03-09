@@ -38,7 +38,7 @@ router.post('/login', async (req, res) => {
   let tenant = null;
   if (user.tenant_id) {
     tenant = await get(
-      'SELECT id, name, slug, logo_url, accent_color FROM tenants WHERE id = $1',
+      'SELECT id, name, slug, logo_url, accent_color, show_table_timer FROM tenants WHERE id = $1',
       [user.tenant_id]
     );
   }
@@ -140,7 +140,7 @@ router.post('/register', async (req, res) => {
   });
 
   const user = await get('SELECT id, email, name, role, tenant_id FROM users WHERE id = $1', [result.userId]);
-  const tenant = await get('SELECT id, name, slug, logo_url, accent_color FROM tenants WHERE id = $1', [result.tenantId]);
+  const tenant = await get('SELECT id, name, slug, logo_url, accent_color, show_table_timer FROM tenants WHERE id = $1', [result.tenantId]);
 
   const token = jwt.sign(
     { id: user.id, role: user.role, tenant_id: user.tenant_id },
@@ -182,7 +182,7 @@ router.post('/accept-invite', async (req, res) => {
   });
 
   const user = await get('SELECT id, email, name, role, tenant_id FROM users WHERE id = $1', [userId]);
-  const tenant = await get('SELECT id, name, slug, logo_url, accent_color FROM tenants WHERE id = $1', [user.tenant_id]);
+  const tenant = await get('SELECT id, name, slug, logo_url, accent_color, show_table_timer FROM tenants WHERE id = $1', [user.tenant_id]);
 
   const jwtToken = jwt.sign(
     { id: user.id, role: user.role, tenant_id: user.tenant_id },
@@ -244,7 +244,7 @@ router.post('/pin-login', async (req, res) => {
   );
 
   const tenant = await get(
-    'SELECT id, name, slug, logo_url, accent_color FROM tenants WHERE id = $1',
+    'SELECT id, name, slug, logo_url, accent_color, show_table_timer FROM tenants WHERE id = $1',
     [user.tenant_id]
   );
 
@@ -287,7 +287,7 @@ router.get('/me', authMiddleware, async (req, res) => {
   let tenant = null;
   if (req.user.tenant_id) {
     tenant = await get(
-      'SELECT id, name, slug, logo_url, accent_color FROM tenants WHERE id = $1',
+      'SELECT id, name, slug, logo_url, accent_color, show_table_timer FROM tenants WHERE id = $1',
       [req.user.tenant_id]
     );
   }

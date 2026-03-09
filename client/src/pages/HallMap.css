@@ -265,6 +265,13 @@
   margin-top: 4px;
 }
 
+.hall-table-timer {
+  font-size: 11px;
+  color: var(--warning);
+  font-weight: 600;
+  margin-top: 2px;
+}
+
 /* Кнопка удаления столика */
 .hall-table-delete {
   position: absolute;

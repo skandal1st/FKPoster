@@ -9,7 +9,7 @@ router.use(authMiddleware);
 
 router.get('/', async (req, res) => {
   const tenant = await get(
-    `SELECT id, name, slug, logo_url, accent_color, day_end_hour, created_at,
+    `SELECT id, name, slug, logo_url, accent_color, day_end_hour, show_table_timer, created_at,
       legal_name, inn, kpp, ogrn, legal_address, actual_address, director_name,
       bank_name, bank_bik, bank_account, bank_corr_account
      FROM tenants WHERE id = $1`,
@@ -20,7 +20,7 @@ router.get('/', async (req, res) => {
 });
 
 router.put('/', ownerOnly, async (req, res) => {
-  const { name, logo_url, accent_color, day_end_hour,
+  const { name, logo_url, accent_color, day_end_hour, show_table_timer,
     legal_name, inn, kpp, ogrn, legal_address, actual_address, director_name,
     bank_name, bank_bik, bank_account, bank_corr_account } = req.body;
   const tenant = await get('SELECT * FROM tenants WHERE id = $1', [req.tenantId]);
@@ -32,8 +32,9 @@ router.put('/', ownerOnly, async (req, res) => {
     `UPDATE tenants SET name = $1, logo_url = $2, accent_color = $3, day_end_hour = $4,
       legal_name = $5, inn = $6, kpp = $7, ogrn = $8,
       legal_address = $9, actual_address = $10, director_name = $11,
-      bank_name = $12, bank_bik = $13, bank_account = $14, bank_corr_account = $15
-     WHERE id = $16`,
+      bank_name = $12, bank_bik = $13, bank_account = $14, bank_corr_account = $15,
+      show_table_timer = $16
+     WHERE id = $17`,
     [
       name || tenant.name,
       logo_url !== undefined ? logo_url : tenant.logo_url,
@@ -50,12 +51,13 @@ router.put('/', ownerOnly, async (req, res) => {
       bank_bik !== undefined ? bank_bik : tenant.bank_bik,
       bank_account !== undefined ? bank_account : tenant.bank_account,
       bank_corr_account !== undefined ? bank_corr_account : tenant.bank_corr_account,
+      show_table_timer !== undefined ? show_table_timer : tenant.show_table_timer,
       req.tenantId,
     ]
   );
 
   const updated = await get(
-    `SELECT id, name, slug, logo_url, accent_color, day_end_hour,
+    `SELECT id, name, slug, logo_url, accent_color, day_end_hour, show_table_timer,
       legal_name, inn, kpp, ogrn, legal_address, actual_address, director_name,
       bank_name, bank_bik, bank_account, bank_corr_account
      FROM tenants WHERE id = $1`,

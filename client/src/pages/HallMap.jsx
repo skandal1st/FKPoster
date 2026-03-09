@@ -6,6 +6,7 @@ import { Plus, Trash2, X, GripVertical, Users, Pencil, Lock } from 'lucide-react
 import { useAuthStore } from '../store/authStore';
 import POS from './POS';
 import { getTableDisplayName } from '../utils/tableDisplay';
+import { formatElapsedTime } from '../utils/formatElapsed';
 import ModalOverlay from '../components/ModalOverlay';
 import './HallMap.css';
 
@@ -41,7 +42,7 @@ export default function HallMap({ readOnly = false }) {
     clearCurrentOrder,
     setPendingTable,
   } = usePosStore();
-  const { user } = useAuthStore();
+  const { user, tenant } = useAuthStore();
   const [selectedHall, setSelectedHall] = useState(null);
   const [tables, setTables] = useState([]);
   const [draggingId, setDraggingId] = useState(null);
@@ -62,6 +63,13 @@ export default function HallMap({ readOnly = false }) {
   const [editShape, setEditShape] = useState('square');
   const gridRef = useRef(null);
   const isAdmin = user?.role === 'admin' || user?.role === 'owner';
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    if (tenant?.show_table_timer === false) return;
+    const interval = setInterval(() => setTick((t) => t + 1), 30000);
+    return () => clearInterval(interval);
+  }, [tenant?.show_table_timer]);
 
   const currentHall = halls.find((h) => h.id === selectedHall) || null;
   const isHallLocked = !!currentHall?.locked_by_plan;
@@ -442,6 +450,9 @@ export default function HallMap({ readOnly = false }) {
                 </div>
                 {order && (
                   <div className="hall-table-sum">{Number(order.total).toFixed(0)} ₽</div>
+                )}
+                {order && tenant?.show_table_timer !== false && (
+                  <div className="hall-table-timer">{formatElapsedTime(order.created_at)}</div>
                 )}
                 {!readOnly && isAdmin && !order && !isHallLocked && (
                   <>

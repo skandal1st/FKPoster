@@ -438,6 +438,80 @@ router.get('/discounts', checkFeature('reports'), async (req, res) => {
   res.json({ summary, by_guest: byGuest });
 });
 
+// Время столиков
+router.get('/table-time', checkFeature('reports'), async (req, res) => {
+  const { from, to } = req.query;
+  const dateFrom = from || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const dateTo = to || new Date().toISOString().split('T')[0];
+
+  const summary = await get(`
+    SELECT COUNT(*)::int as total_orders,
+           ROUND(AVG(EXTRACT(EPOCH FROM (closed_at - created_at)) / 60))::int as avg_minutes,
+           ROUND(MIN(EXTRACT(EPOCH FROM (closed_at - created_at)) / 60))::int as min_minutes,
+           ROUND(MAX(EXTRACT(EPOCH FROM (closed_at - created_at)) / 60))::int as max_minutes
+    FROM orders
+    WHERE status = 'closed' AND table_id IS NOT NULL
+      AND closed_at::date >= $1 AND closed_at::date <= $2 AND tenant_id = $3
+  `, [dateFrom, dateTo, req.tenantId]);
+
+  const byTable = await all(`
+    SELECT t.id, t.number, t.label, h.name as hall_name,
+           COUNT(o.id)::int as orders_count,
+           ROUND(AVG(EXTRACT(EPOCH FROM (o.closed_at - o.created_at)) / 60))::int as avg_minutes,
+           SUM(o.total) as revenue
+    FROM orders o
+    JOIN tables t ON o.table_id = t.id
+    JOIN halls h ON t.hall_id = h.id
+    WHERE o.status = 'closed' AND o.table_id IS NOT NULL
+      AND o.closed_at::date >= $1 AND o.closed_at::date <= $2 AND o.tenant_id = $3
+    GROUP BY t.id, t.number, t.label, h.name
+    ORDER BY avg_minutes DESC
+  `, [dateFrom, dateTo, req.tenantId]);
+
+  const byHall = await all(`
+    SELECT h.id, h.name,
+           COUNT(o.id)::int as orders_count,
+           ROUND(AVG(EXTRACT(EPOCH FROM (o.closed_at - o.created_at)) / 60))::int as avg_minutes,
+           SUM(o.total) as revenue
+    FROM orders o
+    JOIN tables t ON o.table_id = t.id
+    JOIN halls h ON t.hall_id = h.id
+    WHERE o.status = 'closed' AND o.table_id IS NOT NULL
+      AND o.closed_at::date >= $1 AND o.closed_at::date <= $2 AND o.tenant_id = $3
+    GROUP BY h.id, h.name
+    ORDER BY avg_minutes DESC
+  `, [dateFrom, dateTo, req.tenantId]);
+
+  const byHour = await all(`
+    SELECT EXTRACT(HOUR FROM o.created_at)::int as hour,
+           COUNT(*)::int as orders_count,
+           ROUND(AVG(EXTRACT(EPOCH FROM (o.closed_at - o.created_at)) / 60))::int as avg_minutes
+    FROM orders o
+    WHERE o.status = 'closed' AND o.table_id IS NOT NULL
+      AND o.closed_at::date >= $1 AND o.closed_at::date <= $2 AND o.tenant_id = $3
+    GROUP BY hour ORDER BY hour
+  `, [dateFrom, dateTo, req.tenantId]);
+
+  const byDayOfWeek = await all(`
+    SELECT EXTRACT(ISODOW FROM o.created_at)::int as day_of_week,
+           COUNT(*)::int as orders_count,
+           ROUND(AVG(EXTRACT(EPOCH FROM (o.closed_at - o.created_at)) / 60))::int as avg_minutes
+    FROM orders o
+    WHERE o.status = 'closed' AND o.table_id IS NOT NULL
+      AND o.closed_at::date >= $1 AND o.closed_at::date <= $2 AND o.tenant_id = $3
+    GROUP BY day_of_week ORDER BY day_of_week
+  `, [dateFrom, dateTo, req.tenantId]);
+
+  for (const row of byTable) {
+    row.revenue = parseFloat(row.revenue || 0);
+  }
+  for (const row of byHall) {
+    row.revenue = parseFloat(row.revenue || 0);
+  }
+
+  res.json({ summary, by_table: byTable, by_hall: byHall, by_hour: byHour, by_day_of_week: byDayOfWeek });
+});
+
 router.get('/shift/:id', async (req, res) => {
   const shift = await get('SELECT * FROM register_days WHERE id = $1 AND tenant_id = $2', [req.params.id, req.tenantId]);
   if (!shift) return res.status(404).json({ error: 'Смена не найдена' });

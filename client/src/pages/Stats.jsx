@@ -4,6 +4,7 @@ import CostTab from './stats/CostTab';
 import TrafficTab from './stats/TrafficTab';
 import EmployeesTab from './stats/EmployeesTab';
 import DiscountsTab from './stats/DiscountsTab';
+import TableTimeTab from './stats/TableTimeTab';
 import { useAuthStore } from '../store/authStore';
 
 const ALL_TABS = [
@@ -12,6 +13,7 @@ const ALL_TABS = [
   { id: 'traffic', label: 'Посещаемость' },
   { id: 'employees', label: 'Сотрудники' },
   { id: 'discounts', label: 'Скидки' },
+  { id: 'table-time', label: 'Время столиков' },
 ];
 
 export default function Stats() {
@@ -53,6 +55,7 @@ export default function Stats() {
       {activeTab === 'traffic' && <TrafficTab from={from} to={to} />}
       {activeTab === 'employees' && <EmployeesTab from={from} to={to} />}
       {activeTab === 'discounts' && <DiscountsTab from={from} to={to} />}
+      {activeTab === 'table-time' && <TableTimeTab from={from} to={to} />}
     </div>
   );
 }
