@@ -10,6 +10,8 @@ const ATOL_API_URLS = {
   test: 'https://testonline.atol.ru/possystem/v4',
 };
 
+const FETCH_TIMEOUT = 15000;
+
 class AtolProvider {
   constructor({ login, password, groupCode, inn, paymentAddress, sno, callbackUrl, cachedToken, tokenExpiresAt, environment }) {
     this.login = login;
@@ -44,6 +46,7 @@ class AtolProvider {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ login: this.login, pass: this.password }),
+      signal: AbortSignal.timeout(FETCH_TIMEOUT),
     });
 
     const data = await res.json().catch(() => ({}));
@@ -79,6 +82,7 @@ class AtolProvider {
     const res = await fetch(`${this.apiBase}${url}`, {
       ...options,
       headers,
+      signal: AbortSignal.timeout(FETCH_TIMEOUT),
     });
 
     if (!res.ok) {
