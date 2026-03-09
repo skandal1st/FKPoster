@@ -21,6 +21,7 @@ function createKktProvider(integrations) {
       callbackUrl: integrations.kkt_callback_url,
       cachedToken: integrations.kkt_token,
       tokenExpiresAt: integrations.kkt_token_expires_at,
+      environment: integrations.kkt_environment,
     });
   }
 

@@ -44,6 +44,7 @@ router.get('/', async (req, res) => {
       kkt_inn: null,
       kkt_payment_address: null,
       kkt_sno: null,
+      kkt_environment: 'production',
     };
   }
 
@@ -88,7 +89,7 @@ router.put('/', ownerOnly, async (req, res) => {
     edo_sbis_login, edo_sbis_password, edo_sbis_app_client_id, edo_sbis_app_secret,
     edo_diadoc_api_key, edo_diadoc_login, edo_diadoc_password, edo_diadoc_box_id,
     kkt_enabled, kkt_provider, kkt_strict_mode, kkt_default_vat,
-    kkt_group_code, kkt_login, kkt_password, kkt_inn, kkt_payment_address, kkt_sno,
+    kkt_group_code, kkt_login, kkt_password, kkt_inn, kkt_payment_address, kkt_sno, kkt_environment,
   } = req.body;
 
   const existing = await get(
@@ -107,6 +108,7 @@ router.put('/', ownerOnly, async (req, res) => {
       edo_sbis_app_client_id = $11, edo_diadoc_login = $12, edo_diadoc_box_id = $13,
       kkt_enabled = $14, kkt_provider = $15, kkt_strict_mode = $16, kkt_default_vat = $17,
       kkt_group_code = $18, kkt_login = $19, kkt_inn = $20, kkt_payment_address = $21, kkt_sno = $22,
+      kkt_environment = $23,
       updated_at = NOW()`;
     const params = [
       egais_enabled ?? false, egais_utm_host || 'localhost', egais_utm_port || 8080,
@@ -117,6 +119,7 @@ router.put('/', ownerOnly, async (req, res) => {
       edo_sbis_app_client_id || null, edo_diadoc_login || null, edo_diadoc_box_id || null,
       kkt_enabled ?? false, kkt_provider || null, kkt_strict_mode ?? false, kkt_default_vat || 'none',
       kkt_group_code || null, kkt_login || null, kkt_inn || null, kkt_payment_address || null, kkt_sno || null,
+      kkt_environment || 'production',
     ];
 
     // Секретные поля — обновляем только если не маска
@@ -135,6 +138,9 @@ router.put('/', ownerOnly, async (req, res) => {
       }
     }
 
+    // Сбрасываем кешированный токен АТОЛ при смене среды
+    sql += `, kkt_token = NULL, kkt_token_expires_at = NULL`;
+
     sql += ` WHERE tenant_id = $${params.length + 1}`;
     params.push(req.tenantId);
 
@@ -146,9 +152,9 @@ router.put('/', ownerOnly, async (req, res) => {
         edo_enabled, edo_provider, edo_sbis_login, edo_sbis_password, edo_sbis_app_client_id, edo_sbis_app_secret,
         edo_diadoc_api_key, edo_diadoc_login, edo_diadoc_password, edo_diadoc_box_id,
         kkt_enabled, kkt_provider, kkt_strict_mode, kkt_default_vat, kkt_group_code, kkt_login, kkt_password,
-        kkt_inn, kkt_payment_address, kkt_sno)
+        kkt_inn, kkt_payment_address, kkt_sno, kkt_environment)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19,
-        $20, $21, $22, $23, $24, $25, $26, $27, $28, $29)`,
+        $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30)`,
       [
         req.tenantId,
         egais_enabled ?? false, egais_utm_host || 'localhost', egais_utm_port || 8080,
@@ -162,6 +168,7 @@ router.put('/', ownerOnly, async (req, res) => {
         kkt_enabled ?? false, kkt_provider || null, kkt_strict_mode ?? false, kkt_default_vat || 'none',
         kkt_group_code || null, kkt_login || null, notMask(kkt_password) || null,
         kkt_inn || null, kkt_payment_address || null, kkt_sno || null,
+        kkt_environment || 'production',
       ]
     );
   }

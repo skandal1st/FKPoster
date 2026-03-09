@@ -35,6 +35,7 @@ export default function IntegrationSettings() {
     kkt_inn: '',
     kkt_payment_address: '',
     kkt_sno: '',
+    kkt_environment: 'production',
   });
   const [testResults, setTestResults] = useState({});
 
@@ -72,6 +73,7 @@ export default function IntegrationSettings() {
         kkt_inn: data.kkt_inn || '',
         kkt_payment_address: data.kkt_payment_address || '',
         kkt_sno: data.kkt_sno || '',
+        kkt_environment: data.kkt_environment || 'production',
       });
     } catch (err) {
       toast.error(err.message);
@@ -450,6 +452,17 @@ export default function IntegrationSettings() {
 
             {form.kkt_provider === 'atol' && (
               <>
+                <div className="form-group">
+                  <label className="form-label">Среда</label>
+                  <select
+                    className="form-input"
+                    value={form.kkt_environment}
+                    onChange={(e) => setForm({ ...form, kkt_environment: e.target.value })}
+                  >
+                    <option value="test">Тестовая (testonline.atol.ru)</option>
+                    <option value="production">Боевая (online.atol.ru)</option>
+                  </select>
+                </div>
                 <div className="form-row">
                   <div className="form-group">
                     <label className="form-label">Логин интегратора</label>

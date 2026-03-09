@@ -5,10 +5,13 @@
  * Токен кешируется на 24 часа.
  */
 
-const ATOL_API_BASE = 'https://online.atol.ru/possystem/v4';
+const ATOL_API_URLS = {
+  production: 'https://online.atol.ru/possystem/v4',
+  test: 'https://testonline.atol.ru/possystem/v4',
+};
 
 class AtolProvider {
-  constructor({ login, password, groupCode, inn, paymentAddress, sno, callbackUrl, cachedToken, tokenExpiresAt }) {
+  constructor({ login, password, groupCode, inn, paymentAddress, sno, callbackUrl, cachedToken, tokenExpiresAt, environment }) {
     this.login = login;
     this.password = password;
     this.groupCode = groupCode;
@@ -19,6 +22,7 @@ class AtolProvider {
     this.token = cachedToken || null;
     this.tokenExpiresAt = tokenExpiresAt ? new Date(tokenExpiresAt) : null;
     this._onTokenUpdate = null;
+    this.apiBase = ATOL_API_URLS[environment] || ATOL_API_URLS.production;
   }
 
   /**
@@ -36,7 +40,7 @@ class AtolProvider {
   }
 
   async authenticate() {
-    const res = await fetch(`${ATOL_API_BASE}/getToken`, {
+    const res = await fetch(`${this.apiBase}/getToken`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ login: this.login, pass: this.password }),
@@ -72,7 +76,7 @@ class AtolProvider {
       ...options.headers,
     };
 
-    const res = await fetch(`${ATOL_API_BASE}${url}`, {
+    const res = await fetch(`${this.apiBase}${url}`, {
       ...options,
       headers,
     });
