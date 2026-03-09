@@ -26,6 +26,7 @@ async function runMigrations() {
     require('./020_phone_city'),
     require('./021_edo_integration'),
     require('./022_kkt_integration'),
+    require('./023_table_timer_setting'),
   ];
 
   for (const migration of migrations) {
