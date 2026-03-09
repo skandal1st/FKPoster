@@ -19,7 +19,7 @@ export default function Products() {
   const [form, setForm] = useState({
     category_id: '', name: '', price: '', cost_price: '', quantity: '',
     unit: 'шт', track_inventory: 1, is_composite: 0, min_quantity: '',
-    barcode: '', marking_type: 'none', egais_alcocode: '', tobacco_gtin: ''
+    barcode: '', marking_type: 'none', egais_alcocode: '', tobacco_gtin: '', vat_rate: ''
   });
 
   useEffect(() => { load(); }, []);
@@ -37,7 +37,7 @@ export default function Products() {
 
   const openNew = () => {
     setEditing(null);
-    setForm({ category_id: categories[0]?.id || '', name: '', price: '', cost_price: '', quantity: '', unit: 'шт', track_inventory: 1, is_composite: 0, min_quantity: '', barcode: '', marking_type: 'none', egais_alcocode: '', tobacco_gtin: '' });
+    setForm({ category_id: categories[0]?.id || '', name: '', price: '', cost_price: '', quantity: '', unit: 'шт', track_inventory: 1, is_composite: 0, min_quantity: '', barcode: '', marking_type: 'none', egais_alcocode: '', tobacco_gtin: '', vat_rate: '' });
     setShowModal(true);
   };
 
@@ -48,14 +48,15 @@ export default function Products() {
       quantity: p.quantity, unit: p.unit, track_inventory: p.track_inventory, is_composite: p.is_composite,
       min_quantity: p.min_quantity || '',
       barcode: p.barcode || '', marking_type: p.marking_type || 'none',
-      egais_alcocode: p.egais_alcocode || '', tobacco_gtin: p.tobacco_gtin || ''
+      egais_alcocode: p.egais_alcocode || '', tobacco_gtin: p.tobacco_gtin || '',
+      vat_rate: p.vat_rate || ''
     });
     setShowModal(true);
   };
 
   const save = async () => {
     try {
-      const data = { ...form, price: Number(form.price), cost_price: Number(form.cost_price), quantity: Number(form.quantity), min_quantity: Number(form.min_quantity) || 0 };
+      const data = { ...form, price: Number(form.price), cost_price: Number(form.cost_price), quantity: Number(form.quantity), min_quantity: Number(form.min_quantity) || 0, vat_rate: form.vat_rate || null };
       if (editing) {
         const updated = await api.put(`/products/${editing.id}`, data);
         toast.success('Товар обновлён');
@@ -227,6 +228,18 @@ export default function Products() {
                 <input className="form-input" value={form.tobacco_gtin} onChange={(e) => setForm({ ...form, tobacco_gtin: e.target.value })} placeholder="14-значный GTIN" maxLength={14} />
               </div>
             )}
+            <div className="form-group">
+              <label className="form-label">Ставка НДС</label>
+              <select className="form-input" value={form.vat_rate} onChange={(e) => setForm({ ...form, vat_rate: e.target.value })}>
+                <option value="">По умолчанию (из настроек ККТ)</option>
+                <option value="none">Без НДС</option>
+                <option value="vat0">НДС 0%</option>
+                <option value="vat10">НДС 10%</option>
+                <option value="vat20">НДС 20%</option>
+                <option value="vat110">НДС 10/110</option>
+                <option value="vat120">НДС 20/120</option>
+              </select>
+            </div>
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">

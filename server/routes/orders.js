@@ -49,6 +49,16 @@ router.get('/:id', async (req, res) => {
     LEFT JOIN workshops w ON c.workshop_id = w.id
     WHERE oi.order_id = $1
   `, [order.id]);
+
+  // Подтянуть последний ККТ-чек
+  const kktReceipt = await get(
+    'SELECT id, status, fiscal_number, fiscal_document, fiscal_sign, receipt_datetime, error_message FROM kkt_receipts WHERE order_id = $1 AND tenant_id = $2 ORDER BY id DESC LIMIT 1',
+    [order.id, req.tenantId]
+  );
+  if (kktReceipt) {
+    order.kkt_receipt_data = kktReceipt;
+  }
+
   res.json(order);
 });
 
@@ -244,6 +254,27 @@ router.post('/:id/close', async (req, res) => {
     }
   }
 
+  // === ККТ строгий режим: фискализация ДО закрытия ===
+  let kktResult = null;
+  if (req.integrations?.kkt_enabled && req.integrations?.kkt_provider && req.integrations.kkt_strict_mode) {
+    const KktService = require('../services/kkt');
+    const kkt = new KktService(req.tenantId, req.integrations);
+    const receiptItems = await all(
+      'SELECT oi.*, p.vat_rate FROM order_items oi LEFT JOIN products p ON oi.product_id = p.id WHERE oi.order_id = $1',
+      [order.id]
+    );
+    kktResult = await kkt.createSellReceipt(
+      { orderId: order.id, total: totalToPay, paidCash: finalPaidCash, paidCard: finalPaidCard },
+      receiptItems, req.user.name
+    );
+    if (!kktResult.success) {
+      return res.status(502).json({
+        error: `Ошибка фискализации: ${kktResult.error}. Заказ не закрыт.`,
+        kkt_error: true,
+      });
+    }
+  }
+
   // Проверка маркировки: если интеграция включена и есть маркированные позиции
   const hasIntegration = req.integrations && (req.integrations.egais_enabled || req.integrations.chestniy_znak_enabled);
   if (hasIntegration) {
@@ -320,6 +351,24 @@ router.post('/:id/close', async (req, res) => {
     }
   });
 
+  // === ККТ мягкий режим: фискализация ПОСЛЕ закрытия ===
+  if (req.integrations?.kkt_enabled && req.integrations?.kkt_provider && !req.integrations.kkt_strict_mode) {
+    try {
+      const KktService = require('../services/kkt');
+      const kkt = new KktService(req.tenantId, req.integrations);
+      const receiptItems = await all(
+        'SELECT oi.*, p.vat_rate FROM order_items oi LEFT JOIN products p ON oi.product_id = p.id WHERE oi.order_id = $1',
+        [order.id]
+      );
+      kktResult = await kkt.createSellReceipt(
+        { orderId: order.id, total: totalToPay, paidCash: finalPaidCash, paidCard: finalPaidCard },
+        receiptItems, req.user.name
+      );
+    } catch (err) {
+      console.error('KKT soft mode error:', err.message);
+    }
+  }
+
   const updated = await get(`
     SELECT o.*, t.number as table_number, t.label as table_label, h.name as hall_name,
            g.name as guest_name, g.discount_type as guest_discount_type, g.discount_value as guest_discount_value
@@ -337,6 +386,12 @@ router.post('/:id/close', async (req, res) => {
     LEFT JOIN workshops w ON c.workshop_id = w.id
     WHERE oi.order_id = $1
   `, [order.id]);
+
+  // Добавить данные ККТ-чека в ответ
+  if (kktResult) {
+    updated.kkt_receipt = kktResult;
+  }
+
   emitEvent(req, 'order:closed', updated);
   res.json(updated);
 });

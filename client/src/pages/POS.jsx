@@ -134,6 +134,8 @@ export default function POS({ embedded = false, onClose }) {
       if (err.requires_marking) {
         setPendingPayment({ method, paidCash, paidCard });
         setShowMarkingScanner(true);
+      } else if (err.kkt_error) {
+        toast.error(err.message, { duration: 6000 });
       } else {
         toast.error(err.message);
       }

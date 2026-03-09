@@ -6,7 +6,7 @@ import {
   Map, Package, Settings,
   CreditCard, Users, BarChart3, LogOut, Boxes, LayoutDashboard,
   Building2, LogIn, ScanBarcode, Wine, Tag, UserCircle,
-  ChevronLeft, ChevronRight, Link2, FileText, BookUser, PackageCheck, Truck
+  ChevronLeft, ChevronRight, Link2, FileText, BookUser, PackageCheck, Truck, Receipt
 } from 'lucide-react';
 import { CATALOG_TABS, STOCK_TABS, STAFF_TABS } from '../constants/tabGroups';
 
@@ -45,6 +45,7 @@ export default function Layout() {
 
   const hasMarking = integrations && (integrations.egais_enabled || integrations.chestniy_znak_enabled);
   const hasEdo = integrations && integrations.edo_enabled;
+  const hasKkt = integrations && integrations.kkt_enabled;
   const hasChainFeature = plan?.features?.chain_management === true;
 
   const handleExitImpersonation = async () => {
@@ -156,12 +157,17 @@ export default function Layout() {
             </div>
           )}
 
-          {isAdmin && (hasEdo || hasMarking) && (
+          {isAdmin && (hasEdo || hasMarking || hasKkt) && (
             <div className="sidebar-section">
               <div className="sidebar-section-title">Документооборот</div>
               {hasEdo && (
                 <NavLink to="/admin/edo" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="ЭДО документы">
                   <FileText /><span className="sidebar-link-text">ЭДО документы</span>
+                </NavLink>
+              )}
+              {hasKkt && (
+                <NavLink to="/admin/kkt" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Чеки ККТ">
+                  <Receipt /><span className="sidebar-link-text">Чеки ККТ</span>
                 </NavLink>
               )}
               <NavLink to="/admin/counterparties" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Контрагенты">

@@ -35,6 +35,7 @@ const scheduleRoutes = require('./routes/schedule');
 const salaryRoutes = require('./routes/salary');
 const edoRoutes = require('./routes/edo');
 const counterpartyRoutes = require('./routes/counterparties');
+const kktRoutes = require('./routes/kkt');
 
 const app = express();
 
@@ -125,6 +126,7 @@ app.use('/api/schedule', scheduleRoutes);
 app.use('/api/salary', salaryRoutes);
 app.use('/api/edo', edoRoutes);
 app.use('/api/counterparties', counterpartyRoutes);
+app.use('/api/kkt', kktRoutes);
 
 // Production: serve React build
 if (config.NODE_ENV === 'production') {

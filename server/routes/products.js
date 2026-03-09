@@ -100,15 +100,15 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', adminOnly, checkLimit('products'), async (req, res) => {
   const { category_id, name, price, cost_price, quantity, unit, track_inventory, is_composite, output_amount, recipe_description, min_quantity,
-    barcode, marking_type, egais_alcocode, tobacco_gtin } = req.body;
+    barcode, marking_type, egais_alcocode, tobacco_gtin, vat_rate } = req.body;
   if (!name || !category_id) return res.status(400).json({ error: 'Заполните обязательные поля' });
   const result = await run(
     `INSERT INTO products (category_id, name, price, cost_price, quantity, unit, track_inventory, is_composite, output_amount, recipe_description, min_quantity, is_ingredient, tenant_id,
-      barcode, marking_type, egais_alcocode, tobacco_gtin)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING id`,
+      barcode, marking_type, egais_alcocode, tobacco_gtin, vat_rate)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING id`,
     [category_id, name, price || 0, cost_price || 0, quantity || 0, unit || 'шт',
      track_inventory ?? true, is_composite ?? false, output_amount || 1, recipe_description || '', min_quantity || 0, false, req.tenantId,
-     barcode || null, marking_type || 'none', egais_alcocode || null, tobacco_gtin || null]
+     barcode || null, marking_type || 'none', egais_alcocode || null, tobacco_gtin || null, vat_rate || null]
   );
   invalidateResourceCount(req.tenantId, 'products');
   res.json({ id: result.id, name });
@@ -116,15 +116,15 @@ router.post('/', adminOnly, checkLimit('products'), async (req, res) => {
 
 router.put('/:id', adminOnly, async (req, res) => {
   const { category_id, name, price, cost_price, quantity, unit, track_inventory, is_composite, output_amount, recipe_description, min_quantity,
-    barcode, marking_type, egais_alcocode, tobacco_gtin } = req.body;
+    barcode, marking_type, egais_alcocode, tobacco_gtin, vat_rate } = req.body;
   const p = await get('SELECT * FROM products WHERE id = $1 AND tenant_id = $2', [req.params.id, req.tenantId]);
   if (!p) return res.status(404).json({ error: 'Товар не найден' });
   const costPriceNum = cost_price !== undefined && cost_price !== null ? Number(cost_price) : Number(p.cost_price);
   await run(
     `UPDATE products SET category_id=$1, name=$2, price=$3, cost_price=$4, quantity=$5, unit=$6,
      track_inventory=$7, is_composite=$8, output_amount=$9, recipe_description=$10, min_quantity=$11,
-     barcode=$12, marking_type=$13, egais_alcocode=$14, tobacco_gtin=$15
-     WHERE id=$16 AND tenant_id=$17`,
+     barcode=$12, marking_type=$13, egais_alcocode=$14, tobacco_gtin=$15, vat_rate=$16
+     WHERE id=$17 AND tenant_id=$18`,
     [
       category_id ?? p.category_id, name ?? p.name, price ?? p.price, costPriceNum,
       quantity ?? p.quantity, unit ?? p.unit, track_inventory ?? p.track_inventory, is_composite ?? p.is_composite,
@@ -133,10 +133,11 @@ router.put('/:id', adminOnly, async (req, res) => {
       barcode !== undefined ? barcode : p.barcode, marking_type ?? p.marking_type ?? 'none',
       egais_alcocode !== undefined ? egais_alcocode : p.egais_alcocode,
       tobacco_gtin !== undefined ? tobacco_gtin : p.tobacco_gtin,
+      vat_rate !== undefined ? (vat_rate || null) : (p.vat_rate || null),
       req.params.id, req.tenantId
     ]
   );
-  const updated = await get('SELECT id, name, price, cost_price, quantity, unit, category_id, track_inventory, is_composite, output_amount, recipe_description, min_quantity, barcode, marking_type, egais_alcocode, tobacco_gtin FROM products WHERE id = $1 AND tenant_id = $2', [req.params.id, req.tenantId]);
+  const updated = await get('SELECT id, name, price, cost_price, quantity, unit, category_id, track_inventory, is_composite, output_amount, recipe_description, min_quantity, barcode, marking_type, egais_alcocode, tobacco_gtin, vat_rate FROM products WHERE id = $1 AND tenant_id = $2', [req.params.id, req.tenantId]);
   res.json(updated);
 });
 

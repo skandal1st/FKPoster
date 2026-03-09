@@ -131,6 +131,11 @@ export function formatReceipt(order, tenant, printSettings) {
     </div>
     <div class="receipt-center receipt-muted" style="margin-top:4px;">Оплата: ${escapeHtml(paymentLabel)}</div>
     ${order.payment_method === 'mixed' ? `<div class="receipt-center receipt-muted">Наличные: ${Number(order.paid_cash || 0).toFixed(2)}₽ / Карта: ${Number(order.paid_card || 0).toFixed(2)}₽</div>` : ''}
+    ${order.kkt_receipt_data?.fiscal_document ? `
+    <div class="receipt-divider"></div>
+    <div class="receipt-center receipt-muted">ФД: ${escapeHtml(order.kkt_receipt_data.fiscal_document)} | ФПД: ${escapeHtml(order.kkt_receipt_data.fiscal_sign || '—')}</div>
+    <div class="receipt-center receipt-muted">ФН: ${escapeHtml(order.kkt_receipt_data.fiscal_number || '—')}</div>
+    ` : ''}
     <div class="receipt-double-divider"></div>
     <div class="receipt-center receipt-muted">${escapeHtml(footer)}</div>
   `;

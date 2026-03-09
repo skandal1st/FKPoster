@@ -25,6 +25,7 @@ async function runMigrations() {
     require('./019_free_plan_limits'),
     require('./020_phone_city'),
     require('./021_edo_integration'),
+    require('./022_kkt_integration'),
   ];
 
   for (const migration of migrations) {

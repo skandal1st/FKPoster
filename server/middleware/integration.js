@@ -16,9 +16,10 @@ async function loadIntegrations(req, res, next) {
     req.integrations = integrations || {
       egais_enabled: false,
       chestniy_znak_enabled: false,
+      kkt_enabled: false,
     };
   } catch (err) {
-    req.integrations = { egais_enabled: false, chestniy_znak_enabled: false };
+    req.integrations = { egais_enabled: false, chestniy_znak_enabled: false, kkt_enabled: false };
   }
 
   next();
@@ -48,4 +49,14 @@ function requireEdo(req, res, next) {
   next();
 }
 
-module.exports = { loadIntegrations, requireEgais, requireChestniyZnak, requireEdo };
+function requireKkt(req, res, next) {
+  if (!req.integrations || !req.integrations.kkt_enabled) {
+    return res.status(403).json({ error: 'Интеграция ККТ не включена' });
+  }
+  if (!req.integrations.kkt_provider) {
+    return res.status(403).json({ error: 'Не выбран провайдер ККТ' });
+  }
+  next();
+}
+
+module.exports = { loadIntegrations, requireEgais, requireChestniyZnak, requireEdo, requireKkt };

@@ -194,7 +194,7 @@ router.get('/dashboard', checkFeature('reports'), async (req, res) => {
     WHERE active = true AND track_inventory = true AND min_quantity > 0 AND quantity <= min_quantity AND tenant_id = $1
   `, [req.tenantId]);
 
-  const trend = await all(`
+  const trendRaw = await all(`
     SELECT o.closed_at::date::text as day,
            COALESCE(SUM(o.total), 0) as revenue
     FROM orders o
@@ -202,6 +202,7 @@ router.get('/dashboard', checkFeature('reports'), async (req, res) => {
     GROUP BY o.closed_at::date
     ORDER BY day
   `, [req.tenantId]);
+  const trend = trendRaw.map(t => ({ ...t, revenue: parseFloat(t.revenue || 0) }));
 
   const topProducts = await all(`
     SELECT oi.product_name, SUM(oi.quantity)::int as qty, SUM(oi.total) as revenue
@@ -211,6 +212,7 @@ router.get('/dashboard', checkFeature('reports'), async (req, res) => {
     GROUP BY oi.product_id, oi.product_name
     ORDER BY revenue DESC LIMIT 5
   `, [today, req.tenantId]);
+  topProducts.forEach(p => { p.revenue = parseFloat(p.revenue || 0); });
 
   const categorySales = await all(`
     SELECT c.name, c.color, SUM(oi.total) as revenue
@@ -222,6 +224,7 @@ router.get('/dashboard', checkFeature('reports'), async (req, res) => {
     GROUP BY c.id, c.name, c.color
     ORDER BY revenue DESC
   `, [today, req.tenantId]);
+  categorySales.forEach(c => { c.revenue = parseFloat(c.revenue || 0); });
 
   const revenue = parseFloat(todayStats.revenue || 0);
   const profit = revenue - parseFloat(todayCost.total_cost || 0);

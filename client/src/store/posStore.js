@@ -127,6 +127,12 @@ export const usePosStore = create((set, get) => ({
         error.requires_marking = true;
         throw error;
       }
+      // Пробрасываем спец. ошибку для ККТ
+      if (err.message && (err.message.includes('фискализации') || err.message.includes('kkt_error'))) {
+        const error = new Error(err.message);
+        error.kkt_error = true;
+        throw error;
+      }
       throw err;
     }
   },

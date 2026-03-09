@@ -67,6 +67,20 @@ export default function ReceiptModal({ order, onClose, printSettings }) {
           )}
         </div>
 
+        {order.kkt_receipt_data?.fiscal_document ? (
+          <div style={{ borderTop: '1px dashed var(--border-color)', padding: '8px 0', fontSize: 12, color: 'var(--text-muted)', textAlign: 'center' }}>
+            <div>ФД: {order.kkt_receipt_data.fiscal_document} | ФПД: {order.kkt_receipt_data.fiscal_sign || '—'}</div>
+            <div>ФН: {order.kkt_receipt_data.fiscal_number || '—'}</div>
+            {order.kkt_receipt_data.receipt_datetime && (
+              <div>{new Date(order.kkt_receipt_data.receipt_datetime).toLocaleString('ru')}</div>
+            )}
+          </div>
+        ) : order.kkt_receipt?.receiptPending ? (
+          <div style={{ borderTop: '1px dashed var(--border-color)', padding: '8px 0', fontSize: 12, color: 'var(--warning)', textAlign: 'center' }}>
+            Чек ожидает фискализации...
+          </div>
+        ) : null}
+
         <div className="modal-actions no-print">
           <button className="btn btn-ghost" onClick={onClose}>Закрыть</button>
           <button className="btn btn-primary" onClick={handlePrint}>

@@ -25,6 +25,16 @@ export default function IntegrationSettings() {
     edo_diadoc_login: '',
     edo_diadoc_password: '',
     edo_diadoc_box_id: '',
+    kkt_enabled: false,
+    kkt_provider: '',
+    kkt_strict_mode: false,
+    kkt_default_vat: 'none',
+    kkt_group_code: '',
+    kkt_login: '',
+    kkt_password: '',
+    kkt_inn: '',
+    kkt_payment_address: '',
+    kkt_sno: '',
   });
   const [testResults, setTestResults] = useState({});
 
@@ -52,6 +62,16 @@ export default function IntegrationSettings() {
         edo_diadoc_login: data.edo_diadoc_login || '',
         edo_diadoc_password: data.edo_diadoc_password || '',
         edo_diadoc_box_id: data.edo_diadoc_box_id || '',
+        kkt_enabled: data.kkt_enabled || false,
+        kkt_provider: data.kkt_provider || '',
+        kkt_strict_mode: data.kkt_strict_mode || false,
+        kkt_default_vat: data.kkt_default_vat || 'none',
+        kkt_group_code: data.kkt_group_code || '',
+        kkt_login: data.kkt_login || '',
+        kkt_password: data.kkt_password || '',
+        kkt_inn: data.kkt_inn || '',
+        kkt_payment_address: data.kkt_payment_address || '',
+        kkt_sno: data.kkt_sno || '',
       });
     } catch (err) {
       toast.error(err.message);
@@ -104,6 +124,17 @@ export default function IntegrationSettings() {
       toast(result.success ? 'Подключение установлено' : result.message, { icon: result.success ? '✓' : 'ℹ' });
     } catch (err) {
       setTestResults((prev) => ({ ...prev, edo: { success: false, message: err.message } }));
+      toast.error(err.message);
+    }
+  };
+
+  const testKkt = async () => {
+    try {
+      const result = await api.post('/integrations/test-kkt');
+      setTestResults((prev) => ({ ...prev, kkt: result }));
+      toast(result.success ? 'Подключение к ККТ установлено' : result.message, { icon: result.success ? '✓' : 'ℹ' });
+    } catch (err) {
+      setTestResults((prev) => ({ ...prev, kkt: { success: false, message: err.message } }));
       toast.error(err.message);
     }
   };
@@ -381,6 +412,160 @@ export default function IntegrationSettings() {
                   }}>
                     {testResults.edo.success ? <Wifi size={14} /> : <WifiOff size={14} />}
                     {' '}{testResults.edo.message}
+                  </div>
+                )}
+              </>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* ККТ (Контрольно-кассовая техника) */}
+      <div className="card" style={{ marginTop: 20 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <h2 style={{ margin: 0, fontSize: 18 }}>ККТ (онлайн-касса)</h2>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={form.kkt_enabled}
+              onChange={(e) => setForm({ ...form, kkt_enabled: e.target.checked })}
+            />
+            Включено
+          </label>
+        </div>
+
+        {form.kkt_enabled && (
+          <>
+            <div className="form-group">
+              <label className="form-label">Провайдер ККТ</label>
+              <select
+                className="form-input"
+                value={form.kkt_provider}
+                onChange={(e) => setForm({ ...form, kkt_provider: e.target.value })}
+              >
+                <option value="">Выберите провайдер</option>
+                <option value="atol">АТОЛ Онлайн</option>
+              </select>
+            </div>
+
+            {form.kkt_provider === 'atol' && (
+              <>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Логин интегратора</label>
+                    <input
+                      className="form-input"
+                      value={form.kkt_login}
+                      onChange={(e) => setForm({ ...form, kkt_login: e.target.value })}
+                      placeholder="Логин АТОЛ"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Пароль интегратора</label>
+                    <input
+                      className="form-input"
+                      type="password"
+                      value={form.kkt_password}
+                      onChange={(e) => setForm({ ...form, kkt_password: e.target.value })}
+                      placeholder="Пароль АТОЛ"
+                    />
+                  </div>
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Код группы (group_code)</label>
+                    <input
+                      className="form-input"
+                      value={form.kkt_group_code}
+                      onChange={(e) => setForm({ ...form, kkt_group_code: e.target.value })}
+                      placeholder="Код группы ККТ"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">ИНН организации</label>
+                    <input
+                      className="form-input"
+                      value={form.kkt_inn}
+                      onChange={(e) => setForm({ ...form, kkt_inn: e.target.value })}
+                      placeholder="ИНН (10 или 12 цифр)"
+                      maxLength={12}
+                    />
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Адрес расчёта</label>
+                  <input
+                    className="form-input"
+                    value={form.kkt_payment_address}
+                    onChange={(e) => setForm({ ...form, kkt_payment_address: e.target.value })}
+                    placeholder="Адрес, который будет печататься на чеке"
+                  />
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Система налогообложения</label>
+                    <select
+                      className="form-input"
+                      value={form.kkt_sno}
+                      onChange={(e) => setForm({ ...form, kkt_sno: e.target.value })}
+                    >
+                      <option value="">Выберите СНО</option>
+                      <option value="osn">ОСН (общая)</option>
+                      <option value="usn_income">УСН доходы</option>
+                      <option value="usn_income_outcome">УСН доходы-расходы</option>
+                      <option value="envd">ЕНВД</option>
+                      <option value="esn">ЕСН</option>
+                      <option value="patent">Патент</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">НДС по умолчанию</label>
+                    <select
+                      className="form-input"
+                      value={form.kkt_default_vat}
+                      onChange={(e) => setForm({ ...form, kkt_default_vat: e.target.value })}
+                    >
+                      <option value="none">Без НДС</option>
+                      <option value="vat0">НДС 0%</option>
+                      <option value="vat10">НДС 10%</option>
+                      <option value="vat20">НДС 20%</option>
+                      <option value="vat110">НДС 10/110</option>
+                      <option value="vat120">НДС 20/120</option>
+                    </select>
+                  </div>
+                </div>
+              </>
+            )}
+
+            <div style={{ marginTop: 12, padding: '12px 16px', background: 'var(--bg-elevated)', borderRadius: 8 }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={form.kkt_strict_mode}
+                  onChange={(e) => setForm({ ...form, kkt_strict_mode: e.target.checked })}
+                />
+                <span>
+                  <strong>Строгий режим</strong>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                    Если включён, заказ не закроется при ошибке фискализации. Если выключен — заказ закроется, чек попадёт в очередь.
+                  </div>
+                </span>
+              </label>
+            </div>
+
+            {form.kkt_provider && (
+              <>
+                <button className="btn btn-ghost btn-sm" onClick={testKkt} style={{ marginTop: 12 }}>
+                  <Wifi size={14} /> Тест подключения
+                </button>
+                {testResults.kkt && (
+                  <div style={{
+                    marginTop: 8, padding: '8px 12px', borderRadius: 4, fontSize: 13,
+                    background: testResults.kkt.success ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
+                    color: testResults.kkt.success ? 'var(--success)' : 'var(--text-secondary)',
+                  }}>
+                    {testResults.kkt.success ? <Wifi size={14} /> : <WifiOff size={14} />}
+                    {' '}{testResults.kkt.message}
                   </div>
                 )}
               </>

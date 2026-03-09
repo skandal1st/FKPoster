@@ -40,6 +40,7 @@ import EdoDocumentsPage from './pages/admin/EdoDocuments';
 import Counterparties from './pages/admin/Counterparties';
 import Receiving from './pages/admin/Receiving';
 import ChainTransfers from './pages/chain/ChainTransfers';
+import KktReceipts from './pages/admin/KktReceipts';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuthStore();
@@ -107,6 +108,7 @@ function SubdomainApp() {
         <Route path="admin/schedule" element={<AdminRoute><Schedule /></AdminRoute>} />
         <Route path="admin/salary" element={<AdminRoute><Salary /></AdminRoute>} />
         <Route path="admin/edo" element={<AdminRoute><FeatureRoute feature="edo"><EdoDocumentsPage /></FeatureRoute></AdminRoute>} />
+        <Route path="admin/kkt" element={<AdminRoute><FeatureRoute feature="kkt"><KktReceipts /></FeatureRoute></AdminRoute>} />
         <Route path="admin/counterparties" element={<AdminRoute><Counterparties /></AdminRoute>} />
         <Route path="admin/receiving" element={<AdminRoute><Receiving /></AdminRoute>} />
         <Route path="chain/transfers" element={<AdminRoute><ChainTransfers /></AdminRoute>} />
@@ -159,6 +161,7 @@ function MainDomainApp() {
         <Route path="admin/schedule" element={<AdminRoute><Schedule /></AdminRoute>} />
         <Route path="admin/salary" element={<AdminRoute><Salary /></AdminRoute>} />
         <Route path="admin/edo" element={<AdminRoute><FeatureRoute feature="edo"><EdoDocumentsPage /></FeatureRoute></AdminRoute>} />
+        <Route path="admin/kkt" element={<AdminRoute><FeatureRoute feature="kkt"><KktReceipts /></FeatureRoute></AdminRoute>} />
         <Route path="admin/counterparties" element={<AdminRoute><Counterparties /></AdminRoute>} />
         <Route path="admin/receiving" element={<AdminRoute><Receiving /></AdminRoute>} />
         <Route path="chain/transfers" element={<AdminRoute><ChainTransfers /></AdminRoute>} />
