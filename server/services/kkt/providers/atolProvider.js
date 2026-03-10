@@ -79,6 +79,8 @@ class AtolProvider {
       ...options.headers,
     };
 
+    console.log('[ATOL] request:', this.apiBase + url, options.body?.slice(0, 500));
+
     const res = await fetch(`${this.apiBase}${url}`, {
       ...options,
       headers,
