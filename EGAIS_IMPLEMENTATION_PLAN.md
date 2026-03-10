@@ -1,40 +1,60 @@
-# План реализации интеграции с ЕГАИС
+# План реализации локального агента HookahPOS
 
 ## Архитектура решения
+
+Локальный агент — универсальное приложение, устанавливаемое на компьютер клиента. Обеспечивает взаимодействие с локальным оборудованием и сервисами, недоступными напрямую из браузера (SaaS).
+
+### Модули агента
+
+| Модуль | Назначение | Локальный сервис | Фаза |
+|--------|-----------|-----------------|------|
+| **ЕГАИС** | Работа с УТМ (накладные, списания, остатки) | УТМ ФСРАР `:8080` | Phase 1-3 |
+| **ККТ** | Печать фискальных чеков на физическом ФР | ATOL DTO / WebServer `:16732` | Phase 4 |
 
 ### Компоненты
 
 ```
-┌─────────────────────────────────────┐
-│  Локальная сеть клиента (за NAT)    │
-│                                     │
-│  ┌──────────┐      ┌──────────┐    │
-│  │   УТМ    │◄────►│  Агент   │    │
-│  │ :8080    │ REST │ HookahPOS│    │
-│  └──────────┘      └─────┬────┘    │
-│                          │         │
-└──────────────────────────┼─────────┘
-                           │ WebSocket
-                           ▼
-              ┌─────────────────────┐
-              │   VPS (облако)      │
-              │  ┌──────────────┐   │
-              │  │ HookahPOS    │   │
-              │  │ Server       │   │
-              │  └──────────────┘   │
-              │  ┌──────────────┐   │
-              │  │ PostgreSQL   │   │
-              │  │ + stamps     │   │
-              │  └──────────────┘   │
-              └─────────────────────┘
-                           ▲
-                           │ HTTPS
-                           │
-              ┌─────────────────────┐
-              │   Браузер (POS)     │
-              │  Кассир/Менеджер    │
-              └─────────────────────┘
+┌───────────────────────────────────────────────┐
+│  Локальная сеть клиента (за NAT)              │
+│                                               │
+│  ┌──────────┐  ┌──────────────┐  ┌────────┐  │
+│  │   УТМ    │  │  ATOL DTO /  │  │ Агент  │  │
+│  │ ФСРАР    │◄►│  WebServer   │◄►│HookahPOS│  │
+│  │ :8080    │  │  :16732      │  │        │  │
+│  └──────────┘  └──────────────┘  └───┬────┘  │
+│                                      │       │
+└──────────────────────────────────────┼───────┘
+                                       │ WebSocket
+                                       ▼
+                          ┌─────────────────────┐
+                          │   VPS (облако)       │
+                          │  ┌──────────────┐    │
+                          │  │ HookahPOS    │    │
+                          │  │ Server       │    │
+                          │  └──────────────┘    │
+                          │  ┌──────────────┐    │
+                          │  │ PostgreSQL   │    │
+                          │  │ + stamps     │    │
+                          │  └──────────────┘    │
+                          └─────────────────────┘
+                                       ▲
+                                       │ HTTPS
+                                       │
+                          ┌─────────────────────┐
+                          │   Браузер (POS)      │
+                          │  Кассир/Менеджер     │
+                          └─────────────────────┘
 ```
+
+### Почему через агента, а не напрямую из браузера?
+
+| Проблема (браузер → localhost) | Решение (через агента) |
+|---|---|
+| CORS / mixed content (HTTPS → HTTP) | Агент общается с оборудованием напрямую |
+| Настройка безопасности браузера | Не нужна |
+| Браузер должен знать порт драйвера | Агент знает из конфига |
+| Нет фидбека если драйвер/УТМ не запущен | Агент мониторит и сообщает статус в облако |
+| Два отдельных локальных приложения | Один агент для всего локального оборудования |
 
 ### Workflow сканирования марок
 
@@ -671,19 +691,28 @@ app.use('/api/egais', egaisRoutes);
 
 ---
 
-## Этап 3: Клиентский агент (Node.js сервис)
+## Этап 3: Локальный агент HookahPOS (Node.js сервис)
 
 ### 3.1 Структура проекта агента
 
 ```
-hookahpos-egais-agent/
+hookahpos-agent/
 ├── package.json
-├── index.js              # Entry point
-├── config.js             # Конфигурация
-├── utmClient.js          # Клиент для УТМ REST API
+├── index.js              # Entry point — инициализация всех модулей
+├── config.js             # Конфигурация (из ProgramData)
 ├── cloudSync.js          # WebSocket соединение с облаком
-├── queueProcessor.js     # Обработка очереди документов
 ├── db.js                 # Локальная SQLite (offline queue)
+│
+├── modules/
+│   ├── egais/
+│   │   ├── utmClient.js       # Клиент для УТМ REST API
+│   │   └── queueProcessor.js  # Обработка очереди ЕГАИС документов
+│   │
+│   └── kkt/                   # [Phase 4] Модуль фискального регистратора
+│       ├── kktClient.js       # Клиент для ATOL DTO / WebServer API
+│       ├── receiptBuilder.js  # Формирование чека для ФР
+│       └── kktProcessor.js    # Обработка команд печати чеков
+│
 ├── installer/
 │   ├── setup.nsi         # NSIS installer
 │   └── icon.ico
@@ -694,9 +723,9 @@ hookahpos-egais-agent/
 
 ```json
 {
-  "name": "hookahpos-egais-agent",
+  "name": "hookahpos-agent",
   "version": "1.0.0",
-  "description": "ЕГАИС агент для HookahPOS",
+  "description": "Локальный агент HookahPOS (ЕГАИС, ККТ)",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -723,6 +752,31 @@ const path = require('path');
 const configPath = path.join(process.env.PROGRAMDATA || 'C:\\ProgramData',
                               'HookahPOS', 'agent-config.json');
 
+// Пример конфигурации:
+// {
+//   "tenantSlug": "my-bar",
+//   "cloudUrl": "https://hookahpos.ru",
+//   "apiKey": "xxx",
+//
+//   // Модуль ЕГАИС (Phase 1)
+//   "egais": {
+//     "enabled": true,
+//     "utmUrl": "http://localhost:8080",
+//     "utmLogin": "",
+//     "utmPassword": "",
+//     "fsrarId": "030000123456"
+//   },
+//
+//   // Модуль ККТ (Phase 4)
+//   "kkt": {
+//     "enabled": false,
+//     "provider": "atol_dto",
+//     "driverUrl": "http://localhost:16732",
+//     "cashierName": "Кассир",
+//     "cashierInn": ""
+//   }
+// }
+
 function loadConfig() {
   if (!fs.existsSync(configPath)) {
     throw new Error('Конфигурация не найдена. Запустите установку агента.');
@@ -741,7 +795,7 @@ function saveConfig(config) {
 module.exports = { loadConfig, saveConfig, configPath };
 ```
 
-**utmClient.js**
+**modules/egais/utmClient.js**
 ```javascript
 const axios = require('axios');
 
@@ -865,13 +919,26 @@ class CloudSync {
       this.logger.warn('Отключено от облака');
     });
 
-    // Слушать команды от облака
+    // Слушать команды от облака — ЕГАИС
     this.socket.on('egais:sendWayBill', (data) => {
-      this.onMessage('sendWayBill', data);
+      this.onMessage('egais:sendWayBill', data);
     });
 
     this.socket.on('egais:chargeSale', (data) => {
-      this.onMessage('chargeSale', data);
+      this.onMessage('egais:chargeSale', data);
+    });
+
+    // Слушать команды от облака — ККТ (Phase 4)
+    this.socket.on('kkt:print', (data) => {
+      this.onMessage('kkt:print', data);
+    });
+
+    this.socket.on('kkt:refund', (data) => {
+      this.onMessage('kkt:refund', data);
+    });
+
+    this.socket.on('kkt:xReport', (data) => {
+      this.onMessage('kkt:xReport', data);
     });
 
     // Heartbeat каждые 30 секунд
@@ -880,16 +947,22 @@ class CloudSync {
 
   sendHeartbeat() {
     if (this.socket?.connected) {
-      this.socket.emit('egais:heartbeat', {
+      this.socket.emit('agent:heartbeat', {
         timestamp: Date.now(),
-        version: require('./package.json').version
+        version: require('./package.json').version,
+        modules: this.activeModules || {}
+        // { egais: { online: true }, kkt: { online: true, model: 'ATOL 30F' } }
       });
     }
   }
 
+  setActiveModules(modules) {
+    this.activeModules = modules;
+  }
+
   sendStatus(queueItemId, status, data) {
     if (this.socket?.connected) {
-      this.socket.emit('egais:status', {
+      this.socket.emit('agent:status', {
         queueItemId,
         status,
         data
@@ -908,9 +981,7 @@ module.exports = CloudSync;
 **index.js** (главный файл агента)
 ```javascript
 const { loadConfig } = require('./config');
-const UTMClient = require('./utmClient');
 const CloudSync = require('./cloudSync');
-const QueueProcessor = require('./queueProcessor');
 const winston = require('winston');
 
 const logger = winston.createLogger({
@@ -927,38 +998,75 @@ const logger = winston.createLogger({
 
 async function main() {
   try {
-    // Загрузить конфигурацию
     const config = loadConfig();
     logger.info('Конфигурация загружена', { slug: config.tenantSlug });
 
-    // Инициализировать клиенты
-    const utmClient = new UTMClient(
-      config.utmUrl,
-      config.utmLogin,
-      config.utmPassword
-    );
+    // ========== Модуль ЕГАИС ==========
+    let egaisProcessor = null;
+    if (config.egais?.enabled) {
+      const UTMClient = require('./modules/egais/utmClient');
+      const EgaisQueueProcessor = require('./modules/egais/queueProcessor');
 
-    const queueProcessor = new QueueProcessor(utmClient, logger);
+      const utmClient = new UTMClient(
+        config.egais.utmUrl,
+        config.egais.utmLogin,
+        config.egais.utmPassword
+      );
 
-    // Подключиться к облаку
+      egaisProcessor = new EgaisQueueProcessor(utmClient, logger);
+
+      // Проверка УТМ каждые 60 секунд
+      setInterval(async () => {
+        const isUtmOnline = await utmClient.ping();
+        logger.info('Статус УТМ', { online: isUtmOnline });
+      }, 60000);
+
+      logger.info('Модуль ЕГАИС включен');
+    }
+
+    // ========== Модуль ККТ (Phase 4) ==========
+    let kktProcessor = null;
+    if (config.kkt?.enabled) {
+      const KktClient = require('./modules/kkt/kktClient');
+      const KktProcessor = require('./modules/kkt/kktProcessor');
+
+      const kktClient = new KktClient(config.kkt.driverUrl);
+      kktProcessor = new KktProcessor(kktClient, config.kkt, logger);
+
+      // Проверка доступности ФР каждые 30 секунд
+      setInterval(async () => {
+        const isKktOnline = await kktClient.ping();
+        logger.info('Статус ФР', { online: isKktOnline });
+      }, 30000);
+
+      logger.info('Модуль ККТ включен', { provider: config.kkt.provider });
+    }
+
+    // ========== WebSocket к облаку ==========
     const cloudSync = new CloudSync(
       config.cloudUrl,
       config.apiKey,
       async (command, data) => {
         logger.info('Получена команда от облака', { command });
-        await queueProcessor.process(command, data);
+
+        // Маршрутизация команд по модулям
+        if (command.startsWith('egais:') && egaisProcessor) {
+          await egaisProcessor.process(command, data);
+        } else if (command.startsWith('kkt:') && kktProcessor) {
+          // Phase 4: kkt:print, kkt:refund, kkt:status, kkt:xReport, kkt:zReport
+          const result = await kktProcessor.process(command, data);
+          cloudSync.sendStatus(data.queueItemId, result.status, result);
+        }
       }
     );
 
     cloudSync.connect();
-
-    // Проверка УТМ каждые 60 секунд
-    setInterval(async () => {
-      const isUtmOnline = await utmClient.ping();
-      logger.info('Статус УТМ', { online: isUtmOnline });
-    }, 60000);
-
-    logger.info('Агент ЕГАИС запущен');
+    logger.info('Агент HookahPOS запущен', {
+      modules: {
+        egais: !!egaisProcessor,
+        kkt: !!kktProcessor
+      }
+    });
 
     // Graceful shutdown
     process.on('SIGTERM', () => {
@@ -1355,11 +1463,11 @@ app.listen(8080, () => {
 
 Запуск: `node server/test-utils/mockUTM.js`
 
-### 5.2 Чеклист перед продакшеном
+### 5.2 Чеклист перед продакшеном (ЕГАИС)
 
 - [ ] Миграция 012 применена на проде
 - [ ] ЕГАИС routes подключены
-- [ ] Клиентский агент собран в EXE
+- [ ] Локальный агент собран в EXE
 - [ ] NSIS installer протестирован
 - [ ] WebSocket соединение работает через nginx
 - [ ] Тестирование на реальном УТМ (тестовая среда ЕГАИС)
@@ -1394,7 +1502,7 @@ app.listen(8080, () => {
 
 **Результат**: готовое решение для продакшена
 
-### Phase 3: Advanced Features (40 часов)
+### Phase 3: ЕГАИС — Advanced Features (40 часов)
 - [ ] Инвентаризация марок (8 часов)
 - [ ] Возвраты и списания (6 часов)
 - [ ] Отчеты по ЕГАИС (расхождения, аудит) (6 часов)
@@ -1405,11 +1513,124 @@ app.listen(8080, () => {
 
 **Результат**: полнофункциональная интеграция с ЕГАИС
 
+### Phase 4: ККТ — Фискальный регистратор через агента (35-40 часов)
+
+**Предпосылки**: агент уже работает (Phase 1-2), ATOL Online уже реализован в облаке — переиспользуем модель данных `kkt_receipts` и UI.
+
+#### 4.1 Модуль агента — `modules/kkt/` (12 часов)
+
+**`kktClient.js`** — клиент для ATOL DTO / WebServer:
+- `ping()` — проверка доступности ФР
+- `getDeviceInfo()` — модель, серийный номер, статус ФН
+- `sell(receipt)` — фискализация чека продажи
+- `sellRefund(receipt)` — чек возврата
+- `xReport()` — X-отчёт (без закрытия смены)
+- `zReport()` — Z-отчёт (закрытие смены ФР)
+- `openShift(cashierName)` — открытие смены ФР
+- `getShiftStatus()` — статус текущей смены ФР
+
+**`receiptBuilder.js`** — конвертация данных из облачного формата в формат ATOL DTO:
+- Маппинг полей: items, payments, vat, client info
+- Формат ATOL DTO отличается от ATOL Online API
+
+**`kktProcessor.js`** — обработка WebSocket команд:
+- `kkt:print` → собрать чек → отправить на ФР → вернуть фискальные данные
+- `kkt:refund` → чек возврата
+- `kkt:xReport` → запрос X-отчёта
+- `kkt:zReport` → закрытие смены ФР
+- Локальная очередь в SQLite при потере связи с облаком
+
+#### 4.2 Серверная часть — провайдер `agent` (8 часов)
+
+Добавить новый провайдер в `server/services/kkt/providers/`:
+
+**`agentProvider.js`** — отправка чека через WebSocket агенту вместо облачного API:
+- Вместо HTTP-запроса на `online.atol.ru` → WebSocket event `kkt:print` агенту
+- Ожидание ответа `agent:status` с фискальными данными (с таймаутом)
+- Ответ синхронный (ФР печатает ~2-3 сек) в отличие от ATOL Online (polling)
+
+**`kktProviderFactory.js`** — расширить:
+```javascript
+case 'atol':        return new AtolProvider(config);     // облако
+case 'agent_atol':  return new AgentProvider(config);    // ФР через агента
+```
+
+Настройка в `tenant_integrations.kkt_provider`:
+- `'atol'` — облачная фискализация (ATOL Online, как сейчас)
+- `'agent_atol'` — физический ФР через локального агента
+
+#### 4.3 Серверная часть — WebSocket обработка (4 часа)
+
+В `server/socket.js` добавить:
+- Namespace/room для агентов: `agent:{tenantId}`
+- Обработка `agent:heartbeat` — обновление `egais_agents.is_online`, `last_ping_at` + статус модулей
+- Обработка `agent:status` — результат фискализации → обновление `kkt_receipts`
+- Функция `sendToAgent(tenantId, event, data)` — для отправки команд агенту из route handlers
+
+#### 4.4 Клиентская часть — настройки (4 часа)
+
+В `IntegrationSettings.jsx` расширить выбор ККТ провайдера:
+- "АТОЛ Онлайн" (облачная фискализация) — текущий
+- "Фискальный регистратор (через агент)" — новый
+  - Показывать статус агента и ФР (онлайн/оффлайн)
+  - Информация об устройстве (модель, ФН, срок действия ФН)
+  - Кнопка "Тест печати" — тестовый нефискальный чек
+  - Кнопка "X-отчёт" / "Z-отчёт"
+
+#### 4.5 Тестирование и mock (6 часов)
+
+Расширить mock-сервер для эмуляции ATOL DTO:
+```javascript
+// В test-utils/mockATOLDTO.js — эмуляция ATOL WebServer на :16732
+app.post('/api/v2/sell', (req, res) => {
+  res.json({
+    fiscalParams: {
+      fiscalDocumentNumber: 12345,
+      fiscalSign: '1234567890',
+      fnNumber: '9999078900012345',
+      registrationNumber: 'KKT-001',
+      receiptDatetime: new Date().toISOString()
+    }
+  });
+});
+```
+
+#### 4.6 Workflow фискализации через агента
+
+```
+Кассир закрывает заказ в браузере
+  → POST /api/orders/:id/close
+  → kkt_provider = 'agent_atol'
+  → AgentProvider.sell(receipt)
+  → WebSocket event 'kkt:print' → агент
+  → Агент → ATOL DTO (localhost:16732) → ФР → печать чека
+  → Агент получает фискальные данные
+  → WebSocket event 'agent:status' → сервер
+  → Обновление kkt_receipts (fiscal_number, etc.)
+  → WebSocket event → браузер (обновление UI)
+  → Кассир видит "Чек напечатан, ФД №12345"
+```
+
+Время отклика: ~2-3 сек (печать на ФР) вместо ~5-15 сек (ATOL Online polling).
+
+#### 4.7 Чеклист перед продакшеном (ККТ)
+
+- [ ] `agentProvider.js` реализован и подключен в factory
+- [ ] WebSocket обработка `kkt:*` команд на сервере
+- [ ] Модуль `modules/kkt/` в агенте
+- [ ] UI настроек расширен для выбора провайдера
+- [ ] Mock ATOL DTO для тестов
+- [ ] Тест с реальным ATOL DTO + ФР (АТОЛ 30Ф или аналог)
+- [ ] Обработка ситуации "агент оффлайн" (fallback / ошибка)
+- [ ] Обработка ситуации "ФР оффлайн / замятие бумаги / ФН переполнен"
+
+**Результат**: клиент может выбрать между облачной фискализацией (ATOL Online) и физическим фискальным регистратором через агент. Один агент обслуживает и ЕГАИС, и ККТ.
+
 ---
 
 ## Стоимость инфраструктуры
 
-- **Разработка**: 110-120 часов
+- **Разработка**: 145-160 часов (Phase 1-4)
 - **Тестовая среда ЕГАИС**: бесплатно (требуется регистрация)
 - **Тестовый УТМ**: бесплатно (скачать с сайта ФСРАР)
 - **ЭЦП для тестов**: ~3000₽ (тестовый сертификат)
@@ -1430,12 +1651,12 @@ app.listen(8080, () => {
 
 ## Что дальше?
 
-После утверждения плана начинаем с **Phase 1 (MVP)**:
+После утверждения плана начинаем с **Phase 1 (MVP ЕГАИС)**:
 
 1. Применяем миграцию БД
 2. Разрабатываем Server API
-3. Создаем базовую версию агента
+3. Создаём базовую версию агента (модульная архитектура)
 4. Делаем UI для сканирования
 5. Тестируем на mock УТМ
 
-Готовы начать? 🚀
+**Phase 4 (ККТ через агента)** реализуется после стабильной работы ЕГАИС — переиспользуем инфраструктуру агента, WebSocket-канал, и модель данных `kkt_receipts`.
