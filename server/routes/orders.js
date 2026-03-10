@@ -254,6 +254,13 @@ router.post('/:id/close', async (req, res) => {
     }
   }
 
+  // Контакт покупателя для чека ККТ (54-ФЗ)
+  let clientPhone = null;
+  if (finalGuestId) {
+    const guestRow = await get('SELECT phone FROM guests WHERE id = $1', [finalGuestId]);
+    if (guestRow?.phone) clientPhone = guestRow.phone;
+  }
+
   // === ККТ строгий режим: фискализация ДО закрытия ===
   let kktResult = null;
   if (req.integrations?.kkt_enabled && req.integrations?.kkt_provider && req.integrations.kkt_strict_mode) {
@@ -264,7 +271,7 @@ router.post('/:id/close', async (req, res) => {
       [order.id]
     );
     kktResult = await kkt.createSellReceipt(
-      { orderId: order.id, total: totalToPay, paidCash: finalPaidCash, paidCard: finalPaidCard },
+      { orderId: order.id, total: totalToPay, paidCash: finalPaidCash, paidCard: finalPaidCard, clientPhone },
       receiptItems, req.user.name
     );
     if (!kktResult.success) {
@@ -361,7 +368,7 @@ router.post('/:id/close', async (req, res) => {
         [order.id]
       );
       kktResult = await kkt.createSellReceipt(
-        { orderId: order.id, total: totalToPay, paidCash: finalPaidCash, paidCard: finalPaidCard },
+        { orderId: order.id, total: totalToPay, paidCash: finalPaidCash, paidCard: finalPaidCard, clientPhone },
         receiptItems, req.user.name
       );
     } catch (err) {

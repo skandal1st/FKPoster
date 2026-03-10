@@ -46,7 +46,7 @@ class KktService {
   }
 
   async _createReceipt(type, orderData, orderItems, _cashierName) {
-    const { orderId, total, paidCash, paidCard } = orderData;
+    const { orderId, total, paidCash, paidCard, clientPhone } = orderData;
     const totalNum = parseFloat(total) || 0;
 
     // Формируем позиции чека с распределением скидки
@@ -110,7 +110,7 @@ class KktService {
     const payload = {
       external_id: `order-${orderId}-${Date.now()}`,
       receipt: {
-        client: {},
+        client: clientPhone ? { phone: clientPhone } : { email: 'receipt@hookahpos.ru' },
         company: {
           sno: this.sno,
           inn: this.inn,
