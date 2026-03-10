@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { usePosStore } from '../store/posStore';
 import toast from 'react-hot-toast';
-import { Plus, Minus, X, Banknote, CreditCard, Trash2, Receipt, Info, User, Printer, ArrowRightLeft } from 'lucide-react';
+import { Plus, Minus, X, Banknote, CreditCard, Trash2, Receipt, Info, User, Printer, ArrowRightLeft, Users } from 'lucide-react';
 import ReceiptModal from '../components/ReceiptModal';
 import TechCardPopover from '../components/TechCardPopover';
 import MarkingScanner from '../components/MarkingScanner';
@@ -9,11 +9,12 @@ import { useAuthStore } from '../store/authStore';
 import { openPrintWindow, formatReceipt, formatKitchenTicket } from '../utils/print';
 import { getTableDisplayName } from '../utils/tableDisplay';
 import './POS.css';
+import './HallMap.css';
 
 export default function POS({ embedded = false, onClose }) {
   const {
-    categories, products, tables, openOrders, currentOrder, pendingTableId, registerDay, guests, workshops, printSettings,
-    loadCategories, loadProducts, loadTables, loadOpenOrders, loadRegisterDay, loadGuests, loadWorkshops, loadPrintSettings,
+    categories, products, tables, halls, openOrders, currentOrder, pendingTableId, registerDay, guests, workshops, printSettings,
+    loadCategories, loadProducts, loadTables, loadHalls, loadOpenOrders, loadRegisterDay, loadGuests, loadWorkshops, loadPrintSettings,
     createOrder, selectOrder, addItem, removeItem, closeOrder, cancelOrder, moveOrder, clearCurrentOrder,
   } = usePosStore();
 
@@ -36,11 +37,14 @@ export default function POS({ embedded = false, onClose }) {
   const [selectedGuest, setSelectedGuest] = useState(null);
   /** Модалка выбора стола для пересадки */
   const [showMovePicker, setShowMovePicker] = useState(false);
+  /** Выбранный зал в модалке пересадки */
+  const [movePickerHall, setMovePickerHall] = useState(null);
 
   useEffect(() => {
     loadCategories();
     loadProducts();
     loadTables();
+    loadHalls();
     loadOpenOrders();
     loadRegisterDay();
     loadGuests();
@@ -465,33 +469,102 @@ export default function POS({ embedded = false, onClose }) {
         </div>
       )}
 
-      {/* Move table picker modal */}
-      {showMovePicker && currentOrder && (
-        <div className="modal-overlay" onClick={() => setShowMovePicker(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3 className="modal-title">Пересадить на столик</h3>
-              <button className="btn-icon" onClick={() => setShowMovePicker(false)}><X size={18} /></button>
-            </div>
-            <div className="grid-3">
-              {tables.filter((t) => !t.locked_by_plan && t.id !== currentOrder.table_id).map((table) => {
-                const hasOrder = openOrders.some((o) => o.table_id === table.id);
-                return (
-                  <button
-                    key={table.id}
-                    className={`pos-table-btn ${hasOrder ? 'occupied' : ''}`}
-                    onClick={() => !hasOrder && handleMoveOrder(table.id)}
-                    disabled={hasOrder}
-                  >
-                    {getTableDisplayName({ label: table.label, number: table.number })}
-                    {hasOrder && <span className="pos-table-busy">занят</span>}
-                  </button>
-                );
-              })}
+      {/* Move table picker modal — hall map style */}
+      {showMovePicker && currentOrder && (() => {
+        const activeHalls = halls.filter((h) => !h.locked_by_plan);
+        const hallId = movePickerHall || activeHalls[0]?.id;
+        const hall = activeHalls.find((h) => h.id === hallId);
+        const cols = hall?.grid_cols ?? 6;
+        const rows = hall?.grid_rows ?? 4;
+        const hallTables = tables.filter((t) => t.hall_id === hallId && !t.locked_by_plan);
+        const cellSize = 110;
+        const gap = 6;
+        const gridW = cols * cellSize + (cols - 1) * gap;
+        const gridH = rows * cellSize + (rows - 1) * gap;
+        const gp = (gx, gy) => ({ x: gx * (cellSize + gap), y: gy * (cellSize + gap) });
+
+        return (
+          <div className="modal-overlay" onClick={() => setShowMovePicker(false)}>
+            <div className="modal" style={{ maxWidth: Math.max(500, gridW + 48), width: 'auto' }} onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h3 className="modal-title">Пересадить на столик</h3>
+                <button className="btn-icon" onClick={() => setShowMovePicker(false)}><X size={18} /></button>
+              </div>
+
+              {activeHalls.length > 1 && (
+                <div className="hall-tabs" style={{ marginBottom: 12 }}>
+                  {activeHalls.map((h) => (
+                    <div key={h.id} className={`hall-tab ${hallId === h.id ? 'active' : ''}`}>
+                      <button type="button" className="hall-tab-label" onClick={() => setMovePickerHall(h.id)}>
+                        {h.name}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div style={{ overflow: 'auto', padding: '0 4px 12px' }}>
+                <div style={{ position: 'relative', width: gridW, height: gridH, margin: '0 auto' }}>
+                  {/* Grid background */}
+                  {Array.from({ length: rows }).map((_, row) =>
+                    Array.from({ length: cols }).map((_, col) => {
+                      const pos = gp(col, row);
+                      return (
+                        <div
+                          key={`c-${row}-${col}`}
+                          className="hall-grid-cell"
+                          style={{ position: 'absolute', left: pos.x, top: pos.y, width: cellSize, height: cellSize }}
+                        />
+                      );
+                    })
+                  )}
+                  {/* Tables */}
+                  {hallTables.map((table) => {
+                    const isCurrent = table.id === currentOrder.table_id;
+                    const order = openOrders.find((o) => o.table_id === table.id);
+                    const hasOrder = !!order && !isCurrent;
+                    const disabled = isCurrent || hasOrder;
+                    const gx = Math.max(0, table.grid_x ?? 0);
+                    const gy = Math.max(0, table.grid_y ?? 0);
+                    const pos = gp(gx, gy);
+
+                    return (
+                      <div
+                        key={table.id}
+                        role={!disabled ? 'button' : undefined}
+                        className={`hall-table hall-table--grid ${isCurrent || hasOrder ? 'occupied' : 'free'} ${!disabled ? 'hall-table--clickable' : ''}`}
+                        style={{
+                          position: 'absolute',
+                          left: pos.x,
+                          top: pos.y,
+                          width: cellSize,
+                          height: cellSize,
+                          ...(disabled ? { opacity: 0.5, cursor: 'not-allowed' } : {}),
+                        }}
+                        onClick={() => !disabled && handleMoveOrder(table.id)}
+                      >
+                        <span className="hall-table-dot" data-status={isCurrent || hasOrder ? 'occupied' : 'free'} />
+                        <span className={`hall-table-number ${table.label ? 'hall-table-number--label' : ''}`}>
+                          {table.label || table.number}
+                        </span>
+                        <div className="hall-table-meta">
+                          <Users size={12} />
+                          <span>{table.seats ?? 4} мест</span>
+                        </div>
+                        {isCurrent && <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>текущий</div>}
+                        {hasOrder && <div className="hall-table-sum">{Number(order.total).toFixed(0)} ₽</div>}
+                      </div>
+                    );
+                  })}
+                </div>
+                {hallTables.length === 0 && (
+                  <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 20 }}>Нет столиков в этом зале</div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Подтверждение закрытия стола при выборе оплаты */}
       {paymentConfirm && currentOrder && (
