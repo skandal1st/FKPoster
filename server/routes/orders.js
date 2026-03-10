@@ -413,6 +413,75 @@ router.post('/:id/cancel', async (req, res) => {
 });
 
 /**
+ * Пересадить заказ на другой стол.
+ */
+router.patch('/:id/move', async (req, res) => {
+  const { table_id } = req.body;
+  if (!table_id) {
+    return res.status(400).json({ error: 'Укажите новый стол' });
+  }
+
+  const order = await get(
+    "SELECT * FROM orders WHERE id = $1 AND status = 'open' AND tenant_id = $2",
+    [req.params.id, req.tenantId]
+  );
+  if (!order) return res.status(404).json({ error: 'Заказ не найден или уже закрыт' });
+
+  if (order.table_id === table_id) {
+    return res.status(400).json({ error: 'Заказ уже на этом столе' });
+  }
+
+  // Проверяем что новый стол существует и принадлежит тенанту
+  const table = await get('SELECT t.*, h.id as hall_id FROM tables t JOIN halls h ON t.hall_id = h.id WHERE t.id = $1 AND t.tenant_id = $2', [table_id, req.tenantId]);
+  if (!table) return res.status(404).json({ error: 'Стол не найден' });
+
+  // Проверяем лимит по залам
+  const maxHalls = req.plan?.max_halls;
+  if (maxHalls && table.hall_id) {
+    const hallIds = await all(
+      'SELECT id FROM halls WHERE active = true AND tenant_id = $1 ORDER BY id',
+      [req.tenantId]
+    );
+    const allowedIds = hallIds.slice(0, maxHalls).map((h) => h.id);
+    if (!allowedIds.includes(table.hall_id)) {
+      return res.status(403).json({ error: 'Зал заблокирован по лимиту тарифа. Обновите план.' });
+    }
+  }
+
+  // Проверяем что на новом столе нет открытого заказа
+  const existing = await get(
+    "SELECT id FROM orders WHERE table_id = $1 AND status = 'open' AND tenant_id = $2",
+    [table_id, req.tenantId]
+  );
+  if (existing) {
+    return res.status(400).json({ error: 'На этом столике уже есть открытый заказ' });
+  }
+
+  await run('UPDATE orders SET table_id = $1 WHERE id = $2', [table_id, order.id]);
+
+  const updated = await get(`
+    SELECT o.*, t.number as table_number, t.label as table_label, h.name as hall_name,
+           g.name as guest_name, g.discount_type as guest_discount_type, g.discount_value as guest_discount_value
+    FROM orders o
+    LEFT JOIN tables t ON o.table_id = t.id
+    LEFT JOIN halls h ON t.hall_id = h.id
+    LEFT JOIN guests g ON o.guest_id = g.id
+    WHERE o.id = $1
+  `, [order.id]);
+  updated.items = await all(`
+    SELECT oi.*, c.name as category_name, w.name as workshop_name, w.id as workshop_id
+    FROM order_items oi
+    LEFT JOIN products p ON oi.product_id = p.id
+    LEFT JOIN categories c ON p.category_id = c.id
+    LEFT JOIN workshops w ON c.workshop_id = w.id
+    WHERE oi.order_id = $1
+  `, [order.id]);
+
+  emitEvent(req, 'order:updated', updated);
+  res.json(updated);
+});
+
+/**
  * Изменить способ оплаты у закрытого заказа.
  * Пересчитывает итоги кассового дня (total_cash / total_card).
  */

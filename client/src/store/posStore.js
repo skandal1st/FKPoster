@@ -137,6 +137,15 @@ export const usePosStore = create((set, get) => ({
     }
   },
 
+  moveOrder: async (newTableId) => {
+    const { currentOrder } = get();
+    if (!currentOrder) return;
+    const order = await api.patch(`/orders/${currentOrder.id}/move`, { table_id: newTableId });
+    set({ currentOrder: order });
+    get().loadOpenOrders();
+    return order;
+  },
+
   cancelOrder: async () => {
     const { currentOrder } = get();
     if (!currentOrder) return;

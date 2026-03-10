@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { usePosStore } from '../store/posStore';
 import toast from 'react-hot-toast';
-import { Plus, Minus, X, Banknote, CreditCard, Trash2, Receipt, Info, User, Printer } from 'lucide-react';
+import { Plus, Minus, X, Banknote, CreditCard, Trash2, Receipt, Info, User, Printer, ArrowRightLeft } from 'lucide-react';
 import ReceiptModal from '../components/ReceiptModal';
 import TechCardPopover from '../components/TechCardPopover';
 import MarkingScanner from '../components/MarkingScanner';
@@ -14,7 +14,7 @@ export default function POS({ embedded = false, onClose }) {
   const {
     categories, products, tables, openOrders, currentOrder, pendingTableId, registerDay, guests, workshops, printSettings,
     loadCategories, loadProducts, loadTables, loadOpenOrders, loadRegisterDay, loadGuests, loadWorkshops, loadPrintSettings,
-    createOrder, selectOrder, addItem, removeItem, closeOrder, cancelOrder, clearCurrentOrder,
+    createOrder, selectOrder, addItem, removeItem, closeOrder, cancelOrder, moveOrder, clearCurrentOrder,
   } = usePosStore();
 
   const { tenant } = useAuthStore();
@@ -34,6 +34,8 @@ export default function POS({ embedded = false, onClose }) {
   const [mixedCashAmount, setMixedCashAmount] = useState('');
   /** Выбранный гость для скидки */
   const [selectedGuest, setSelectedGuest] = useState(null);
+  /** Модалка выбора стола для пересадки */
+  const [showMovePicker, setShowMovePicker] = useState(false);
 
   useEffect(() => {
     loadCategories();
@@ -167,6 +169,16 @@ export default function POS({ embedded = false, onClose }) {
     try {
       await cancelOrder();
       toast.success('Заказ отменён');
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleMoveOrder = async (newTableId) => {
+    try {
+      await moveOrder(newTableId);
+      setShowMovePicker(false);
+      toast.success('Заказ перемещён');
     } catch (err) {
       toast.error(err.message);
     }
@@ -361,6 +373,11 @@ export default function POS({ embedded = false, onClose }) {
                 <Printer size={16} /> Печать на кухню
               </button>
             )}
+            {currentOrder.table_id && (
+              <button className="btn btn-ghost btn-sm" onClick={() => setShowMovePicker(true)} style={{ width: '100%', marginTop: 8 }}>
+                <ArrowRightLeft size={16} /> Пересадить
+              </button>
+            )}
             <button className="btn btn-ghost btn-sm" onClick={handleCancel} style={{ width: '100%', marginTop: 8 }}>
               Отменить заказ
             </button>
@@ -443,6 +460,34 @@ export default function POS({ embedded = false, onClose }) {
               <button className="btn btn-ghost" onClick={() => handleNewOrder(null)} style={{ width: '100%' }}>
                 Без столика
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Move table picker modal */}
+      {showMovePicker && currentOrder && (
+        <div className="modal-overlay" onClick={() => setShowMovePicker(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title">Пересадить на столик</h3>
+              <button className="btn-icon" onClick={() => setShowMovePicker(false)}><X size={18} /></button>
+            </div>
+            <div className="grid-3">
+              {tables.filter((t) => !t.locked_by_plan && t.id !== currentOrder.table_id).map((table) => {
+                const hasOrder = openOrders.some((o) => o.table_id === table.id);
+                return (
+                  <button
+                    key={table.id}
+                    className={`pos-table-btn ${hasOrder ? 'occupied' : ''}`}
+                    onClick={() => !hasOrder && handleMoveOrder(table.id)}
+                    disabled={hasOrder}
+                  >
+                    {getTableDisplayName({ label: table.label, number: table.number })}
+                    {hasOrder && <span className="pos-table-busy">занят</span>}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
