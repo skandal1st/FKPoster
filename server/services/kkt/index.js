@@ -110,7 +110,7 @@ class KktService {
     const payload = {
       external_id: `order-${orderId}-${Date.now()}`,
       receipt: {
-        client: clientPhone ? { phone: clientPhone } : { email: 'receipt@hookahpos.ru' },
+        client: { email: 'receipt@hookahpos.ru', ...(clientPhone ? { phone: clientPhone } : {}) },
         company: {
           sno: this.sno,
           inn: this.inn,
