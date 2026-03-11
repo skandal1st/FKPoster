@@ -29,10 +29,11 @@ router.post('/login', async (req, res) => {
     return res.status(401).json({ error: 'Неверный email или пароль' });
   }
 
+  const isCapacitorClient = req.headers['x-client-type'] === 'capacitor';
   const token = jwt.sign(
     { id: user.id, role: user.role, tenant_id: user.tenant_id, chain_id: user.chain_id || null },
     config.JWT_SECRET,
-    { expiresIn: '24h' }
+    { expiresIn: isCapacitorClient ? '30d' : '24h' }
   );
 
   let tenant = null;
@@ -237,10 +238,11 @@ router.post('/pin-login', async (req, res) => {
     return res.status(401).json({ error: 'Неверный PIN-код' });
   }
 
+  const isCapacitorClient = req.headers['x-client-type'] === 'capacitor';
   const token = jwt.sign(
     { id: user.id, role: user.role, tenant_id: user.tenant_id },
     config.JWT_SECRET,
-    { expiresIn: '24h' }
+    { expiresIn: isCapacitorClient ? '30d' : '24h' }
   );
 
   const tenant = await get(

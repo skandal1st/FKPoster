@@ -36,6 +36,7 @@ const salaryRoutes = require('./routes/salary');
 const edoRoutes = require('./routes/edo');
 const counterpartyRoutes = require('./routes/counterparties');
 const kktRoutes = require('./routes/kkt');
+const modifierRoutes = require('./routes/modifiers');
 
 const app = express();
 
@@ -46,11 +47,13 @@ app.set('trust proxy', 1);
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(morgan(config.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
-// CORS — разрешить *.BASE_DOMAIN + localhost/127.0.0.1 (exact suffix match)
+// CORS — разрешить *.BASE_DOMAIN + localhost/127.0.0.1 + Capacitor (exact suffix match)
 const baseDomain = config.BASE_DOMAIN;
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true); // allow non-browser (curl, etc)
+    // Capacitor WebView: capacitor://localhost
+    if (origin.startsWith('capacitor://')) return callback(null, true);
     let hostname;
     try {
       hostname = new URL(origin).hostname;
@@ -127,6 +130,7 @@ app.use('/api/salary', salaryRoutes);
 app.use('/api/edo', edoRoutes);
 app.use('/api/counterparties', counterpartyRoutes);
 app.use('/api/kkt', kktRoutes);
+app.use('/api/modifiers', modifierRoutes);
 
 // Production: serve React build
 if (config.NODE_ENV === 'production') {

@@ -21,23 +21,32 @@ export default function Products() {
     unit: 'шт', track_inventory: 1, is_composite: 0, min_quantity: '',
     barcode: '', marking_type: 'none', egais_alcocode: '', tobacco_gtin: '', vat_rate: ''
   });
-
-  useEffect(() => { load(); }, []);
+  // Модификаторы
+  const [allModifiers, setAllModifiers] = useState([]);
+  const [selectedModifierIds, setSelectedModifierIds] = useState([]);
+  const [showNewModifier, setShowNewModifier] = useState(false);
+  const [modifierForm, setModifierForm] = useState({ name: '', price: '', cost_price: '', ingredient_id: '' });
 
   const load = async () => {
-    const [prods, ings, cats] = await Promise.all([
+    const [prods, ings, cats, mods] = await Promise.all([
       api.get('/products'),
       api.get('/ingredients'),
-      api.get('/categories')
+      api.get('/categories'),
+      api.get('/modifiers')
     ]);
     setProducts(prods);
     setIngredients(ings);
     setCategories(cats);
+    setAllModifiers(mods);
   };
+
+  useEffect(() => { load(); }, []);
 
   const openNew = () => {
     setEditing(null);
     setForm({ category_id: categories[0]?.id || '', name: '', price: '', cost_price: '', quantity: '', unit: 'шт', track_inventory: 1, is_composite: 0, min_quantity: '', barcode: '', marking_type: 'none', egais_alcocode: '', tobacco_gtin: '', vat_rate: '' });
+    setSelectedModifierIds([]);
+    setShowNewModifier(false);
     setShowModal(true);
   };
 
@@ -51,6 +60,8 @@ export default function Products() {
       egais_alcocode: p.egais_alcocode || '', tobacco_gtin: p.tobacco_gtin || '',
       vat_rate: p.vat_rate || ''
     });
+    setSelectedModifierIds((p.modifiers || []).map((m) => m.id));
+    setShowNewModifier(false);
     setShowModal(true);
   };
 
@@ -59,15 +70,37 @@ export default function Products() {
       const data = { ...form, price: Number(form.price), cost_price: Number(form.cost_price), quantity: Number(form.quantity), min_quantity: Number(form.min_quantity) || 0, vat_rate: form.vat_rate || null };
       if (editing) {
         const updated = await api.put(`/products/${editing.id}`, data);
+        await api.put(`/products/${editing.id}/modifiers`, { modifier_ids: selectedModifierIds });
         toast.success('Товар обновлён');
         setProducts((prev) => prev.map((p) => (p.id === editing.id ? { ...p, ...updated } : p)));
       } else {
-        await api.post('/products', data);
+        const created = await api.post('/products', data);
+        if (selectedModifierIds.length > 0) {
+          await api.put(`/products/${created.id}/modifiers`, { modifier_ids: selectedModifierIds });
+        }
         toast.success('Товар создан');
       }
       setShowModal(false);
-      if (editing) return;
       load();
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
+  const createModifier = async () => {
+    if (!modifierForm.name) { toast.error('Укажите название модификатора'); return; }
+    try {
+      const mod = await api.post('/modifiers', {
+        name: modifierForm.name,
+        price: Number(modifierForm.price) || 0,
+        cost_price: Number(modifierForm.cost_price) || 0,
+        ingredient_id: modifierForm.ingredient_id ? Number(modifierForm.ingredient_id) : null
+      });
+      setAllModifiers((prev) => [...prev, mod]);
+      setSelectedModifierIds((prev) => [...prev, mod.id]);
+      setModifierForm({ name: '', price: '', cost_price: '', ingredient_id: '' });
+      setShowNewModifier(false);
+      toast.success('Модификатор создан');
     } catch (err) {
       toast.error(err.message);
     }
@@ -252,6 +285,76 @@ export default function Products() {
                 </label>
               </div>
             </div>
+            {/* Модификаторы */}
+            <div className="form-group" style={{ marginTop: 16 }}>
+              <label className="form-label">Модификаторы (добавки)</label>
+              {selectedModifierIds.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                  {selectedModifierIds.map((id) => {
+                    const mod = allModifiers.find((m) => m.id === id);
+                    if (!mod) return null;
+                    return (
+                      <span key={id} style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 4,
+                        background: 'var(--bg-tertiary)', border: '1px solid var(--border)',
+                        borderRadius: 6, padding: '4px 8px', fontSize: 12
+                      }}>
+                        {mod.name} (+{mod.price} ₽)
+                        <button type="button" className="btn-icon" style={{ padding: 0 }}
+                          onClick={() => setSelectedModifierIds((prev) => prev.filter((x) => x !== id))}>
+                          <X size={12} />
+                        </button>
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <select className="form-input" style={{ flex: 1 }} value=""
+                  onChange={(e) => {
+                    const id = Number(e.target.value);
+                    if (id && !selectedModifierIds.includes(id)) {
+                      setSelectedModifierIds((prev) => [...prev, id]);
+                    }
+                  }}>
+                  <option value="">Добавить модификатор...</option>
+                  {allModifiers.filter((m) => !selectedModifierIds.includes(m.id)).map((m) => (
+                    <option key={m.id} value={m.id}>{m.name} (+{m.price} ₽)</option>
+                  ))}
+                </select>
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setShowNewModifier(!showNewModifier); setModifierForm({ name: '', price: '', cost_price: '', ingredient_id: '' }); }}>
+                  <Plus size={14} /> Новый
+                </button>
+              </div>
+              {showNewModifier && (
+                <div style={{ marginTop: 8, padding: 12, background: 'var(--bg-tertiary)', borderRadius: 8, border: '1px solid var(--border)' }}>
+                  <div className="form-group" style={{ marginBottom: 8 }}>
+                    <input className="form-input" placeholder="Название" value={modifierForm.name}
+                      onChange={(e) => setModifierForm({ ...modifierForm, name: e.target.value })} autoFocus />
+                  </div>
+                  <div className="form-row" style={{ gap: 8, marginBottom: 8 }}>
+                    <input className="form-input" type="number" placeholder="Цена" value={modifierForm.price}
+                      onChange={(e) => setModifierForm({ ...modifierForm, price: e.target.value })} style={{ flex: 1 }} />
+                    {hasCostPrice && (
+                      <input className="form-input" type="number" placeholder="Себест." value={modifierForm.cost_price}
+                        onChange={(e) => setModifierForm({ ...modifierForm, cost_price: e.target.value })} style={{ flex: 1 }} />
+                    )}
+                  </div>
+                  <div className="form-group" style={{ marginBottom: 8 }}>
+                    <select className="form-input" value={modifierForm.ingredient_id}
+                      onChange={(e) => setModifierForm({ ...modifierForm, ingredient_id: e.target.value })}>
+                      <option value="">Без привязки к ингредиенту</option>
+                      {ingredients.map((i) => <option key={i.id} value={i.id}>{i.name} ({i.quantity} {i.unit})</option>)}
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowNewModifier(false)}>Отмена</button>
+                    <button type="button" className="btn btn-primary btn-sm" onClick={createModifier}>Создать</button>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="modal-actions">
               <button className="btn btn-ghost" onClick={() => setShowModal(false)}>Отмена</button>
               <button className="btn btn-primary" onClick={save}>Сохранить</button>

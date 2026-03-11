@@ -5,6 +5,7 @@ import { Plus, Minus, X, Banknote, CreditCard, Trash2, Receipt, Info, User, Prin
 import ReceiptModal from '../components/ReceiptModal';
 import TechCardPopover from '../components/TechCardPopover';
 import MarkingScanner from '../components/MarkingScanner';
+import ModifierModal from '../components/ModifierModal';
 import { useAuthStore } from '../store/authStore';
 import { openPrintWindow, formatReceipt, formatKitchenTicket } from '../utils/print';
 import { getTableDisplayName } from '../utils/tableDisplay';
@@ -39,6 +40,8 @@ export default function POS({ embedded = false, onClose }) {
   const [showMovePicker, setShowMovePicker] = useState(false);
   /** Выбранный зал в модалке пересадки */
   const [movePickerHall, setMovePickerHall] = useState(null);
+  /** Товар с модификаторами, для которого показываем модальное окно */
+  const [modifierProduct, setModifierProduct] = useState(null);
 
   useEffect(() => {
     loadCategories();
@@ -96,8 +99,23 @@ export default function POS({ embedded = false, onClose }) {
       toast.error('Сначала создайте заказ');
       return;
     }
+    // Если у товара есть модификаторы — показать модальное окно выбора
+    if (product.modifiers && product.modifiers.length > 0) {
+      setModifierProduct(product);
+      return;
+    }
     try {
       await addItem(product.id, 1);
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleModifierConfirm = async (modifiers) => {
+    if (!modifierProduct) return;
+    setModifierProduct(null);
+    try {
+      await addItem(modifierProduct.id, 1, modifiers);
     } catch (err) {
       toast.error(err.message);
     }
@@ -324,6 +342,11 @@ export default function POS({ embedded = false, onClose }) {
             <div key={item.id} className="pos-order-item">
               <div className="pos-order-item-info">
                 <div className="pos-order-item-name">{item.product_name}</div>
+                {item.modifiers && item.modifiers.length > 0 && (
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                    {item.modifiers.map((m) => `${m.modifier_name} x${m.quantity}`).join(', ')}
+                  </div>
+                )}
                 <div className="pos-order-item-price">{item.price} ₽ x {item.quantity}</div>
               </div>
               <div className="pos-order-item-actions">
@@ -658,6 +681,14 @@ export default function POS({ embedded = false, onClose }) {
         <TechCardPopover
           product={techCardPopoverProduct}
           onClose={() => setTechCardPopoverProduct(null)}
+        />
+      )}
+
+      {modifierProduct && (
+        <ModifierModal
+          product={modifierProduct}
+          onConfirm={handleModifierConfirm}
+          onClose={() => setModifierProduct(null)}
         />
       )}
 

@@ -47,6 +47,15 @@ router.get('/', async (req, res) => {
       }
       p.available_from_ingredients = minPortions === Infinity ? 0 : minPortions;
     }
+    // Модификаторы товара
+    p.modifiers = await all(`
+      SELECT m.id, m.name, m.price, m.cost_price, m.ingredient_id, ing.name as ingredient_name
+      FROM product_modifiers pm
+      JOIN modifiers m ON pm.modifier_id = m.id
+      LEFT JOIN products ing ON m.ingredient_id = ing.id
+      WHERE pm.product_id = $1 AND m.active = true
+      ORDER BY m.name
+    `, [p.id]);
   }
   res.json(products);
 });
@@ -95,6 +104,15 @@ router.get('/:id', async (req, res) => {
     }
     product.available_from_ingredients = minPortions === Infinity ? 0 : minPortions;
   }
+  // Модификаторы товара
+  product.modifiers = await all(`
+    SELECT m.id, m.name, m.price, m.cost_price, m.ingredient_id, ing.name as ingredient_name
+    FROM product_modifiers pm
+    JOIN modifiers m ON pm.modifier_id = m.id
+    LEFT JOIN products ing ON m.ingredient_id = ing.id
+    WHERE pm.product_id = $1 AND m.active = true
+    ORDER BY m.name
+  `, [product.id]);
   res.json(product);
 });
 
@@ -187,6 +205,32 @@ router.put('/:id/ingredients', adminOnly, async (req, res) => {
   params.push(req.params.id, req.tenantId);
   await run(`UPDATE products SET ${updates.join(', ')} WHERE id = $${idx++} AND tenant_id = $${idx}`, params);
   res.json({ success: true });
+});
+
+// Назначить модификаторы товару
+router.put('/:id/modifiers', adminOnly, async (req, res) => {
+  const { modifier_ids } = req.body;
+  const product = await get('SELECT id FROM products WHERE id = $1 AND tenant_id = $2', [req.params.id, req.tenantId]);
+  if (!product) return res.status(404).json({ error: 'Товар не найден' });
+
+  await run('DELETE FROM product_modifiers WHERE product_id = $1', [req.params.id]);
+  if (modifier_ids && modifier_ids.length > 0) {
+    for (const modId of modifier_ids) {
+      const mod = await get('SELECT id FROM modifiers WHERE id = $1 AND tenant_id = $2 AND active = true', [modId, req.tenantId]);
+      if (mod) {
+        await run('INSERT INTO product_modifiers (product_id, modifier_id) VALUES ($1, $2)', [req.params.id, modId]);
+      }
+    }
+  }
+  const modifiers = await all(`
+    SELECT m.id, m.name, m.price, m.cost_price, m.ingredient_id, ing.name as ingredient_name
+    FROM product_modifiers pm
+    JOIN modifiers m ON pm.modifier_id = m.id
+    LEFT JOIN products ing ON m.ingredient_id = ing.id
+    WHERE pm.product_id = $1 AND m.active = true
+    ORDER BY m.name
+  `, [req.params.id]);
+  res.json({ success: true, modifiers });
 });
 
 router.delete('/:id', adminOnly, async (req, res) => {

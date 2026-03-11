@@ -1,6 +1,16 @@
 import { create } from 'zustand';
 import { io } from 'socket.io-client';
 import { usePosStore } from './posStore';
+import { isCapacitor } from '../utils/platform';
+import { getTenantSlug, getBaseDomain } from '../utils/subdomain';
+
+function getSocketUrl() {
+  if (!isCapacitor()) return undefined; // относительный URL (через прокси)
+  const slug = getTenantSlug();
+  const domain = getBaseDomain();
+  if (slug) return `https://${slug}.${domain}`;
+  return `https://${domain}`;
+}
 
 export const useSocketStore = create((set, get) => ({
   socket: null,
@@ -10,7 +20,8 @@ export const useSocketStore = create((set, get) => ({
     const { socket: existing } = get();
     if (existing) existing.disconnect();
 
-    const socket = io({
+    const url = getSocketUrl();
+    const socket = io(url || '/', {
       auth: { token },
       transports: ['websocket', 'polling'],
     });

@@ -1,9 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import { isSubdomain } from './utils/subdomain';
+import { isCapacitor } from './utils/platform';
 import ErrorBoundary from './components/ErrorBoundary';
-import Layout from './components/Layout';
 import LayoutSwitch from './components/LayoutSwitch';
 import SuperadminTenants from './pages/superadmin/SuperadminTenants';
 import Login from './pages/Login';
@@ -41,6 +41,7 @@ import Counterparties from './pages/admin/Counterparties';
 import Receiving from './pages/admin/Receiving';
 import ChainTransfers from './pages/chain/ChainTransfers';
 import KktReceipts from './pages/admin/KktReceipts';
+import TenantSelect from './pages/TenantSelect';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuthStore();
@@ -75,9 +76,30 @@ function StatsRoute() {
   return <Stats />;
 }
 
+/** Инициализация нативных возможностей Capacitor */
+function useNativeInit() {
+  const initialized = useRef(false);
+  useEffect(() => {
+    if (!isCapacitor() || initialized.current) return;
+    initialized.current = true;
+
+    // Status bar: тёмная тема
+    import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
+      StatusBar.setStyle({ style: Style.Dark });
+      StatusBar.setBackgroundColor({ color: '#0a0a0c' });
+    }).catch(() => {});
+
+    // Keep awake: экран не гаснет пока приложение открыто
+    import('@capacitor-community/keep-awake').then(({ KeepAwake }) => {
+      KeepAwake.keepAwake();
+    }).catch(() => {});
+  }, []);
+}
+
 /** Приложение на сабдомене заведения */
 function SubdomainApp() {
   const checkAuth = useAuthStore((s) => s.checkAuth);
+  useNativeInit();
 
   useEffect(() => {
     checkAuth();
@@ -173,6 +195,15 @@ function MainDomainApp() {
 }
 
 export default function App() {
+  // В Capacitor: если нет сохранённого slug → показать экран выбора заведения
+  if (isCapacitor() && !isSubdomain()) {
+    return (
+      <ErrorBoundary>
+        <TenantSelect />
+      </ErrorBoundary>
+    );
+  }
+
   return (
     <ErrorBoundary>
       {isSubdomain() ? <SubdomainApp /> : <MainDomainApp />}

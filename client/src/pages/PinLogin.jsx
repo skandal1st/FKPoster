@@ -3,7 +3,17 @@ import { Navigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { api } from '../api';
 import { applyBranding } from '../utils/branding';
+import { isCapacitor } from '../utils/platform';
 import { ArrowLeft, Delete } from 'lucide-react';
+
+/** Тактильная отдача при нажатии кнопки PIN (Capacitor) */
+async function hapticTap() {
+  if (!isCapacitor()) return;
+  try {
+    const { Haptics, ImpactStyle } = await import('@capacitor/haptics');
+    Haptics.impact({ style: ImpactStyle.Light });
+  } catch {}
+}
 
 const roleLabel = (r) => {
   if (r === 'owner') return 'Владелец';
@@ -89,11 +99,13 @@ export default function PinLogin() {
     if (pin.length < 4) {
       setPin((p) => p + digit);
       setError('');
+      hapticTap();
     }
   }, [pin]);
 
   const handleBackspace = useCallback(() => {
     setPin((p) => p.slice(0, -1));
+    hapticTap();
   }, []);
 
   // Клавиатурный ввод

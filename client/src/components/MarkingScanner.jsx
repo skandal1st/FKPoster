@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { api } from '../api';
 import toast from 'react-hot-toast';
-import { X, ScanBarcode, Check, AlertTriangle } from 'lucide-react';
+import { X, ScanBarcode, Check, AlertTriangle, Camera } from 'lucide-react';
+import { isCapacitor } from '../utils/platform';
 
 /**
  * MarkingScanner — модальное окно для сканирования маркировочных кодов
@@ -175,6 +176,36 @@ export default function MarkingScanner({ context, contextId, items = [], onClose
           </div>
         )}
 
+        {/* Сканирование камерой (Capacitor) */}
+        {isCapacitor() && (
+          <button
+            className="btn btn-primary"
+            style={{ width: '100%', marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+            disabled={scanning}
+            onClick={async () => {
+              try {
+                const { BarcodeScanner } = await import('@capacitor-mlkit/barcode-scanning');
+                // Запросить разрешение
+                const { granted } = await BarcodeScanner.requestPermissions();
+                if (!granted) {
+                  toast.error('Нет доступа к камере');
+                  return;
+                }
+                const { barcodes } = await BarcodeScanner.scan();
+                if (barcodes.length > 0) {
+                  processCode(barcodes[0].rawValue);
+                }
+              } catch (err) {
+                if (err.message !== 'User cancelled') {
+                  toast.error('Ошибка сканера: ' + err.message);
+                }
+              }
+            }}
+          >
+            <Camera size={18} /> Сканировать камерой
+          </button>
+        )}
+
         {/* Ручной ввод */}
         <form onSubmit={handleManualSubmit} style={{ marginBottom: 12 }}>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -192,7 +223,10 @@ export default function MarkingScanner({ context, contextId, items = [], onClose
             </button>
           </div>
           <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-            Сканер автоматически определит код. Для ручного ввода нажмите OK или Enter.
+            {isCapacitor()
+              ? 'Нажмите кнопку выше для сканирования камерой или введите код вручную.'
+              : 'Сканер автоматически определит код. Для ручного ввода нажмите OK или Enter.'
+            }
           </div>
         </form>
 

@@ -9,6 +9,16 @@ const { invalidateResourceCount } = require('../cache');
 const router = express.Router();
 router.use(authMiddleware, checkSubscription, loadIntegrations);
 
+// Подгрузить модификаторы для массива order_items
+async function loadItemModifiers(items) {
+  for (const item of items) {
+    item.modifiers = await all(
+      'SELECT * FROM order_item_modifiers WHERE order_item_id = $1',
+      [item.id]
+    );
+  }
+}
+
 router.get('/', async (req, res) => {
   const { status } = req.query;
   let sql = `
@@ -50,6 +60,14 @@ router.get('/:id', async (req, res) => {
     WHERE oi.order_id = $1
   `, [order.id]);
 
+  // Подтянуть модификаторы для каждой позиции
+  for (const item of order.items) {
+    item.modifiers = await all(
+      'SELECT * FROM order_item_modifiers WHERE order_item_id = $1',
+      [item.id]
+    );
+  }
+
   // Подтянуть последний ККТ-чек
   const kktReceipt = await get(
     'SELECT id, status, fiscal_number, fiscal_document, fiscal_sign, receipt_datetime, error_message FROM kkt_receipts WHERE order_id = $1 AND tenant_id = $2 ORDER BY id DESC LIMIT 1',
@@ -63,7 +81,20 @@ router.get('/:id', async (req, res) => {
 });
 
 router.post('/', checkLimit('orders'), async (req, res) => {
-  const { table_id } = req.body;
+  const { table_id, idempotency_key } = req.body;
+
+  // Idempotency: проверка дубля (для офлайн-синхронизации)
+  if (idempotency_key) {
+    const existing = await get(
+      'SELECT id FROM orders WHERE idempotency_key = $1 AND tenant_id = $2',
+      [idempotency_key, req.tenantId]
+    );
+    if (existing) {
+      const existingOrder = await get('SELECT * FROM orders WHERE id = $1', [existing.id]);
+      existingOrder.items = await all('SELECT * FROM order_items WHERE order_id = $1', [existing.id]);
+      return res.json(existingOrder);
+    }
+  }
 
   const day = await get("SELECT id FROM register_days WHERE status = 'open' AND tenant_id = $1", [req.tenantId]);
   if (!day) {
@@ -94,8 +125,8 @@ router.post('/', checkLimit('orders'), async (req, res) => {
   }
 
   const result = await run(
-    'INSERT INTO orders (table_id, register_day_id, user_id, tenant_id) VALUES ($1, $2, $3, $4) RETURNING id',
-    [table_id || null, day.id, req.user.id, req.tenantId]
+    'INSERT INTO orders (table_id, register_day_id, user_id, tenant_id, idempotency_key) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+    [table_id || null, day.id, req.user.id, req.tenantId, idempotency_key || null]
   );
   const order = await get('SELECT * FROM orders WHERE id = $1', [result.id]);
   if (!order) {
@@ -108,7 +139,7 @@ router.post('/', checkLimit('orders'), async (req, res) => {
 });
 
 router.post('/:id/items', async (req, res) => {
-  const { product_id, quantity } = req.body;
+  const { product_id, quantity, modifiers } = req.body;
   const order = await get("SELECT * FROM orders WHERE id = $1 AND status = 'open' AND tenant_id = $2", [req.params.id, req.tenantId]);
   if (!order) return res.status(400).json({ error: 'Заказ не найден или уже закрыт' });
 
@@ -116,8 +147,10 @@ router.post('/:id/items', async (req, res) => {
   if (!product) return res.status(404).json({ error: 'Товар не найден' });
 
   const qty = quantity || 1;
+  const hasModifiers = modifiers && modifiers.length > 0;
 
-  const existingItem = await get('SELECT * FROM order_items WHERE order_id = $1 AND product_id = $2', [order.id, product_id]);
+  // Если есть модификаторы — всегда новая позиция (разные комбинации = разные строки)
+  const existingItem = hasModifiers ? null : await get('SELECT * FROM order_items WHERE order_id = $1 AND product_id = $2', [order.id, product_id]);
   if (existingItem) {
     const newQty = existingItem.quantity + qty;
     if (newQty <= 0) {
@@ -151,13 +184,42 @@ router.post('/:id/items', async (req, res) => {
       }
     }
 
+    // Расчёт доплаты модификаторов
+    let modSurcharge = 0;
+    let modCostSurcharge = 0;
+    const resolvedModifiers = [];
+    if (hasModifiers) {
+      for (const m of modifiers) {
+        const mod = await get('SELECT * FROM modifiers WHERE id = $1 AND tenant_id = $2 AND active = true', [m.modifier_id, req.tenantId]);
+        if (mod) {
+          const mQty = m.quantity || 1;
+          modSurcharge += parseFloat(mod.price) * mQty;
+          modCostSurcharge += parseFloat(mod.cost_price) * mQty;
+          resolvedModifiers.push({ modifier_id: mod.id, name: mod.name, price: parseFloat(mod.price), quantity: mQty });
+        }
+      }
+    }
+
+    const itemPrice = parseFloat(product.price) + modSurcharge;
+    const itemCost = costPrice + modCostSurcharge;
+
     const markingType = product.marking_type || 'none';
     const markedCodesRequired = markingType !== 'none' ? qty : 0;
 
-    await run(
-      'INSERT INTO order_items (order_id, product_id, product_name, quantity, price, cost_price, total, marking_type, marked_codes_required) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
-      [order.id, product_id, product.name, qty, product.price, costPrice, qty * parseFloat(product.price), markingType, markedCodesRequired]
+    const itemResult = await run(
+      'INSERT INTO order_items (order_id, product_id, product_name, quantity, price, cost_price, total, marking_type, marked_codes_required) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id',
+      [order.id, product_id, product.name, qty, itemPrice, itemCost, qty * itemPrice, markingType, markedCodesRequired]
     );
+
+    // Сохранить модификаторы позиции
+    if (resolvedModifiers.length > 0) {
+      for (const rm of resolvedModifiers) {
+        await run(
+          'INSERT INTO order_item_modifiers (order_item_id, modifier_id, modifier_name, price, quantity) VALUES ($1, $2, $3, $4, $5)',
+          [itemResult.id, rm.modifier_id, rm.name, rm.price, rm.quantity]
+        );
+      }
+    }
   }
 
   const totalRow = await get('SELECT COALESCE(SUM(total), 0) as total FROM order_items WHERE order_id = $1', [order.id]);
@@ -165,6 +227,7 @@ router.post('/:id/items', async (req, res) => {
 
   const updated = await get('SELECT * FROM orders WHERE id = $1', [order.id]);
   updated.items = await all('SELECT * FROM order_items WHERE order_id = $1', [order.id]);
+  await loadItemModifiers(updated.items);
   emitEvent(req, 'order:updated', updated);
   res.json(updated);
 });
@@ -177,6 +240,7 @@ router.put('/:id/items/:itemId', async (req, res) => {
   if (quantity <= 0) {
     await run('DELETE FROM order_items WHERE id = $1', [item.id]);
   } else {
+    // price уже включает модификаторы (записана при создании позиции)
     await run('UPDATE order_items SET quantity = $1, total = $2 WHERE id = $3', [quantity, quantity * parseFloat(item.price), item.id]);
   }
 
@@ -185,6 +249,7 @@ router.put('/:id/items/:itemId', async (req, res) => {
 
   const updated = await get('SELECT * FROM orders WHERE id = $1', [req.params.id]);
   updated.items = await all('SELECT * FROM order_items WHERE order_id = $1', [req.params.id]);
+  await loadItemModifiers(updated.items);
   emitEvent(req, 'order:updated', updated);
   res.json(updated);
 });
@@ -199,6 +264,7 @@ router.delete('/:id/items/:itemId', async (req, res) => {
   await run('UPDATE orders SET total = $1 WHERE id = $2', [totalRow.total, req.params.id]);
   const updated = await get('SELECT * FROM orders WHERE id = $1', [req.params.id]);
   updated.items = await all('SELECT * FROM order_items WHERE order_id = $1', [req.params.id]);
+  await loadItemModifiers(updated.items);
   emitEvent(req, 'order:updated', updated);
   res.json(updated);
 });
@@ -335,6 +401,25 @@ router.post('/:id/close', async (req, res) => {
       }
     }
 
+    // Списание ингредиентов модификаторов
+    const allItemModifiers = await tx.all(`
+      SELECT oim.*, oi.quantity as item_qty
+      FROM order_item_modifiers oim
+      JOIN order_items oi ON oim.order_item_id = oi.id
+      WHERE oi.order_id = $1
+    `, [order.id]);
+    for (const oim of allItemModifiers) {
+      if (!oim.modifier_id) continue;
+      const mod = await tx.get('SELECT ingredient_id FROM modifiers WHERE id = $1', [oim.modifier_id]);
+      if (mod?.ingredient_id) {
+        const ing = await tx.get('SELECT track_inventory FROM products WHERE id = $1', [mod.ingredient_id]);
+        if (ing?.track_inventory) {
+          await tx.run('UPDATE products SET quantity = quantity - $1 WHERE id = $2',
+            [oim.quantity * oim.item_qty, mod.ingredient_id]);
+        }
+      }
+    }
+
     // Update order: итог к оплате, скидка, гость, paid_cash/paid_card
     await tx.run(
       `UPDATE orders SET status = 'closed', payment_method = $1, closed_at = NOW(),
@@ -393,6 +478,7 @@ router.post('/:id/close', async (req, res) => {
     LEFT JOIN workshops w ON c.workshop_id = w.id
     WHERE oi.order_id = $1
   `, [order.id]);
+  await loadItemModifiers(updated.items);
 
   // Добавить данные ККТ-чека в ответ
   if (kktResult) {
@@ -476,6 +562,7 @@ router.patch('/:id/move', async (req, res) => {
     LEFT JOIN workshops w ON c.workshop_id = w.id
     WHERE oi.order_id = $1
   `, [order.id]);
+  await loadItemModifiers(updated.items);
 
   emitEvent(req, 'order:updated', updated);
   res.json(updated);
