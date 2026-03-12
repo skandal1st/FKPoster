@@ -11,10 +11,30 @@ export function applyBranding(tenant) {
     const hoverColor = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
     root.style.setProperty('--accent-hover', hoverColor);
   }
+  // Тема: localStorage override > tenant default > 'dark'
+  const savedTheme = localStorage.getItem('theme_preference');
+  const theme = savedTheme || tenant.theme || 'dark';
+  root.setAttribute('data-theme', theme);
 }
 
 export function resetBranding() {
   const root = document.documentElement;
   root.style.removeProperty('--accent');
   root.style.removeProperty('--accent-hover');
+  root.removeAttribute('data-theme');
+}
+
+/** Переключить тему и сохранить в localStorage */
+export function toggleTheme() {
+  const root = document.documentElement;
+  const current = root.getAttribute('data-theme') || 'dark';
+  const next = current === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  localStorage.setItem('theme_preference', next);
+  return next;
+}
+
+/** Получить текущую тему */
+export function getCurrentTheme() {
+  return document.documentElement.getAttribute('data-theme') || 'dark';
 }

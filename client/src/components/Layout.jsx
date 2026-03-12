@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { api } from '../api';
+import { toggleTheme, getCurrentTheme } from '../utils/branding';
 import {
   Map, Package, Settings,
   CreditCard, Users, BarChart3, LogOut, Boxes, LayoutDashboard,
   Building2, LogIn, ScanBarcode, Wine, Tag, UserCircle,
-  ChevronLeft, ChevronRight, Link2, FileText, BookUser, PackageCheck, Truck, Receipt
+  ChevronLeft, ChevronRight, Link2, FileText, BookUser, PackageCheck, Truck, Receipt,
+  Sun, Moon, ShoppingBag
 } from 'lucide-react';
 import { CATALOG_TABS, STOCK_TABS, STAFF_TABS } from '../constants/tabGroups';
 
@@ -18,6 +20,8 @@ export default function Layout() {
   const location = useLocation();
   const isGroupActive = (tabs) => tabs.some((t) => t.path === location.pathname);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true');
+  const [theme, setTheme] = useState(getCurrentTheme);
+  const isFastPos = tenant?.pos_mode === 'fast_pos';
 
   const toggleSidebar = () => {
     setSidebarCollapsed((prev) => {
@@ -98,10 +102,10 @@ export default function Layout() {
         <nav className="sidebar-nav">
           <div className="sidebar-section">
             <div className="sidebar-section-title">Работа</div>
-            <NavLink to="/" end className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Зал">
-              <Map /><span className="sidebar-link-text">Зал</span>
+            <NavLink to="/" end className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title={isFastPos ? 'Касса' : 'Зал'}>
+              {isFastPos ? <ShoppingBag /> : <Map />}<span className="sidebar-link-text">{isFastPos ? 'Касса' : 'Зал'}</span>
             </NavLink>
-            {isAdmin && (
+            {isAdmin && !isFastPos && (
               <NavLink to="/hall-map" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Редактировать карту">
                 <Settings /><span className="sidebar-link-text">Редактировать карту</span>
               </NavLink>
@@ -236,6 +240,15 @@ export default function Layout() {
           >
             {sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
             <span className="sidebar-toggle-text">{sidebarCollapsed ? 'Развернуть' : 'Свернуть'}</span>
+          </button>
+          <button
+            type="button"
+            className="btn btn-ghost sidebar-toggle-btn"
+            onClick={() => setTheme(toggleTheme())}
+            title={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
+          >
+            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            <span className="sidebar-toggle-text">{theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}</span>
           </button>
           <div className="sidebar-user">
             <span>{user?.name}</span>

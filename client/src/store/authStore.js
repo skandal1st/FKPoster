@@ -50,11 +50,12 @@ export const useAuthStore = create((set) => ({
     useSocketStore.getState().connect(data.token);
   },
 
-  register: async (company_name, name, email, password, slug, phone, city) => {
+  register: async (company_name, name, email, password, slug, phone, city, business_type) => {
     const body = { company_name, name, email, password };
     if (slug) body.slug = slug;
     if (phone) body.phone = phone;
     if (city) body.city = city;
+    if (business_type) body.business_type = business_type;
     const data = await api.post('/auth/register', body);
     // Не сохраняем токен на main domain — вернём data для редиректа на сабдомен
     return data;

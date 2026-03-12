@@ -39,7 +39,7 @@ router.post('/login', async (req, res) => {
   let tenant = null;
   if (user.tenant_id) {
     tenant = await get(
-      'SELECT id, name, slug, logo_url, accent_color, show_table_timer FROM tenants WHERE id = $1',
+      'SELECT id, name, slug, logo_url, accent_color, show_table_timer, business_type, pos_mode, theme FROM tenants WHERE id = $1',
       [user.tenant_id]
     );
   }
@@ -73,7 +73,7 @@ router.post('/login', async (req, res) => {
 });
 
 router.post('/register', async (req, res) => {
-  const { company_name, name, email, password, slug: requestedSlug, phone, city } = req.body;
+  const { company_name, name, email, password, slug: requestedSlug, phone, city, business_type } = req.body;
   if (!company_name || !name || !email || !password) {
     return res.status(400).json({ error: 'Заполните все поля' });
   }
@@ -103,10 +103,16 @@ router.post('/register', async (req, res) => {
     slug = await generateUniqueSlug(company_name);
   }
 
+  // Шаблон по типу бизнеса
+  const validTypes = ['hookah', 'coffee', 'fastfood', 'restaurant'];
+  const bType = validTypes.includes(business_type) ? business_type : 'hookah';
+  const posMode = ['coffee', 'fastfood'].includes(bType) ? 'fast_pos' : 'table_service';
+  const theme = ['coffee', 'fastfood'].includes(bType) ? 'light' : 'dark';
+
   const result = await transaction(async (tx) => {
     const tenantRes = await tx.run(
-      'INSERT INTO tenants (name, slug, city) VALUES ($1, $2, $3) RETURNING id',
-      [company_name, slug, city || null]
+      'INSERT INTO tenants (name, slug, city, business_type, pos_mode, theme) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
+      [company_name, slug, city || null, bType, posMode, theme]
     );
     const tenantId = tenantRes.id;
 
@@ -125,11 +131,33 @@ router.post('/register', async (req, res) => {
       );
     }
 
-    const defaultCategories = [
-      { name: 'Кальяны', color: '#6366f1', sort_order: 0 },
-      { name: 'Напитки', color: '#22c55e', sort_order: 1 },
-      { name: 'Еда', color: '#f59e0b', sort_order: 2 },
-    ];
+    // Категории по умолчанию зависят от типа бизнеса
+    const categoryTemplates = {
+      hookah: [
+        { name: 'Кальяны', color: '#6366f1', sort_order: 0 },
+        { name: 'Напитки', color: '#22c55e', sort_order: 1 },
+        { name: 'Еда', color: '#f59e0b', sort_order: 2 },
+      ],
+      coffee: [
+        { name: 'Кофе', color: '#8B4513', sort_order: 0 },
+        { name: 'Чай', color: '#22c55e', sort_order: 1 },
+        { name: 'Выпечка', color: '#f59e0b', sort_order: 2 },
+        { name: 'Десерты', color: '#ec4899', sort_order: 3 },
+      ],
+      fastfood: [
+        { name: 'Основное меню', color: '#ef4444', sort_order: 0 },
+        { name: 'Напитки', color: '#22c55e', sort_order: 1 },
+        { name: 'Гарниры', color: '#f59e0b', sort_order: 2 },
+        { name: 'Соусы', color: '#8b5cf6', sort_order: 3 },
+      ],
+      restaurant: [
+        { name: 'Горячее', color: '#ef4444', sort_order: 0 },
+        { name: 'Салаты', color: '#22c55e', sort_order: 1 },
+        { name: 'Напитки', color: '#3b82f6', sort_order: 2 },
+        { name: 'Десерты', color: '#ec4899', sort_order: 3 },
+      ],
+    };
+    const defaultCategories = categoryTemplates[bType] || categoryTemplates.hookah;
     for (const cat of defaultCategories) {
       await tx.run(
         'INSERT INTO categories (name, color, sort_order, tenant_id) VALUES ($1, $2, $3, $4)',
@@ -141,7 +169,7 @@ router.post('/register', async (req, res) => {
   });
 
   const user = await get('SELECT id, email, name, role, tenant_id FROM users WHERE id = $1', [result.userId]);
-  const tenant = await get('SELECT id, name, slug, logo_url, accent_color, show_table_timer FROM tenants WHERE id = $1', [result.tenantId]);
+  const tenant = await get('SELECT id, name, slug, logo_url, accent_color, show_table_timer, business_type, pos_mode, theme FROM tenants WHERE id = $1', [result.tenantId]);
 
   const token = jwt.sign(
     { id: user.id, role: user.role, tenant_id: user.tenant_id },
@@ -183,7 +211,7 @@ router.post('/accept-invite', async (req, res) => {
   });
 
   const user = await get('SELECT id, email, name, role, tenant_id FROM users WHERE id = $1', [userId]);
-  const tenant = await get('SELECT id, name, slug, logo_url, accent_color, show_table_timer FROM tenants WHERE id = $1', [user.tenant_id]);
+  const tenant = await get('SELECT id, name, slug, logo_url, accent_color, show_table_timer, business_type, pos_mode, theme FROM tenants WHERE id = $1', [user.tenant_id]);
 
   const jwtToken = jwt.sign(
     { id: user.id, role: user.role, tenant_id: user.tenant_id },
@@ -246,7 +274,7 @@ router.post('/pin-login', async (req, res) => {
   );
 
   const tenant = await get(
-    'SELECT id, name, slug, logo_url, accent_color, show_table_timer FROM tenants WHERE id = $1',
+    'SELECT id, name, slug, logo_url, accent_color, show_table_timer, business_type, pos_mode, theme FROM tenants WHERE id = $1',
     [user.tenant_id]
   );
 
@@ -289,7 +317,7 @@ router.get('/me', authMiddleware, async (req, res) => {
   let tenant = null;
   if (req.user.tenant_id) {
     tenant = await get(
-      'SELECT id, name, slug, logo_url, accent_color, show_table_timer FROM tenants WHERE id = $1',
+      'SELECT id, name, slug, logo_url, accent_color, show_table_timer, business_type, pos_mode, theme FROM tenants WHERE id = $1',
       [req.user.tenant_id]
     );
   }

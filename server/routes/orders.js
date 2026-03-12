@@ -81,7 +81,7 @@ router.get('/:id', async (req, res) => {
 });
 
 router.post('/', checkLimit('orders'), async (req, res) => {
-  const { table_id, idempotency_key } = req.body;
+  const { table_id, idempotency_key, order_type } = req.body;
 
   // Idempotency: проверка дубля (для офлайн-синхронизации)
   if (idempotency_key) {
@@ -124,9 +124,13 @@ router.post('/', checkLimit('orders'), async (req, res) => {
     }
   }
 
+  // Тип заказа для FastPOS (dine_in / take_away / delivery)
+  const validOrderTypes = ['dine_in', 'take_away', 'delivery'];
+  const oType = validOrderTypes.includes(order_type) ? order_type : 'dine_in';
+
   const result = await run(
-    'INSERT INTO orders (table_id, register_day_id, user_id, tenant_id, idempotency_key) VALUES ($1, $2, $3, $4, $5) RETURNING id',
-    [table_id || null, day.id, req.user.id, req.tenantId, idempotency_key || null]
+    'INSERT INTO orders (table_id, register_day_id, user_id, tenant_id, idempotency_key, order_type) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
+    [table_id || null, day.id, req.user.id, req.tenantId, idempotency_key || null, oType]
   );
   const order = await get('SELECT * FROM orders WHERE id = $1', [result.id]);
   if (!order) {

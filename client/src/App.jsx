@@ -11,6 +11,7 @@ import RegisterPage from './pages/Register';
 import AcceptInvite from './pages/AcceptInvite';
 import PinLogin from './pages/PinLogin';
 import HallMap from './pages/HallMap';
+import FastPOS from './pages/FastPOS';
 import Categories from './pages/admin/Categories';
 import Products from './pages/admin/Products';
 import Ingredients from './pages/admin/Ingredients';
@@ -96,6 +97,13 @@ function useNativeInit() {
   }, []);
 }
 
+/** Выбор стартовой страницы по pos_mode тенанта */
+function PosIndexRoute() {
+  const tenant = useAuthStore((s) => s.tenant);
+  if (tenant?.pos_mode === 'fast_pos') return <FastPOS />;
+  return <HallMap readOnly />;
+}
+
 /** Приложение на сабдомене заведения */
 function SubdomainApp() {
   const checkAuth = useAuthStore((s) => s.checkAuth);
@@ -109,7 +117,7 @@ function SubdomainApp() {
     <Routes>
       <Route path="/login" element={<PinLogin />} />
       <Route path="/" element={<ProtectedRoute><LayoutSwitch /></ProtectedRoute>}>
-        <Route index element={<HallMap readOnly />} />
+        <Route index element={<PosIndexRoute />} />
         <Route path="pos" element={<Navigate to="/" replace />} />
         <Route path="hall-map" element={<AdminRoute><HallMap /></AdminRoute>} />
         <Route path="admin/categories" element={<AdminRoute><Categories /></AdminRoute>} />

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api';
 import toast from 'react-hot-toast';
-import { Plus, Pencil, Trash2, X, FlaskConical, AlertTriangle } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, FlaskConical, AlertTriangle, Image, Layers } from 'lucide-react';
 import TechCardModal from '../../components/TechCardModal';
 import ModalOverlay from '../../components/ModalOverlay';
 import TabNav from '../../components/TabNav';
@@ -10,6 +10,8 @@ import { useAuthStore } from '../../store/authStore';
 
 export default function Products() {
   const hasCostPrice = useAuthStore((s) => s.plan?.features?.cost_price === true);
+  const tenant = useAuthStore((s) => s.tenant);
+  const isFastPosType = ['coffee', 'fastfood', 'restaurant'].includes(tenant?.business_type);
   const [products, setProducts] = useState([]);
   const [ingredients, setIngredients] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -19,8 +21,13 @@ export default function Products() {
   const [form, setForm] = useState({
     category_id: '', name: '', price: '', cost_price: '', quantity: '',
     unit: 'шт', track_inventory: 1, is_composite: 0, min_quantity: '',
-    barcode: '', marking_type: 'none', egais_alcocode: '', tobacco_gtin: '', vat_rate: ''
+    barcode: '', marking_type: 'none', egais_alcocode: '', tobacco_gtin: '', vat_rate: '',
+    image_url: ''
   });
+  // Вариации
+  const [variants, setVariants] = useState([]);
+  // Загрузка изображения
+  const [uploading, setUploading] = useState(false);
   // Модификаторы
   const [allModifiers, setAllModifiers] = useState([]);
   const [selectedModifierIds, setSelectedModifierIds] = useState([]);
@@ -44,8 +51,9 @@ export default function Products() {
 
   const openNew = () => {
     setEditing(null);
-    setForm({ category_id: categories[0]?.id || '', name: '', price: '', cost_price: '', quantity: '', unit: 'шт', track_inventory: 1, is_composite: 0, min_quantity: '', barcode: '', marking_type: 'none', egais_alcocode: '', tobacco_gtin: '', vat_rate: '' });
+    setForm({ category_id: categories[0]?.id || '', name: '', price: '', cost_price: '', quantity: '', unit: 'шт', track_inventory: 1, is_composite: 0, min_quantity: '', barcode: '', marking_type: 'none', egais_alcocode: '', tobacco_gtin: '', vat_rate: '', image_url: '' });
     setSelectedModifierIds([]);
+    setVariants([]);
     setShowNewModifier(false);
     setShowModal(true);
   };
@@ -58,23 +66,29 @@ export default function Products() {
       min_quantity: p.min_quantity || '',
       barcode: p.barcode || '', marking_type: p.marking_type || 'none',
       egais_alcocode: p.egais_alcocode || '', tobacco_gtin: p.tobacco_gtin || '',
-      vat_rate: p.vat_rate || ''
+      vat_rate: p.vat_rate || '',
+      image_url: p.image_url || ''
     });
     setSelectedModifierIds((p.modifiers || []).map((m) => m.id));
+    setVariants((p.variants || []).map((v) => ({ name: v.name, price: v.price, cost_price: v.cost_price || 0, barcode: v.barcode || '' })));
     setShowNewModifier(false);
     setShowModal(true);
   };
 
   const save = async () => {
     try {
-      const data = { ...form, price: Number(form.price), cost_price: Number(form.cost_price), quantity: Number(form.quantity), min_quantity: Number(form.min_quantity) || 0, vat_rate: form.vat_rate || null };
+      const data = { ...form, price: Number(form.price), cost_price: Number(form.cost_price), quantity: Number(form.quantity), min_quantity: Number(form.min_quantity) || 0, vat_rate: form.vat_rate || null, image_url: form.image_url || null };
       if (editing) {
         const updated = await api.put(`/products/${editing.id}`, data);
         await api.put(`/products/${editing.id}/modifiers`, { modifier_ids: selectedModifierIds });
+        if (isFastPosType) {
+          await api.put(`/products/${editing.id}/variants`, { variants });
+        }
         toast.success('Товар обновлён');
         setProducts((prev) => prev.map((p) => (p.id === editing.id ? { ...p, ...updated } : p)));
       } else {
-        const created = await api.post('/products', data);
+        const varsPayload = isFastPosType ? variants : undefined;
+        const created = await api.post('/products', { ...data, variants: varsPayload });
         if (selectedModifierIds.length > 0) {
           await api.put(`/products/${created.id}/modifiers`, { modifier_ids: selectedModifierIds });
         }
@@ -85,6 +99,46 @@ export default function Products() {
     } catch (err) {
       toast.error(err.message);
     }
+  };
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Файл слишком большой (макс. 5 МБ)');
+      return;
+    }
+    setUploading(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64 = reader.result.split(',')[1];
+        const res = await api.post('/upload', {
+          data: base64,
+          mime_type: file.type,
+          filename: file.name,
+        });
+        setForm((f) => ({ ...f, image_url: res.url }));
+        setUploading(false);
+        toast.success('Изображение загружено');
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      setUploading(false);
+      toast.error('Ошибка загрузки: ' + err.message);
+    }
+  };
+
+  const addVariant = () => {
+    setVariants((prev) => [...prev, { name: '', price: '', cost_price: '', barcode: '' }]);
+  };
+
+  const updateVariant = (index, field, value) => {
+    setVariants((prev) => prev.map((v, i) => i === index ? { ...v, [field]: value } : v));
+  };
+
+  const removeVariant = (index) => {
+    setVariants((prev) => prev.filter((_, i) => i !== index));
   };
 
   const createModifier = async () => {
@@ -139,7 +193,17 @@ export default function Products() {
           <tbody>
             {products.map((p) => (
               <tr key={p.id}>
-                <td>{p.name}</td>
+                <td>
+                  {p.image_url ? (
+                    <img src={p.image_url} alt="" style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover', verticalAlign: 'middle', marginRight: 8 }} />
+                  ) : null}
+                  {p.name}
+                  {p.variants && p.variants.length > 0 && (
+                    <span style={{ marginLeft: 6, fontSize: 11, color: 'var(--accent)', fontWeight: 500 }}>
+                      <Layers size={11} style={{ verticalAlign: 'middle', marginRight: 2 }} />{p.variants.length} вар.
+                    </span>
+                  )}
+                </td>
                 <td>
                   <span className="color-dot" style={{ background: p.category_color, marginRight: 6 }} />
                   {p.category_name}
@@ -193,6 +257,44 @@ export default function Products() {
             <div className="modal-header">
               <h3 className="modal-title">{editing ? 'Редактировать' : 'Новый товар'}</h3>
               <button className="btn-icon" onClick={() => setShowModal(false)}><X size={18} /></button>
+            </div>
+            {/* Изображение товара */}
+            <div className="form-group">
+              <label className="form-label">Изображение</label>
+              {form.image_url ? (
+                <div style={{ position: 'relative', display: 'inline-block', marginBottom: 8 }}>
+                  <img
+                    src={form.image_url}
+                    alt="Превью"
+                    style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-color)' }}
+                  />
+                  <button
+                    type="button"
+                    className="btn-icon"
+                    onClick={() => setForm({ ...form, image_url: '' })}
+                    style={{
+                      position: 'absolute', top: -8, right: -8,
+                      background: 'var(--danger)', color: '#fff',
+                      borderRadius: '50%', width: 24, height: 24, minWidth: 24, minHeight: 24,
+                      padding: 0,
+                    }}
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ) : (
+                <label style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 8,
+                  width: '100%', height: 100, borderRadius: 'var(--radius-xl)',
+                  border: '2px dashed var(--border-color)', cursor: 'pointer',
+                  background: 'var(--bg-input)', transition: 'all 0.2s',
+                  color: 'var(--text-muted)', fontSize: 13,
+                }}>
+                  <Image size={24} />
+                  {uploading ? 'Загрузка...' : 'Нажмите для загрузки'}
+                  <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageUpload} disabled={uploading} />
+                </label>
+              )}
             </div>
             <div className="form-group">
               <label className="form-label">Название</label>
@@ -354,6 +456,53 @@ export default function Products() {
                 </div>
               )}
             </div>
+
+            {/* Вариации (размеры) — только для кофеен/фастфуд/ресторан */}
+            {isFastPosType && (
+              <div className="form-group" style={{ marginTop: 16 }}>
+                <label className="form-label"><Layers size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} />Вариации (размеры)</label>
+                {variants.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 8 }}>
+                    {variants.map((v, i) => (
+                      <div key={i} style={{
+                        display: 'flex', gap: 8, alignItems: 'center',
+                        padding: '8px 10px', background: 'var(--bg-tertiary)',
+                        borderRadius: 8, border: '1px solid var(--border-color)',
+                      }}>
+                        <input
+                          className="form-input" placeholder="Название (нпр. 0.3л)"
+                          value={v.name} onChange={(e) => updateVariant(i, 'name', e.target.value)}
+                          style={{ flex: 2, minHeight: 36, padding: '6px 10px' }}
+                        />
+                        <input
+                          className="form-input" type="number" placeholder="Цена"
+                          value={v.price} onChange={(e) => updateVariant(i, 'price', e.target.value)}
+                          style={{ flex: 1, minHeight: 36, padding: '6px 10px' }}
+                        />
+                        {hasCostPrice && (
+                          <input
+                            className="form-input" type="number" placeholder="Себест."
+                            value={v.cost_price} onChange={(e) => updateVariant(i, 'cost_price', e.target.value)}
+                            style={{ flex: 1, minHeight: 36, padding: '6px 10px' }}
+                          />
+                        )}
+                        <button type="button" className="btn-icon" onClick={() => removeVariant(i)} style={{ flexShrink: 0 }}>
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <button type="button" className="btn btn-ghost btn-sm" onClick={addVariant}>
+                  <Plus size={14} /> Добавить вариацию
+                </button>
+                {variants.length === 0 && (
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+                    Например: 0.2л — 150₽, 0.4л — 250₽, 0.6л — 350₽
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="modal-actions">
               <button className="btn btn-ghost" onClick={() => setShowModal(false)}>Отмена</button>

@@ -37,6 +37,7 @@ const edoRoutes = require('./routes/edo');
 const counterpartyRoutes = require('./routes/counterparties');
 const kktRoutes = require('./routes/kkt');
 const modifierRoutes = require('./routes/modifiers');
+const uploadRoutes = require('./routes/upload');
 
 const app = express();
 
@@ -131,6 +132,10 @@ app.use('/api/edo', edoRoutes);
 app.use('/api/counterparties', counterpartyRoutes);
 app.use('/api/kkt', kktRoutes);
 app.use('/api/modifiers', modifierRoutes);
+app.use('/api/upload', uploadRoutes);
+
+// Serve uploaded files (product images)
+app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 
 // Production: serve React build
 if (config.NODE_ENV === 'production') {

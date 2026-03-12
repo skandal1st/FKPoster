@@ -46,6 +46,7 @@ export default function RegisterPage() {
   const [slug, setSlug] = useState('');
   const [slugError, setSlugError] = useState('');
   const [city, setCity] = useState('');
+  const [businessType, setBusinessType] = useState('hookah');
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -53,7 +54,7 @@ export default function RegisterPage() {
 
   if (user) return <Navigate to="/" />;
 
-  const previewSlug = slug || transliterate(companyName) || 'my-hookah-bar';
+  const previewSlug = slug || transliterate(companyName) || 'my-bar';
 
   const handleSlugChange = (value) => {
     const normalized = value.toLowerCase().replace(/[^a-z0-9-]/g, '');
@@ -95,7 +96,7 @@ export default function RegisterPage() {
     }
     setLoading(true);
     try {
-      const data = await register(companyName, name, email, password, slug || undefined, phone, city || undefined);
+      const data = await register(companyName, name, email, password, slug || undefined, phone, city || undefined, businessType);
       setRegistered(data);
     } catch (err) {
       setError(err.message);
@@ -144,6 +145,13 @@ export default function RegisterPage() {
             background: step >= 2 ? 'var(--accent)' : 'var(--bg-secondary)',
             color: step >= 2 ? '#fff' : 'var(--text-muted)',
           }}>2</div>
+          <div style={{ width: 32, height: 2, background: step >= 3 ? 'var(--accent)' : 'var(--border)' }} />
+          <div style={{
+            width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 13, fontWeight: 600,
+            background: step >= 3 ? 'var(--accent)' : 'var(--bg-secondary)',
+            color: step >= 3 ? '#fff' : 'var(--text-muted)',
+          }}>3</div>
         </div>
 
         {error && <div className="login-error">{error}</div>}
@@ -207,6 +215,47 @@ export default function RegisterPage() {
         )}
 
         {step === 2 && (
+          <form onSubmit={(e) => { e.preventDefault(); setStep(3); }}>
+            <p className="login-subtitle">Тип заведения</p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
+              {[
+                { value: 'hookah', label: 'Кальянная', icon: '☁' },
+                { value: 'coffee', label: 'Кофейня', icon: '☕' },
+                { value: 'fastfood', label: 'Фастфуд', icon: '✦' },
+                { value: 'restaurant', label: 'Ресторан', icon: '★' },
+              ].map((t) => (
+                <button
+                  key={t.value}
+                  type="button"
+                  onClick={() => setBusinessType(t.value)}
+                  style={{
+                    padding: '16px 12px', borderRadius: 'var(--radius-2xl)',
+                    border: businessType === t.value ? '2px solid var(--accent)' : '1px solid var(--border-color)',
+                    background: businessType === t.value ? 'rgba(99,102,241,0.08)' : 'var(--bg-input)',
+                    color: 'var(--text-primary)', cursor: 'pointer', textAlign: 'center',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  <div style={{ fontSize: 22, marginBottom: 6 }}>{t.icon}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600 }}>{t.label}</div>
+                </button>
+              ))}
+            </div>
+            <button className="btn btn-primary login-btn" type="submit">
+              Далее
+            </button>
+            <button
+              type="button"
+              className="btn btn-ghost login-btn"
+              style={{ marginTop: 8 }}
+              onClick={() => { setError(''); setStep(1); }}
+            >
+              Назад
+            </button>
+          </form>
+        )}
+
+        {step === 3 && (
           <form onSubmit={handleStep2}>
             <p className="login-subtitle">Настройка заведения</p>
             <div className="form-group">
@@ -216,7 +265,7 @@ export default function RegisterPage() {
                 type="text"
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
-                placeholder="Моя кальянная"
+                placeholder="Моё заведение"
                 autoFocus
                 required
               />
@@ -228,7 +277,7 @@ export default function RegisterPage() {
                 type="text"
                 value={slug}
                 onChange={(e) => handleSlugChange(e.target.value)}
-                placeholder="my-hookah-bar"
+                placeholder="my-bar"
               />
               <div style={{ fontSize: 13, marginTop: 4, color: slugError ? 'var(--danger)' : 'var(--text-secondary)' }}>
                 {slugError || <>{previewSlug}.{BASE_DOMAIN}</>}
@@ -251,7 +300,7 @@ export default function RegisterPage() {
               type="button"
               className="btn btn-ghost login-btn"
               style={{ marginTop: 8 }}
-              onClick={() => { setError(''); setStep(1); }}
+              onClick={() => { setError(''); setStep(2); }}
             >
               Назад
             </button>
