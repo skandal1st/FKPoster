@@ -2,6 +2,7 @@
 FROM node:20-alpine AS client-build
 WORKDIR /app/client
 COPY client/package.json client/package-lock.json ./
+COPY client/scripts/ ./scripts/
 RUN npm ci
 COPY client/ ./
 ARG VITE_BASE_DOMAIN=lvh.me
