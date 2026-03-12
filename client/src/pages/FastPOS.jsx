@@ -24,6 +24,8 @@ export default function FastPOS() {
   const [variantPicker, setVariantPicker] = useState(null);
   const [pickerVariant, setPickerVariant] = useState(null);
   const [pickerModifiers, setPickerModifiers] = useState([]);
+  const [paymentModal, setPaymentModal] = useState(null); // { orderId, total }
+  const [deliveryOrders, setDeliveryOrders] = useState([]);
 
   useEffect(() => {
     Promise.all([api.get('/products'), api.get('/categories')])
@@ -35,7 +37,15 @@ export default function FastPOS() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
+    loadDeliveryOrders();
   }, []);
+
+  const loadDeliveryOrders = async () => {
+    try {
+      const orders = await api.get('/orders?status=open');
+      setDeliveryOrders(orders.filter(o => o.order_type === 'delivery'));
+    } catch {}
+  };
 
   const filteredProducts = useMemo(() => {
     let list = products;
@@ -124,13 +134,44 @@ export default function FastPOS() {
           quantity: item.quantity,
         });
       }
-      setCart([]);
-      setCustomerName('');
-      toast.success('Заказ создан');
+
+      if (orderType === 'delivery') {
+        // Delivery: order stays open in the queue
+        setCart([]);
+        setCustomerName('');
+        toast.success('Заказ на доставку создан');
+        loadDeliveryOrders();
+      } else {
+        // Dine-in / Takeaway: show payment modal
+        setPaymentModal({ orderId: order.id, total: cartTotal });
+        setCart([]);
+        setCustomerName('');
+      }
     } catch (err) {
       setError(err.message);
     } finally {
       setPaying(false);
+    }
+  };
+
+  const closeOrder = async (orderId, paymentMethod) => {
+    try {
+      await api.post(`/orders/${orderId}/close`, { payment_method: paymentMethod });
+      setPaymentModal(null);
+      toast.success('Заказ закрыт');
+      loadDeliveryOrders();
+    } catch (err) {
+      toast.error('Ошибка закрытия: ' + err.message);
+    }
+  };
+
+  const deliverOrder = async (orderId) => {
+    try {
+      await api.post(`/orders/${orderId}/close`, { payment_method: 'cash' });
+      toast.success('Заказ выдан');
+      loadDeliveryOrders();
+    } catch (err) {
+      toast.error('Ошибка: ' + err.message);
     }
   };
 
@@ -424,6 +465,36 @@ export default function FastPOS() {
           ))}
         </div>
 
+        {/* Delivery queue */}
+        {deliveryOrders.length > 0 && (
+          <div style={{ padding: '0 20px 12px', borderTop: '1px solid var(--border-color)' }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', padding: '10px 0 6px', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              Ожидают доставку ({deliveryOrders.length})
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 150, overflowY: 'auto' }}>
+              {deliveryOrders.map((o) => (
+                <div key={o.id} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '8px 10px', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-xl)',
+                  fontSize: 13,
+                }}>
+                  <div>
+                    <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>#{o.id}</span>
+                    <span style={{ color: 'var(--text-muted)', marginLeft: 8 }}>{parseFloat(o.total || 0).toLocaleString('ru-RU')} ₽</span>
+                  </div>
+                  <button
+                    className="btn btn-primary btn-sm"
+                    style={{ fontSize: 12, padding: '4px 12px', borderRadius: 'var(--radius-xl)' }}
+                    onClick={() => deliverOrder(o.id)}
+                  >
+                    Выдан
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Footer */}
         <div style={{ padding: '16px 20px', borderTop: '1px solid var(--border-color)' }}>
           {error && <div style={{ color: 'var(--danger)', fontSize: 12, marginBottom: 8 }}>{error}</div>}
@@ -439,10 +510,60 @@ export default function FastPOS() {
             disabled={cart.length === 0 || paying}
             onClick={handlePlaceOrder}
           >
-            {paying ? 'Создание...' : 'Создать заказ'}
+            {paying ? 'Создание...' : orderType === 'delivery' ? 'Отправить на доставку' : 'Оплатить'}
           </button>
         </div>
       </div>
+
+      {/* Payment modal */}
+      {paymentModal && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 1100, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          onClick={() => setPaymentModal(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: 'var(--bg-card)', borderRadius: 'var(--radius-2xl)',
+              padding: 32, minWidth: 320, textAlign: 'center',
+              boxShadow: '0 16px 48px rgba(0,0,0,0.3)',
+            }}
+          >
+            <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8, color: 'var(--text-primary)' }}>
+              Оплата
+            </div>
+            <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--accent)', marginBottom: 24 }}>
+              {paymentModal.total.toLocaleString('ru-RU')} ₽
+            </div>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button
+                className="btn"
+                style={{
+                  flex: 1, minHeight: 56, fontSize: 15, fontWeight: 700,
+                  borderRadius: 'var(--radius-xl)', border: '2px solid var(--accent)',
+                  background: 'transparent', color: 'var(--accent)', cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+                onClick={() => closeOrder(paymentModal.orderId, 'cash')}
+              >
+                💵 Наличные
+              </button>
+              <button
+                className="btn"
+                style={{
+                  flex: 1, minHeight: 56, fontSize: 15, fontWeight: 700,
+                  borderRadius: 'var(--radius-xl)',
+                  background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+                onClick={() => closeOrder(paymentModal.orderId, 'card')}
+              >
+                💳 Карта
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
