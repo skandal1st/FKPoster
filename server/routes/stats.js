@@ -512,6 +512,68 @@ router.get('/table-time', checkFeature('reports'), async (req, res) => {
   res.json({ summary, by_table: byTable, by_hall: byHall, by_hour: byHour, by_day_of_week: byDayOfWeek });
 });
 
+// Отчёт по типам заказов (FastPOS)
+router.get('/order-types', checkFeature('reports'), async (req, res) => {
+  const { from, to } = req.query;
+  const dateFrom = from || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const dateTo = to || new Date().toISOString().split('T')[0];
+
+  const byType = await all(`
+    SELECT COALESCE(o.order_type, 'dine_in') as order_type,
+           COUNT(*)::int as orders_count,
+           COALESCE(SUM(o.total), 0) as revenue,
+           ROUND(COALESCE(AVG(o.total), 0))::int as avg_check
+    FROM orders o
+    WHERE o.status = 'closed'
+      AND o.closed_at::date >= $1 AND o.closed_at::date <= $2
+      AND o.tenant_id = $3
+    GROUP BY COALESCE(o.order_type, 'dine_in')
+    ORDER BY revenue DESC
+  `, [dateFrom, dateTo, req.tenantId]);
+
+  for (const r of byType) {
+    r.revenue = parseFloat(r.revenue || 0);
+  }
+
+  const byPayment = await all(`
+    SELECT o.payment_method,
+           COUNT(*)::int as orders_count,
+           COALESCE(SUM(o.total), 0) as revenue
+    FROM orders o
+    WHERE o.status = 'closed'
+      AND o.closed_at::date >= $1 AND o.closed_at::date <= $2
+      AND o.tenant_id = $3
+    GROUP BY o.payment_method
+    ORDER BY revenue DESC
+  `, [dateFrom, dateTo, req.tenantId]);
+
+  for (const r of byPayment) {
+    r.revenue = parseFloat(r.revenue || 0);
+  }
+
+  const daily = await all(`
+    SELECT o.closed_at::date::text as day,
+           COALESCE(o.order_type, 'dine_in') as order_type,
+           COUNT(*)::int as orders_count,
+           COALESCE(SUM(o.total), 0) as revenue
+    FROM orders o
+    WHERE o.status = 'closed'
+      AND o.closed_at::date >= $1 AND o.closed_at::date <= $2
+      AND o.tenant_id = $3
+    GROUP BY o.closed_at::date, COALESCE(o.order_type, 'dine_in')
+    ORDER BY day
+  `, [dateFrom, dateTo, req.tenantId]);
+
+  for (const r of daily) {
+    r.revenue = parseFloat(r.revenue || 0);
+  }
+
+  const totalOrders = byType.reduce((s, r) => s + r.orders_count, 0);
+  const totalRevenue = byType.reduce((s, r) => s + r.revenue, 0);
+
+  res.json({ by_type: byType, by_payment: byPayment, daily, total_orders: totalOrders, total_revenue: totalRevenue });
+});
+
 router.get('/shift/:id', async (req, res) => {
   const shift = await get('SELECT * FROM register_days WHERE id = $1 AND tenant_id = $2', [req.params.id, req.tenantId]);
   if (!shift) return res.status(404).json({ error: 'Смена не найдена' });
