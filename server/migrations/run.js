@@ -27,6 +27,8 @@ async function runMigrations() {
     require('./021_edo_integration'),
     require('./022_kkt_integration'),
     require('./023_table_timer_setting'),
+    require('./024_order_idempotency'),
+    require('./025_product_modifiers'),
   ];
 
   for (const migration of migrations) {

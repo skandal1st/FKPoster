@@ -1,6 +1,8 @@
-exports.up = async function (db) {
+const { run } = require('../db');
+
+exports.up = async function () {
   // Каталог модификаторов (tenant-level, переиспользуемые между товарами)
-  await db.run(`
+  await run(`
     CREATE TABLE IF NOT EXISTS modifiers (
       id SERIAL PRIMARY KEY,
       tenant_id INTEGER NOT NULL REFERENCES tenants(id),
@@ -13,10 +15,10 @@ exports.up = async function (db) {
     )
   `);
 
-  await db.run('CREATE INDEX IF NOT EXISTS idx_modifiers_tenant ON modifiers(tenant_id)');
+  await run('CREATE INDEX IF NOT EXISTS idx_modifiers_tenant ON modifiers(tenant_id)');
 
   // Какие модификаторы доступны для какого товара (M:N)
-  await db.run(`
+  await run(`
     CREATE TABLE IF NOT EXISTS product_modifiers (
       id SERIAL PRIMARY KEY,
       product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
@@ -25,10 +27,10 @@ exports.up = async function (db) {
     )
   `);
 
-  await db.run('CREATE INDEX IF NOT EXISTS idx_product_modifiers_product ON product_modifiers(product_id)');
+  await run('CREATE INDEX IF NOT EXISTS idx_product_modifiers_product ON product_modifiers(product_id)');
 
   // Выбранные модификаторы в позициях заказа (денормализация цены/имени)
-  await db.run(`
+  await run(`
     CREATE TABLE IF NOT EXISTS order_item_modifiers (
       id SERIAL PRIMARY KEY,
       order_item_id INTEGER NOT NULL REFERENCES order_items(id) ON DELETE CASCADE,
@@ -39,5 +41,5 @@ exports.up = async function (db) {
     )
   `);
 
-  await db.run('CREATE INDEX IF NOT EXISTS idx_order_item_modifiers_item ON order_item_modifiers(order_item_id)');
+  await run('CREATE INDEX IF NOT EXISTS idx_order_item_modifiers_item ON order_item_modifiers(order_item_id)');
 };
