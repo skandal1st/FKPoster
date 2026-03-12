@@ -98,6 +98,7 @@ export default function FastPOS() {
           variant_id: variant?.id || null,
           name: itemName,
           mod_names: modNames,
+          modifiers: modifiers.map(m => ({ modifier_id: m.id, name: m.name, price: m.price })),
           price,
           quantity: 1,
           total: price,
@@ -129,10 +130,14 @@ export default function FastPOS() {
     try {
       const order = await api.post('/orders', { order_type: orderType });
       for (const item of cart) {
-        await api.post(`/orders/${order.id}/items`, {
+        const body = {
           product_id: item.product_id,
           quantity: item.quantity,
-        });
+        };
+        if (item.modifiers && item.modifiers.length > 0) {
+          body.modifiers = item.modifiers.map(m => ({ modifier_id: m.modifier_id, quantity: 1 }));
+        }
+        await api.post(`/orders/${order.id}/items`, body);
       }
 
       if (orderType === 'delivery') {
@@ -167,7 +172,7 @@ export default function FastPOS() {
 
   const deliverOrder = async (orderId) => {
     try {
-      await api.post(`/orders/${orderId}/close`, { payment_method: 'cash' });
+      await api.post(`/orders/${orderId}/close`, { payment_method: 'delivery' });
       toast.success('Заказ выдан');
       loadDeliveryOrders();
     } catch (err) {

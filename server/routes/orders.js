@@ -278,7 +278,7 @@ router.post('/:id/close', async (req, res) => {
   const order = await get("SELECT * FROM orders WHERE id = $1 AND status = 'open' AND tenant_id = $2", [req.params.id, req.tenantId]);
   if (!order) return res.status(400).json({ error: 'Заказ не найден или уже закрыт' });
 
-  if (!payment_method || !['cash', 'card', 'mixed'].includes(payment_method)) {
+  if (!payment_method || !['cash', 'card', 'mixed', 'delivery'].includes(payment_method)) {
     return res.status(400).json({ error: 'Выберите способ оплаты' });
   }
 
@@ -311,6 +311,10 @@ router.post('/:id/close', async (req, res) => {
     finalPaidCash = totalToPay;
   } else if (payment_method === 'card') {
     finalPaidCard = totalToPay;
+  } else if (payment_method === 'delivery') {
+    // Доставка — оплата через службу доставки, не наличные/карта
+    finalPaidCash = 0;
+    finalPaidCard = 0;
   } else if (payment_method === 'mixed') {
     finalPaidCash = parseFloat(paid_cash) || 0;
     finalPaidCard = parseFloat(paid_card) || 0;
@@ -578,8 +582,8 @@ router.patch('/:id/move', async (req, res) => {
  */
 router.patch('/:id/payment-method', async (req, res) => {
   const { payment_method, paid_cash, paid_card } = req.body;
-  if (!payment_method || !['cash', 'card', 'mixed'].includes(payment_method)) {
-    return res.status(400).json({ error: 'Укажите способ оплаты: cash, card или mixed' });
+  if (!payment_method || !['cash', 'card', 'mixed', 'delivery'].includes(payment_method)) {
+    return res.status(400).json({ error: 'Укажите способ оплаты: cash, card, mixed или delivery' });
   }
 
   const order = await get(
