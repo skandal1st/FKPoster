@@ -38,6 +38,8 @@ services:
       REDIS_URL: redis://redis:6379
     ports:
       - "3001:3001"
+    volumes:
+      - uploads:/app/public/uploads
 
   redis:
     image: redis:7-alpine
@@ -58,3 +60,4 @@ services:
 
 volumes:
   pgdata:
+  uploads:
