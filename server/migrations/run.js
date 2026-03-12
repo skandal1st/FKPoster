@@ -29,6 +29,7 @@ async function runMigrations() {
     require('./023_table_timer_setting'),
     require('./024_order_idempotency'),
     require('./025_product_modifiers'),
+    require('./026_business_types_and_variants'),
   ];
 
   for (const migration of migrations) {
