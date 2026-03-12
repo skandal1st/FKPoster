@@ -22,6 +22,8 @@ export default function FastPOS() {
   const [paying, setPaying] = useState(false);
   const [error, setError] = useState('');
   const [variantPicker, setVariantPicker] = useState(null);
+  const [pickerVariant, setPickerVariant] = useState(null);
+  const [pickerModifiers, setPickerModifiers] = useState([]);
 
   useEffect(() => {
     Promise.all([api.get('/products'), api.get('/categories')])
@@ -47,18 +49,27 @@ export default function FastPOS() {
   }, [products, activeCategory, search]);
 
   const handleProductClick = (product, e) => {
-    if (product.variants && product.variants.length > 0) {
-      const rect = e.currentTarget.getBoundingClientRect();
-      setVariantPicker({ product, rect });
+    const hasVariants = product.variants && product.variants.length > 0;
+    const hasModifiers = product.modifiers && product.modifiers.length > 0;
+    if (hasVariants || hasModifiers) {
+      setVariantPicker({ product });
+      setPickerVariant(hasVariants ? product.variants[0] : null);
+      setPickerModifiers([]);
     } else {
-      addToCart(product, null);
+      addToCart(product, null, []);
     }
   };
 
-  const addToCart = (product, variant) => {
-    const cartKey = variant ? `${product.id}_v${variant.id}` : `${product.id}`;
-    const price = variant ? parseFloat(variant.price) : parseFloat(product.price);
-    const itemName = variant ? `${product.name} (${variant.name})` : product.name;
+  const addToCart = (product, variant, modifiers = []) => {
+    const modKey = modifiers.length > 0 ? '_m' + modifiers.map(m => m.id).sort().join('-') : '';
+    const cartKey = variant ? `${product.id}_v${variant.id}${modKey}` : `${product.id}${modKey}`;
+    const basePrice = variant ? parseFloat(variant.price) : parseFloat(product.price);
+    const modPrice = modifiers.reduce((s, m) => s + parseFloat(m.price), 0);
+    const price = basePrice + modPrice;
+    const parts = [product.name];
+    if (variant) parts.push(variant.name);
+    const itemName = parts.join(' — ');
+    const modNames = modifiers.map(m => m.name);
 
     setCart((prev) => {
       const existing = prev.find((item) => item.cart_key === cartKey);
@@ -76,6 +87,7 @@ export default function FastPOS() {
           product_id: product.id,
           variant_id: variant?.id || null,
           name: itemName,
+          mod_names: modNames,
           price,
           quantity: 1,
           total: price,
@@ -126,48 +138,103 @@ export default function FastPOS() {
 
   return (
     <div style={{ display: 'flex', height: '100vh', gap: 0, position: 'relative' }}>
-      {/* Variant picker overlay */}
+      {/* Product picker modal */}
       {variantPicker && (
         <div
-          style={{ position: 'fixed', inset: 0, zIndex: 999 }}
+          style={{ position: 'fixed', inset: 0, zIndex: 999, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           onClick={() => setVariantPicker(null)}
         >
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
-              position: 'absolute',
-              top: Math.min(variantPicker.rect.bottom + 8, window.innerHeight - 200),
-              left: Math.min(variantPicker.rect.left, window.innerWidth - 260),
               background: 'var(--bg-card)', border: '1px solid var(--border-color)',
-              borderRadius: 'var(--radius-2xl)', padding: 16,
-              boxShadow: '0 12px 32px rgba(0,0,0,0.2)',
-              backdropFilter: 'blur(20px)', minWidth: 220, zIndex: 1000,
+              borderRadius: 'var(--radius-2xl)', padding: 24,
+              boxShadow: '0 16px 48px rgba(0,0,0,0.25)',
+              minWidth: 320, maxWidth: 400, maxHeight: '80vh', overflowY: 'auto',
             }}
           >
-            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10, color: 'var(--text-primary)' }}>
-              {variantPicker.product.name}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+              {variantPicker.product.image_url && (
+                <img src={variantPicker.product.image_url} alt="" style={{ width: 48, height: 48, borderRadius: 12, objectFit: 'cover' }} />
+              )}
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>
+                {variantPicker.product.name}
+              </div>
             </div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10 }}>Выберите вариант:</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {variantPicker.product.variants.map((v) => (
-                <button
-                  key={v.id}
-                  onClick={() => addToCart(variantPicker.product, v)}
-                  style={{
-                    padding: '10px 14px', borderRadius: 'var(--radius-xl)',
-                    border: '1px solid var(--border-color)', background: 'var(--bg-input)',
-                    cursor: 'pointer', display: 'flex', justifyContent: 'space-between',
-                    alignItems: 'center', color: 'var(--text-primary)',
-                    transition: 'all 0.15s',
-                  }}
-                  onMouseOver={(e) => { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.borderColor = 'var(--accent)'; }}
-                  onMouseOut={(e) => { e.currentTarget.style.background = 'var(--bg-input)'; e.currentTarget.style.borderColor = 'var(--border-color)'; }}
-                >
-                  <span style={{ fontWeight: 600, fontSize: 13 }}>{v.name}</span>
-                  <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--accent)' }}>{parseFloat(v.price).toLocaleString('ru-RU')} ₽</span>
-                </button>
-              ))}
-            </div>
+
+            {/* Variants */}
+            {variantPicker.product.variants && variantPicker.product.variants.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>Размер</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {variantPicker.product.variants.map((v) => (
+                    <button
+                      key={v.id}
+                      onClick={() => setPickerVariant(v)}
+                      style={{
+                        padding: '10px 14px', borderRadius: 'var(--radius-xl)',
+                        border: pickerVariant?.id === v.id ? '2px solid var(--accent)' : '1px solid var(--border-color)',
+                        background: pickerVariant?.id === v.id ? 'rgba(99,102,241,0.08)' : 'var(--bg-input)',
+                        cursor: 'pointer', display: 'flex', justifyContent: 'space-between',
+                        alignItems: 'center', color: 'var(--text-primary)',
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      <span style={{ fontWeight: 600, fontSize: 13 }}>{v.name}</span>
+                      <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--accent)' }}>{parseFloat(v.price).toLocaleString('ru-RU')} ₽</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Modifiers */}
+            {variantPicker.product.modifiers && variantPicker.product.modifiers.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>Добавки</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {variantPicker.product.modifiers.map((m) => {
+                    const selected = pickerModifiers.some(pm => pm.id === m.id);
+                    return (
+                      <button
+                        key={m.id}
+                        onClick={() => {
+                          setPickerModifiers(prev =>
+                            selected ? prev.filter(pm => pm.id !== m.id) : [...prev, m]
+                          );
+                        }}
+                        style={{
+                          padding: '10px 14px', borderRadius: 'var(--radius-xl)',
+                          border: selected ? '2px solid var(--accent)' : '1px solid var(--border-color)',
+                          background: selected ? 'rgba(99,102,241,0.08)' : 'var(--bg-input)',
+                          cursor: 'pointer', display: 'flex', justifyContent: 'space-between',
+                          alignItems: 'center', color: 'var(--text-primary)',
+                          transition: 'all 0.15s',
+                        }}
+                      >
+                        <span style={{ fontWeight: 600, fontSize: 13 }}>
+                          {selected ? '✓ ' : ''}{m.name}
+                        </span>
+                        <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-secondary)' }}>+{parseFloat(m.price).toLocaleString('ru-RU')} ₽</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <button
+              className="btn btn-primary"
+              style={{ width: '100%', minHeight: 44, fontSize: 14, fontWeight: 600, borderRadius: 'var(--radius-xl)' }}
+              onClick={() => addToCart(variantPicker.product, pickerVariant, pickerModifiers)}
+            >
+              Добавить
+              {(() => {
+                const base = pickerVariant ? parseFloat(pickerVariant.price) : parseFloat(variantPicker.product.price);
+                const mods = pickerModifiers.reduce((s, m) => s + parseFloat(m.price), 0);
+                return ` — ${(base + mods).toLocaleString('ru-RU')} ₽`;
+              })()}
+            </button>
           </div>
         </div>
       )}
@@ -336,6 +403,11 @@ export default function FastPOS() {
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {item.name}
                 </div>
+                {item.mod_names && item.mod_names.length > 0 && (
+                  <div style={{ fontSize: 11, color: 'var(--accent)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    +{item.mod_names.join(', ')}
+                  </div>
+                )}
                 <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                   {item.price.toLocaleString('ru-RU')} ₽
                 </div>
