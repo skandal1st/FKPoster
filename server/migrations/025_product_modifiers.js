@@ -42,4 +42,5 @@ exports.up = async function () {
   `);
 
   await run('CREATE INDEX IF NOT EXISTS idx_order_item_modifiers_item ON order_item_modifiers(order_item_id)');
+  console.log('Migration 025_product_modifiers complete');
 };

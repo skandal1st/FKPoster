@@ -2,12 +2,9 @@ const { run } = require('../db');
 
 exports.up = async function () {
   // 1. Расширение таблицы settings / tenants для хранения типа бизнеса и темы
-  await run(`
-    ALTER TABLE tenants 
-    ADD COLUMN IF NOT EXISTS business_type VARCHAR(50) DEFAULT 'hookah',
-    ADD COLUMN IF NOT EXISTS pos_mode VARCHAR(50) DEFAULT 'table_service',
-    ADD COLUMN IF NOT EXISTS theme VARCHAR(20) DEFAULT 'dark';
-  `);
+  await run(`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS business_type VARCHAR(50) DEFAULT 'hookah'`);
+  await run(`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS pos_mode VARCHAR(50) DEFAULT 'table_service'`);
+  await run(`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS theme VARCHAR(20) DEFAULT 'dark'`);
 
   // 2. Расширение таблицы товаров для изображений
   await run(`
@@ -41,4 +38,5 @@ exports.up = async function () {
     ALTER TABLE orders
     ADD COLUMN IF NOT EXISTS order_type VARCHAR(50) DEFAULT 'dine_in';
   `);
+  console.log('Migration 026_business_types_and_variants complete');
 };
