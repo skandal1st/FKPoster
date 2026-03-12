@@ -38,5 +38,9 @@ exports.up = async function () {
     ALTER TABLE orders
     ADD COLUMN IF NOT EXISTS order_type VARCHAR(50) DEFAULT 'dine_in';
   `);
+  // 6. Обновить CHECK constraint для payment_method — добавить 'delivery'
+  await run(`ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_payment_method_check`);
+  await run(`ALTER TABLE orders ADD CONSTRAINT orders_payment_method_check CHECK (payment_method IN ('cash', 'card', 'mixed', 'delivery'))`);
+
   console.log('Migration 026_business_types_and_variants complete');
 };
