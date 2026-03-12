@@ -7,7 +7,7 @@ exports.up = async () => {
 
   // Убрать старый CHECK constraint (если есть) и добавить новый с 'mixed'
   await run(`ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_payment_method_check`);
-  await run(`ALTER TABLE orders ADD CONSTRAINT orders_payment_method_check CHECK (payment_method IN ('cash', 'card', 'mixed'))`);
+  await run(`ALTER TABLE orders ADD CONSTRAINT orders_payment_method_check CHECK (payment_method IN ('cash', 'card', 'mixed', 'delivery'))`);
 
   // Бэкфилл: для закрытых заказов проставить paid_cash/paid_card по payment_method
   await run(`UPDATE orders SET paid_cash = total WHERE payment_method = 'cash' AND status = 'closed' AND (paid_cash IS NULL OR paid_cash = 0)`);

@@ -5,20 +5,29 @@ import TrafficTab from './stats/TrafficTab';
 import EmployeesTab from './stats/EmployeesTab';
 import DiscountsTab from './stats/DiscountsTab';
 import TableTimeTab from './stats/TableTimeTab';
+import OrderTypesTab from './stats/OrderTypesTab';
 import { useAuthStore } from '../store/authStore';
-
-const ALL_TABS = [
-  { id: 'sales', label: 'Продажи' },
-  { id: 'cost', label: 'Себестоимость', feature: 'cost_price' },
-  { id: 'traffic', label: 'Посещаемость' },
-  { id: 'employees', label: 'Сотрудники' },
-  { id: 'discounts', label: 'Скидки' },
-  { id: 'table-time', label: 'Время столиков' },
-];
 
 export default function Stats() {
   const plan = useAuthStore((s) => s.plan);
-  const tabs = useMemo(() => ALL_TABS.filter((t) => !t.feature || plan?.features?.[t.feature]), [plan]);
+  const tenant = useAuthStore((s) => s.tenant);
+  const isFastPos = tenant?.pos_mode === 'fast_pos';
+
+  const tabs = useMemo(() => {
+    const baseTabs = [
+      { id: 'sales', label: 'Продажи' },
+      { id: 'cost', label: 'Себестоимость', feature: 'cost_price' },
+      { id: 'traffic', label: 'Посещаемость' },
+      { id: 'employees', label: 'Сотрудники' },
+      { id: 'discounts', label: 'Скидки' },
+    ];
+    if (isFastPos) {
+      baseTabs.push({ id: 'order-types', label: 'Типы заказов' });
+    } else {
+      baseTabs.push({ id: 'table-time', label: 'Время столиков' });
+    }
+    return baseTabs.filter((t) => !t.feature || plan?.features?.[t.feature]);
+  }, [plan, isFastPos]);
   const [activeTab, setActiveTab] = useState('sales');
   const [from, setFrom] = useState(() => {
     const d = new Date();
@@ -56,6 +65,7 @@ export default function Stats() {
       {activeTab === 'employees' && <EmployeesTab from={from} to={to} />}
       {activeTab === 'discounts' && <DiscountsTab from={from} to={to} />}
       {activeTab === 'table-time' && <TableTimeTab from={from} to={to} />}
+      {activeTab === 'order-types' && <OrderTypesTab from={from} to={to} />}
     </div>
   );
 }
