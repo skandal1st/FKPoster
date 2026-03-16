@@ -14,4 +14,5 @@ module.exports = {
   JWT_SECRET: process.env.JWT_SECRET || 'hookahpos-dev-secret-do-not-use-in-production',
   CORS_ORIGIN: process.env.CORS_ORIGIN || 'http://localhost:5173',
   BASE_DOMAIN: process.env.BASE_DOMAIN || 'lvh.me',
+  BASE_URL: process.env.BASE_URL || null,
 };

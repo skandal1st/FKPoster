@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>HookahPOS KKT Bridge</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --border: #2d313f;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --success: #10b981;
+      --error: #ef4444;
+      --radius: 8px;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+    header {
+      padding: 24px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 600;
+    }
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 13px;
+      margin-top: 4px;
+    }
+    main {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      box-sizing: border-box;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus {
+      border-color: var(--primary);
+    }
+    .btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      width: 100%;
+      transition: background 0.2s;
+    }
+    .btn:hover {
+      background: var(--primary-hover);
+    }
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .btn-secondary:hover {
+      background: var(--bg);
+    }
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .status-badge {
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      background: var(--border);
+      color: var(--text-muted);
+    }
+    .status-badge.online {
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--success);
+    }
+    .status-badge.error {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--error);
+    }
+    
+    .flex-row {
+      display: flex;
+      gap: 12px;
+    }
+    .flex-row > * {
+      flex: 1;
+    }
+    
+    .checkbox-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    .checkbox-wrapper input {
+      margin: 0;
+      width: 16px;
+      height: 16px;
+    }
+    .checkbox-wrapper label {
+      margin: 0;
+      cursor: pointer;
+    }
+
+    #messageBox {
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      margin-top: 16px;
+      display: none;
+    }
+    .msg-error {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--error);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+    .msg-success {
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>HookahPOS KKT Bridge</h1>
+    <div class="subtitle" id="deviceIdEl">ID: загрузка...</div>
+  </header>
+
+  <main>
+    <div class="card">
+      <div class="card-title">Статус подключения</div>
+      <div class="status-row">
+        <span>Связь с сервером</span>
+        <div class="status-badge" id="serverStatusBadge">Офлайн</div>
+      </div>
+      <div class="status-row">
+        <span>Касса АТОЛ (ДТО 10)</span>
+        <div class="status-badge" id="atolStatusBadge">Не проверено</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Привязка к серверу</div>
+      <p style="font-size: 13px; color: var(--text-muted); margin-top: 0;">Вставьте ссылку или токен привязки из веб-панели администратора.</p>
+      
+      <div class="form-group">
+        <label>Сервер (URL)</label>
+        <input type="text" id="serverUrlInput" placeholder="https://api.hookahpos.ru" readonly>
+      </div>
+
+      <div class="form-group">
+        <label>Ссылка или токен привязки</label>
+        <input type="text" id="pairingInput" placeholder="Вставьте токен привязки сюда">
+      </div>
+      <button class="btn" id="pairBtn">Привязать устройство</button>
+      
+      <div id="messageBox"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Настройки АТОЛ WebRequests</div>
+      <div class="flex-row">
+        <div class="form-group">
+          <label>Логин</label>
+          <input type="text" id="atolLoginInput" value="Admin">
+        </div>
+        <div class="form-group">
+          <label>Пароль</label>
+          <input type="password" id="atolPasswordInput" value="Admin">
+        </div>
+      </div>
+      <div class="flex-row">
+        <button class="btn btn-secondary" id="saveAtolBtn">Сохранить</button>
+        <button class="btn btn-secondary" id="testAtolBtn">Тест ККТ</button>
+      </div>
+    </div>
+
+    <div class="checkbox-wrapper">
+      <input type="checkbox" id="autostartCheckbox">
+      <label for="autostartCheckbox">Запускать при старте Windows (работа в фоне)</label>
+    </div>
+  </main>
+
+  <script src="./renderer.js"></script>
+</body>
+</html>

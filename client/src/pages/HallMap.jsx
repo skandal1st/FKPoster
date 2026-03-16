@@ -41,6 +41,7 @@ export default function HallMap({ readOnly = false }) {
     selectOrder,
     clearCurrentOrder,
     setPendingTable,
+    startTimer,
   } = usePosStore();
   const { user, tenant } = useAuthStore();
   const [selectedHall, setSelectedHall] = useState(null);
@@ -66,10 +67,10 @@ export default function HallMap({ readOnly = false }) {
   const [, setTick] = useState(0);
 
   useEffect(() => {
-    if (tenant?.show_table_timer === false) return;
+    if (tenant?.table_timer_mode === 'off') return;
     const interval = setInterval(() => setTick((t) => t + 1), 30000);
     return () => clearInterval(interval);
-  }, [tenant?.show_table_timer]);
+  }, [tenant?.table_timer_mode]);
 
   const currentHall = halls.find((h) => h.id === selectedHall) || null;
   const isHallLocked = !!currentHall?.locked_by_plan;
@@ -451,8 +452,24 @@ export default function HallMap({ readOnly = false }) {
                 {order && (
                   <div className="hall-table-sum">{Number(order.total).toFixed(0)} ₽</div>
                 )}
-                {order && tenant?.show_table_timer !== false && (
+                {order && tenant?.table_timer_mode === 'auto' && (
                   <div className="hall-table-timer">{formatElapsedTime(order.created_at)}</div>
+                )}
+                {order && tenant?.table_timer_mode === 'manual' && order.timer_started_at && (
+                  <div className="hall-table-timer">{formatElapsedTime(order.timer_started_at)}</div>
+                )}
+                {order && tenant?.table_timer_mode === 'manual' && !order.timer_started_at && readOnly && (
+                  <button
+                    type="button"
+                    className="hall-table-start-timer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      startTimer(order.id);
+                    }}
+                    title="Запустить таймер"
+                  >
+                    &#9654;
+                  </button>
                 )}
                 {!readOnly && isAdmin && !order && !isHallLocked && (
                   <>

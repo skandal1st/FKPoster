@@ -9,7 +9,7 @@ router.use(authMiddleware);
 
 router.get('/', async (req, res) => {
   const tenant = await get(
-    `SELECT id, name, slug, logo_url, accent_color, day_end_hour, show_table_timer, created_at,
+    `SELECT id, name, slug, logo_url, accent_color, day_end_hour, show_table_timer, table_timer_mode, created_at,
       business_type, pos_mode, theme,
       legal_name, inn, kpp, ogrn, legal_address, actual_address, director_name,
       bank_name, bank_bik, bank_account, bank_corr_account
@@ -21,7 +21,7 @@ router.get('/', async (req, res) => {
 });
 
 router.put('/', ownerOnly, async (req, res) => {
-  const { name, logo_url, accent_color, day_end_hour, show_table_timer,
+  const { name, logo_url, accent_color, day_end_hour, table_timer_mode,
     business_type, pos_mode, theme,
     legal_name, inn, kpp, ogrn, legal_address, actual_address, director_name,
     bank_name, bank_bik, bank_account, bank_corr_account } = req.body;
@@ -32,15 +32,20 @@ router.put('/', ownerOnly, async (req, res) => {
   const validTypes = ['hookah', 'coffee', 'fastfood', 'restaurant'];
   const validModes = ['table_service', 'fast_pos'];
   const validThemes = ['dark', 'light'];
+  const validTimerModes = ['auto', 'manual', 'off'];
+
+  // Если передан table_timer_mode — вычисляем оба поля
+  const newTimerMode = validTimerModes.includes(table_timer_mode) ? table_timer_mode : tenant.table_timer_mode || 'auto';
+  const newShowTableTimer = newTimerMode !== 'off';
 
   await run(
     `UPDATE tenants SET name = $1, logo_url = $2, accent_color = $3, day_end_hour = $4,
       legal_name = $5, inn = $6, kpp = $7, ogrn = $8,
       legal_address = $9, actual_address = $10, director_name = $11,
       bank_name = $12, bank_bik = $13, bank_account = $14, bank_corr_account = $15,
-      show_table_timer = $16,
-      business_type = $17, pos_mode = $18, theme = $19
-     WHERE id = $20`,
+      show_table_timer = $16, table_timer_mode = $17,
+      business_type = $18, pos_mode = $19, theme = $20
+     WHERE id = $21`,
     [
       name || tenant.name,
       logo_url !== undefined ? logo_url : tenant.logo_url,
@@ -57,7 +62,8 @@ router.put('/', ownerOnly, async (req, res) => {
       bank_bik !== undefined ? bank_bik : tenant.bank_bik,
       bank_account !== undefined ? bank_account : tenant.bank_account,
       bank_corr_account !== undefined ? bank_corr_account : tenant.bank_corr_account,
-      show_table_timer !== undefined ? show_table_timer : tenant.show_table_timer,
+      newShowTableTimer,
+      newTimerMode,
       validTypes.includes(business_type) ? business_type : tenant.business_type,
       validModes.includes(pos_mode) ? pos_mode : tenant.pos_mode,
       validThemes.includes(theme) ? theme : tenant.theme,
@@ -66,7 +72,7 @@ router.put('/', ownerOnly, async (req, res) => {
   );
 
   const updated = await get(
-    `SELECT id, name, slug, logo_url, accent_color, day_end_hour, show_table_timer,
+    `SELECT id, name, slug, logo_url, accent_color, day_end_hour, show_table_timer, table_timer_mode,
       business_type, pos_mode, theme,
       legal_name, inn, kpp, ogrn, legal_address, actual_address, director_name,
       bank_name, bank_bik, bank_account, bank_corr_account

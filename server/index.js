@@ -36,6 +36,7 @@ const salaryRoutes = require('./routes/salary');
 const edoRoutes = require('./routes/edo');
 const counterpartyRoutes = require('./routes/counterparties');
 const kktRoutes = require('./routes/kkt');
+const fiscalDevicesRoutes = require('./routes/fiscalDevices');
 const modifierRoutes = require('./routes/modifiers');
 const uploadRoutes = require('./routes/upload');
 
@@ -131,6 +132,7 @@ app.use('/api/salary', salaryRoutes);
 app.use('/api/edo', edoRoutes);
 app.use('/api/counterparties', counterpartyRoutes);
 app.use('/api/kkt', kktRoutes);
+app.use('/api/fiscal-devices', fiscalDevicesRoutes);
 app.use('/api/modifiers', modifierRoutes);
 app.use('/api/upload', uploadRoutes);
 

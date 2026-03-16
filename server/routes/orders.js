@@ -469,6 +469,64 @@ router.post('/:id/close', async (req, res) => {
     }
   }
 
+  // === Физическая ККТ: постановка чека в очередь ===
+  if (req.integrations?.kkt_physical_enabled) {
+    try {
+      // Найти активное устройство тенанта
+      const device = await get(
+        `SELECT device_id FROM kkt_physical_devices
+         WHERE tenant_id = $1 AND status = 'online'
+         ORDER BY last_seen_at DESC LIMIT 1`,
+        [req.tenantId]
+      );
+
+      if (device) {
+        // Получить позиции с VAT для чека
+        const receiptItems = await all(
+          'SELECT oi.*, p.vat_rate FROM order_items oi LEFT JOIN products p ON oi.product_id = p.id WHERE oi.order_id = $1',
+          [order.id]
+        );
+
+        const receiptData = {
+          items: receiptItems.map(i => ({
+            name: i.product_name,
+            price: parseFloat(i.price),
+            quantity: parseFloat(i.quantity),
+            amount: parseFloat(i.total),
+            vat: i.vat_rate || 'none'
+          })),
+          total: totalToPay,
+          paid_cash: finalPaidCash,
+          paid_card: finalPaidCard,
+          payment_method,
+          operator_name: req.user.name
+        };
+
+        const queueResult = await get(
+          `INSERT INTO kkt_physical_queue (tenant_id, order_id, device_id, receipt_type, receipt_data)
+           VALUES ($1, $2, $3, 'sell', $4) RETURNING id`,
+          [req.tenantId, order.id, device.device_id, JSON.stringify(receiptData)]
+        );
+
+        // Уведомить bridge-устройство по socket
+        const io = req.app.get('io');
+        if (io) {
+          io.to(`device:${device.device_id}`).emit('fiscal:print', {
+            queue_id: queueResult.id,
+            receipt_type: 'sell',
+            receipt_data: receiptData
+          });
+        }
+
+        console.log(`[PHYSICAL_KKT] Чек заказа #${order.id} поставлен в очередь #${queueResult.id} для устройства ${device.device_id}`);
+      } else {
+        console.warn(`[PHYSICAL_KKT] Нет активных устройств для тенанта ${req.tenantId}`);
+      }
+    } catch (err) {
+      console.error('[PHYSICAL_KKT] Ошибка постановки чека в очередь:', err.message);
+    }
+  }
+
   const updated = await get(`
     SELECT o.*, t.number as table_number, t.label as table_label, h.name as hall_name,
            g.name as guest_name, g.discount_type as guest_discount_type, g.discount_value as guest_discount_value
@@ -643,6 +701,29 @@ router.patch('/:id/payment-method', async (req, res) => {
     'SELECT o.*, t.number as table_number, t.label as table_label, h.name as hall_name FROM orders o LEFT JOIN tables t ON o.table_id = t.id LEFT JOIN halls h ON t.hall_id = h.id WHERE o.id = $1',
     [order.id]
   );
+  emitEvent(req, 'order:updated', updated);
+  res.json(updated);
+});
+
+/**
+ * Запустить таймер на заказе (ручной режим).
+ */
+router.post('/:id/start-timer', async (req, res) => {
+  const order = await get(
+    "SELECT * FROM orders WHERE id = $1 AND status = 'open' AND tenant_id = $2",
+    [req.params.id, req.tenantId]
+  );
+  if (!order) return res.status(404).json({ error: 'Заказ не найден или уже закрыт' });
+
+  if (order.timer_started_at) {
+    return res.status(400).json({ error: 'Таймер уже запущен' });
+  }
+
+  await run('UPDATE orders SET timer_started_at = NOW() WHERE id = $1', [order.id]);
+
+  const updated = await get('SELECT * FROM orders WHERE id = $1', [order.id]);
+  updated.items = await all('SELECT * FROM order_items WHERE order_id = $1', [order.id]);
+  await loadItemModifiers(updated.items);
   emitEvent(req, 'order:updated', updated);
   res.json(updated);
 });

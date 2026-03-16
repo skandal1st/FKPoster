@@ -30,6 +30,9 @@ async function runMigrations() {
     require('./024_order_idempotency'),
     require('./025_product_modifiers'),
     require('./026_business_types_and_variants'),
+    require('./027_physical_kkt_devices'),
+    require('./028_orders_fiscal_fields'),
+    require('./029_timer_modes'),
   ];
 
   for (const migration of migrations) {

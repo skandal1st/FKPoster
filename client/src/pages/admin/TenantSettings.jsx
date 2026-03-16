@@ -11,7 +11,7 @@ export default function TenantSettings() {
   const [name, setName] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
   const [accentColor, setAccentColor] = useState('#6366f1');
-  const [showTableTimer, setShowTableTimer] = useState(true);
+  const [tableTimerMode, setTableTimerMode] = useState('auto');
   const [saving, setSaving] = useState(false);
   const [subscription, setSubscription] = useState(null);
   const [usage, setUsage] = useState(null);
@@ -42,7 +42,7 @@ export default function TenantSettings() {
       setName(tenant.name || '');
       setLogoUrl(tenant.logo_url || '');
       setAccentColor(tenant.accent_color || '#6366f1');
-      setShowTableTimer(tenant.show_table_timer !== false);
+      setTableTimerMode(tenant.table_timer_mode || (tenant.show_table_timer === false ? 'off' : 'auto'));
       setLegalForm({
         legal_name: tenant.legal_name || '',
         inn: tenant.inn || '',
@@ -134,7 +134,7 @@ export default function TenantSettings() {
     e.preventDefault();
     setSaving(true);
     try {
-      const updated = await api.put('/tenant', { name, logo_url: logoUrl, accent_color: accentColor, show_table_timer: showTableTimer });
+      const updated = await api.put('/tenant', { name, logo_url: logoUrl, accent_color: accentColor, table_timer_mode: tableTimerMode });
       setTenant(updated);
       toast.success('Настройки сохранены');
     } catch (err) {
@@ -174,14 +174,13 @@ export default function TenantSettings() {
                 <input className="form-input" value={accentColor} onChange={(e) => setAccentColor(e.target.value)} style={{ width: 120 }} />
               </div>
             </div>
-            <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <input
-                type="checkbox"
-                id="showTableTimer"
-                checked={showTableTimer}
-                onChange={(e) => setShowTableTimer(e.target.checked)}
-              />
-              <label htmlFor="showTableTimer" style={{ cursor: 'pointer' }}>Показывать таймер на занятых столиках</label>
+            <div className="form-group">
+              <label className="form-label">Таймер на столиках</label>
+              <select className="form-input" value={tableTimerMode} onChange={(e) => setTableTimerMode(e.target.value)}>
+                <option value="auto">Автоматический (с момента открытия заказа)</option>
+                <option value="manual">Ручной (запуск кнопкой)</option>
+                <option value="off">Выключен</option>
+              </select>
             </div>
             <button className="btn btn-primary" type="submit" disabled={saving}>
               {saving ? 'Сохранение...' : 'Сохранить'}

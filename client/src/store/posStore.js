@@ -470,6 +470,41 @@ export const usePosStore = create((set, get) => ({
     set({ currentOrder: null, openOrders: updatedOrders });
   },
 
+  startTimer: async (orderId) => {
+    const isOnline = useNetworkStore.getState().isOnline;
+    const { currentOrder } = get();
+
+    if (isOnline && !(currentOrder?._offline)) {
+      try {
+        const order = await api.post(`/orders/${orderId}/start-timer`);
+        if (currentOrder && currentOrder.id === orderId) {
+          set({ currentOrder: order });
+        }
+        get().loadOpenOrders();
+        return;
+      } catch (err) {
+        if (!(err instanceof OfflineError)) throw err;
+      }
+    }
+
+    // Офлайн: установить timer_started_at локально
+    const now = new Date().toISOString();
+    if (currentOrder && currentOrder.id === orderId) {
+      set({ currentOrder: { ...currentOrder, timer_started_at: now } });
+    }
+    const orders = get().openOrders.map((o) => o.id === orderId ? { ...o, timer_started_at: now } : o);
+    set({ openOrders: orders });
+
+    await syncQueue.enqueue({
+      type: 'start_timer',
+      method: 'POST',
+      url: `/orders/${orderId}/start-timer`,
+      body: {},
+      parentRef: currentOrder?._offline ? currentOrder.id : undefined,
+    });
+    refreshPendingCount();
+  },
+
   clearCurrentOrder: () => set({ currentOrder: null, pendingTableId: null }),
 
   reset: () => set({

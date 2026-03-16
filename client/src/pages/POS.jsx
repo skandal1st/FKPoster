@@ -16,7 +16,7 @@ export default function POS({ embedded = false, onClose }) {
   const {
     categories, products, tables, halls, openOrders, currentOrder, pendingTableId, registerDay, guests, workshops, printSettings,
     loadCategories, loadProducts, loadTables, loadHalls, loadOpenOrders, loadRegisterDay, loadGuests, loadWorkshops, loadPrintSettings,
-    createOrder, selectOrder, addItem, removeItem, closeOrder, cancelOrder, moveOrder, clearCurrentOrder,
+    createOrder, selectOrder, addItem, removeItem, closeOrder, cancelOrder, moveOrder, clearCurrentOrder, startTimer,
   } = usePosStore();
 
   const { tenant } = useAuthStore();
@@ -396,6 +396,11 @@ export default function POS({ embedded = false, onClose }) {
             {currentOrder.table_id && (
               <button className="btn btn-ghost btn-sm" onClick={() => setShowMovePicker(true)} style={{ width: '100%', marginTop: 8 }}>
                 <ArrowRightLeft size={16} /> Пересадить
+              </button>
+            )}
+            {tenant?.table_timer_mode === 'manual' && currentOrder.table_id && !currentOrder.timer_started_at && (
+              <button className="btn btn-ghost btn-sm" onClick={() => startTimer(currentOrder.id)} style={{ width: '100%', marginTop: 8 }}>
+                &#9654; Запустить таймер
               </button>
             )}
             <button className="btn btn-ghost btn-sm" onClick={handleCancel} style={{ width: '100%', marginTop: 8 }}>

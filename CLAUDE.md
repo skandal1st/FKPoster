@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-HookahPOS — multi-tenant SaaS POS system designed specifically for hookah bars/lounges. Russian-language UI and error messages throughout. Cloud-based with per-tenant subdomain isolation.
+HookahPOS — multi-tenant SaaS POS system for hospitality businesses (hookah bars, cafes, restaurants, fast food). Russian-language UI and error messages throughout. Cloud-based with per-tenant subdomain isolation.
+
+**Multi-business support**: система адаптируется под тип заведения (`business_type`: hookah/cafe/restaurant/fastfood) и режим работы (`pos_mode`: table_service/fast_pos).
 
 ## Commands
 
@@ -42,6 +44,12 @@ npm run lint                # check lint
 npm run lint:fix            # auto-fix lint
 npm run format              # format with Prettier
 npm run format:check        # check formatting
+
+# KKT Bridge (Windows desktop app for physical fiscal printers)
+cd kkt-bridge-windows
+npm install
+npm start                   # development mode
+npm run build               # build installer
 ```
 
 ## Architecture
@@ -50,22 +58,23 @@ npm run format:check        # check formatting
 
 - **Entry**: `server/index.js` — mounts all `/api/*` routes, subdomain middleware, CORS, rate limiting, socket.io setup, serves React build in production
 - **DB**: `server/db.js` — pg Pool with helpers: `run(sql, params)`, `all()`, `get()`, `transaction(callback)`. All queries use PG numbered params (`$1, $2`). Money fields are `NUMERIC(12,2)` — use `parseFloat()` when reading
-- **Config**: `server/config.js` — reads from `.env`: PORT, DATABASE_URL, JWT_SECRET, CORS_ORIGIN, NODE_ENV, BASE_DOMAIN
-- **Migrations**: `server/migrations/run.js` — runs all migration files sequentially (001–021). Each exports `up()`. Idempotent (uses `IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`)
+- **Config**: `server/config.js` — reads from `.env`: PORT, DATABASE_URL, JWT_SECRET, CORS_ORIGIN, NODE_ENV, BASE_DOMAIN, BASE_URL
+- **Migrations**: `server/migrations/run.js` — runs all migration files sequentially (001–028). Each exports `up()`. Idempotent (uses `IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`)
 - **Services**: `server/services/` — external integration services:
   - `egais/` — UTM client, XML parser/builder for EGAIS protocol
   - `chestniyZnak/` — API client, DataMatrix barcode processing
   - `edo/` — document builder, provider factory with SBIS and Diadoc providers
+  - `kkt/` — fiscal receipt service with provider factory (АТОЛ Онлайн, physical KKT bridge)
 
 ### Middleware chain (typical route)
 
-`subdomainMiddleware` (global) → `authMiddleware` → `tenantMiddleware` → `checkSubscription` → `checkLimit(resource)` → route handler
+`subdomainMiddleware` (global) → `authMiddleware` → `tenantMiddleware` → `checkSubscription` → `checkLimit(resource)` → `loadIntegrations` → route handler
 
 - `subdomain.js`: Parses `Host`/`X-Forwarded-Host` header, extracts slug from `{slug}.{BASE_DOMAIN}`, looks up tenant in DB. Sets `req.subdomainTenant` (tenant object or null) and `req.isMainDomain` (boolean). Mounted globally before all routes
 - `auth.js`: JWT verify → loads user (with cache) → sets `req.user`, `req.tenantId`, `req.chainId`. Role guards: `adminOnly`, `ownerOnly`, `superadminOnly`, `chainOwnerOnly`
 - `tenant.js`: rejects if `req.tenantId` missing
 - `subscription.js`: `checkSubscription` (402 if expired), `checkLimit('users'|'halls'|'products')` (403 if over plan limit), `checkFeature(feature)` (403 if plan lacks feature)
-- `integration.js`: `loadIntegrations` — loads tenant's integration settings (ЕГАИС, Честный знак, ЭДО) from `tenant_integrations` with cache. Guards: `requireEgais`, `requireChestniyZnak`, `requireEdo`
+- `integration.js`: `loadIntegrations` — loads tenant's integration settings (ЕГАИС, Честный знак, ЭДО, ККТ) from `tenant_integrations` with cache. Guards: `requireEgais`, `requireChestniyZnak`, `requireEdo`
 
 ### Multi-tenancy
 
@@ -73,9 +82,9 @@ Row-level isolation via `tenant_id` on all business tables. Every query must fil
 
 ### Subdomain system
 
-Each tenant has a unique `slug` (auto-transliterated from company name via `server/utils/slugify.js`). Tenants are accessed at `{slug}.{BASE_DOMAIN}` (e.g., `my-bar.lvh.me` in dev, `my-bar.hookahpos.ru` in prod).
+Each tenant has a unique `slug` (auto-transliterated from company name via `server/utils/slugify.js`). Tenants are accessed at `{slug}.{BASE_DOMAIN}` (e.g., `my-bar.lvh.me` in dev, `my-bar.skandata.ru` in prod).
 
-- **Main domain** (`lvh.me`, `hookahpos.ru`): landing page, registration of new companies, superadmin panel, chain management, owner email/password login (redirects to subdomain after login)
+- **Main domain** (`lvh.me`, `skandata.ru`): landing page, registration of new companies, superadmin panel, chain management, owner email/password login (redirects to subdomain after login)
 - **Subdomain** (`{slug}.lvh.me`): PIN-code login for employees (cashier-friendly), fallback email/password login for owner, all POS functionality
 
 Dev uses `lvh.me` which resolves to 127.0.0.1 and supports subdomains natively.
@@ -93,30 +102,42 @@ Dev uses `lvh.me` which resolves to 127.0.0.1 and supports subdomains natively.
 
 ### WebSocket (socket.io)
 
-- **Server**: `server/socket.js` — JWT auth on handshake (with user cache), rooms by `tenant:{tenantId}`. Optional Redis adapter for clustered mode (PM2)
+- **Server**: `server/socket.js` — JWT auth on handshake (with user cache), rooms by `tenant:{tenantId}` and `device:{deviceId}` (for KKT bridge). Optional Redis adapter for clustered mode (PM2)
 - **Event helper**: `server/utils/emitEvent.js` — `emitEvent(req, event, data)` called in route handlers after DB writes
 - **Client**: `client/src/store/socketStore.js` — Zustand store, connect/disconnect with auth token
-- **Events**: `order:created`, `order:updated`, `order:closed`, `order:cancelled`, `register:opened`, `register:closed`
+- **Events**:
+  - **Order events**: `order:created`, `order:updated`, `order:closed`, `order:cancelled`
+  - **Register events**: `register:opened`, `register:closed`
+  - **Fiscal events**: `fiscal:print` (to bridge), `fiscal:confirmed`, `fiscal:error` (from bridge)
 - **Vite proxy**: `/socket.io` → `localhost:3001` with `ws: true`
+- **Device auth**: Bridge clients connect with device JWT (`{ device_id, tenant_id }`), join `device:{deviceId}` room for targeted notifications
 
 ## Data Model
 
 ### Core tables (all business tables have `tenant_id` FK)
 
-- **tenants** — `id`, `company_name`, `slug` (unique, for subdomain), `accent_color`, `city`, `inn`, `kpp`, `ogrn`, `legal_address`, `actual_address`, `plan_id`, `subscription_status`, `subscription_expires_at`, `day_end_hour`, `created_at`
+- **tenants** — `id`, `company_name`, `slug` (unique, for subdomain), `business_type` (hookah/cafe/restaurant/fastfood), `pos_mode` (table_service/fast_pos), `theme` (dark/light), `accent_color`, `city`, `inn`, `kpp`, `ogrn`, `legal_address`, `actual_address`, `plan_id`, `subscription_status`, `subscription_expires_at`, `day_end_hour`, `show_table_timer`, `created_at`
 - **plans** — `id`, `name`, `code` (start/business/pro), `price`, `max_users`, `max_halls`, `max_products`, `max_orders_monthly`, `features` (JSONB — feature flags for `checkFeature()`), `is_active`
 - **users** — `id`, `tenant_id`, `name`, `email`, `phone`, `password_hash`, `pin_hash` (for PIN login), `role` (superadmin/chain_owner/owner/admin/cashier), `chain_id`, `active`
-- **categories** — `id`, `tenant_id`, `name`, `sort_order`, `is_active`
-- **products** — `id`, `tenant_id`, `category_id`, `name`, `price`, `cost_price`, `unit`, `min_stock`, `current_stock`, `is_ingredient`, `barcode`, `marking_type`, `egais_alcocode`, `is_active`
+- **categories** — `id`, `tenant_id`, `name`, `workshop_id`, `sort_order`, `is_active`
+- **products** — `id`, `tenant_id`, `category_id`, `name`, `price`, `cost_price`, `unit`, `min_stock`, `quantity`, `track_inventory`, `is_ingredient`, `is_composite`, `barcode`, `image_url`, `marking_type`, `egais_alcocode`, `vat_rate`, `active`
+- **product_variants** — `id`, `product_id`, `name`, `price`, `cost_price`, `barcode`, `is_active` (e.g., drink sizes: 0.2л, 0.4л)
+- **modifiers** — `id`, `tenant_id`, `name`, `price`, `cost_price`, `ingredient_id`, `active` (e.g., toppings, syrups, extras)
+- **product_modifiers** — `product_id`, `modifier_id` (M:N relationship)
+- **order_item_modifiers** — `id`, `order_item_id`, `modifier_id`, `modifier_name`, `price`, `quantity`
 - **ingredient_groups** — `id`, `tenant_id`, `name`, `sort_order`
-- **workshops** — `id`, `tenant_id`, `name`, `sort_order`
+- **workshops** — `id`, `tenant_id`, `name`, `sort_order` (кухонные цеха для передачи заказов)
 - **halls** — `id`, `tenant_id`, `name`, `grid_cols`, `grid_rows`, `is_active`
 - **tables** — `id`, `tenant_id`, `hall_id`, `number`, `label`, `capacity`, `status` (free/occupied/reserved), `position_x`, `position_y`, `grid_x`, `grid_y`
-- **shifts** — `id`, `tenant_id`, `user_id` (who opened), `opened_at`, `closed_at`, `opening_cash`, `closing_cash`, `status` (open/closed)
-- **orders** — `id`, `tenant_id`, `shift_id`, `table_id`, `user_id` (cashier), `hookah_master_id`, `guest_id`, `order_number`, `status` (open/paid/cancelled), `subtotal`, `discount_type` (percent/fixed), `discount_value`, `discount_amount`, `total`, `payment_method` (cash/card/mixed), `paid_cash`, `paid_card`, `created_at`, `closed_at`
-- **order_items** — `id`, `order_id`, `product_id`, `product_name` (denormalized), `quantity`, `price`, `total`
-- **guests** — `id`, `tenant_id`, `name`, `phone`, `discount_type`, `discount_value`, `bonus_balance`, `total_spent`, `visits_count`
-- **tenant_integrations** — `id`, `tenant_id`, `egais_enabled`, `egais_fsrar_id`, `chestniy_znak_enabled`, `edo_enabled`, `edo_provider`
+- **register_days** — `id`, `tenant_id`, `user_id` (who opened), `opened_at`, `closed_at`, `opening_cash`, `closing_cash`, `status` (open/closed)
+- **orders** — `id`, `tenant_id`, `register_day_id`, `table_id`, `user_id` (cashier), `hookah_master_id`, `guest_id`, `order_number`, `order_type` (dine_in/take_away/delivery), `status` (open/closed/cancelled), `total_before_discount`, `discount_amount`, `total`, `payment_method` (cash/card/mixed/delivery), `paid_cash`, `paid_card`, `fiscal_number`, `fiscal_document_number`, `fiscal_sign`, `idempotency_key`, `created_at`, `closed_at`
+- **order_items** — `id`, `order_id`, `product_id`, `variant_id`, `product_name` (denormalized), `quantity`, `price`, `cost_price`, `total`, `marking_type`, `marked_codes_required`, `marked_codes_scanned`
+- **guests** — `id`, `tenant_id`, `name`, `phone`, `discount_type`, `discount_value`, `bonus_balance`, `total_spent`, `visits_count`, `active`
+- **tenant_integrations** — `id`, `tenant_id`, `egais_enabled`, `egais_fsrar_id`, `chestniy_znak_enabled`, `edo_enabled`, `edo_provider`, `kkt_enabled`, `kkt_provider`, `kkt_strict_mode`, `kkt_environment`, `kkt_physical_enabled`, ...
+- **kkt_receipts** — `id`, `tenant_id`, `order_id`, `external_uuid`, `receipt_type`, `status`, `fiscal_number`, `fiscal_document`, `fiscal_sign`, `registration_number`, `fn_number`, `total`, `payment_method`, `kkt_provider`, `request_payload`, `response_payload`, `error_message`, `retry_count`, `created_at`, `updated_at`
+- **kkt_physical_devices** — `id`, `tenant_id`, `device_id` (unique), `name`, `platform` (android/windows/ios/linux), `status` (online/offline), `atol_model`, `last_seen_at`, `created_at`
+- **kkt_pairing_tokens** — `id`, `tenant_id`, `token`, `device_name`, `used`, `expires_at`, `created_at`
+- **kkt_physical_queue** — `id`, `tenant_id`, `order_id`, `device_id`, `receipt_type`, `status` (pending/sent/done/error), `receipt_data` (JSONB), `fiscal_number`, `fiscal_document_number`, `fiscal_sign`, `fiscal_datetime`, `error_message`, `retry_count`, `created_at`, `updated_at`
 - **marked_items** — `id`, `tenant_id`, `product_id`, `marking_code`, `status`
 - **egais_documents** — `id`, `tenant_id`, `type`, `status`, `xml_content`, `reply_xml`
 - **egais_stock** — `id`, `tenant_id`, `alcocode`, `quantity`, `last_sync`
@@ -137,19 +158,26 @@ Dev uses `lvh.me` which resolves to 127.0.0.1 and supports subdomains natively.
 
 ```
 tenants → plans (many-to-one)
-tenants → users, categories, products, halls, shifts, orders, guests (one-to-many)
+tenants → users, categories, products, halls, orders, guests, modifiers (one-to-many)
 tenants → tenant_integrations (one-to-one)
+tenants → kkt_physical_devices (one-to-many)
 halls → tables (one-to-many)
 categories → products (one-to-many)
 categories → workshops (many-to-one via workshop_id)
 products → ingredient_groups (many-to-one via ingredient_group_id)
-shifts → orders (one-to-many)
-orders → order_items (one-to-many)
-orders → tables, users, guests (many-to-one)
+products → product_variants, product_modifiers (one-to-many)
+products → modifiers (many-to-many via product_modifiers)
+register_days → orders (one-to-many)
+orders → order_items → order_item_modifiers (one-to-many)
+orders → tables, users, guests, product_variants (many-to-one)
+orders → kkt_receipts, kkt_physical_queue (one-to-many)
+kkt_physical_devices → kkt_physical_queue (one-to-many)
 chains → chain_tenants → tenants (many-to-many)
 chains → chain_transfers → chain_transfer_items (one-to-many)
 users → work_schedule, salary_payouts (one-to-many)
 counterparties → edo_documents (one-to-many)
+modifiers → products (many-to-many via product_modifiers)
+modifiers → products (many-to-one via ingredient_id for inventory tracking)
 ```
 
 ## API Routes
@@ -167,6 +195,12 @@ counterparties → edo_documents (one-to-many)
 - `PUT /api/products/:id` — update (admin+)
 - `DELETE /api/products/:id` — soft delete (admin+)
 
+### Modifiers (`server/routes/modifiers.js`)
+- `GET /api/modifiers` — list all modifiers for tenant
+- `POST /api/modifiers` — create modifier (admin+)
+- `PUT /api/modifiers/:id` — update modifier (admin+)
+- `DELETE /api/modifiers/:id` — soft delete modifier (admin+)
+
 ### Categories (`server/routes/categories.js`)
 - `GET /api/categories` — list all
 - `POST /api/categories` — create (admin+)
@@ -183,12 +217,15 @@ counterparties → edo_documents (one-to-many)
 - CRUD for workshops / цеха (admin+)
 
 ### Orders (`server/routes/orders.js`)
-- `GET /api/orders` — list with filters (date, status, shift)
+- `GET /api/orders` — list with filters (date, status, shift, order_type)
 - `POST /api/orders` — create new order
-- `GET /api/orders/:id` — order detail with items
+- `GET /api/orders/:id` — order detail with items + modifiers
 - `PUT /api/orders/:id` — update (add items, change discount)
-- `POST /api/orders/:id/pay` — close order with payment (cash/card/mixed split)
+- `POST /api/orders/:id/items` — add item with modifiers and variants
+- `PUT /api/orders/:id/items/:itemId` — update item quantity
+- `POST /api/orders/:id/close` — close order with payment (cash/card/mixed split), fiscal integration
 - `POST /api/orders/:id/cancel` — cancel order
+- `PATCH /api/orders/:id/payment-method` — change payment method
 
 ### Halls & Tables (`server/routes/halls.js`, `server/routes/tables.js`)
 - `GET /api/halls` — list halls with tables
@@ -198,8 +235,10 @@ counterparties → edo_documents (one-to-many)
 - `PUT /api/halls/:hallId/tables/:id` — update table (position, status)
 - `DELETE /api/halls/:hallId/tables/:id` — remove table
 
-### Shifts / Register (`server/routes/register.js`)
-- Open/close register day (cash shift), generate summary
+### Register (`server/routes/register.js`)
+- `GET /api/register/current` — current open register day
+- `POST /api/register/open` — open register day
+- `POST /api/register/close` — close register day with Z-report
 
 ### Users / Employees (`server/routes/users.js`)
 - `GET /api/users` — list tenant users (admin+)
@@ -208,8 +247,11 @@ counterparties → edo_documents (one-to-many)
 - `DELETE /api/users/:id` — deactivate (admin+)
 
 ### Stats / Reports (`server/routes/stats.js`)
-- Sales, products, employees, cost, traffic, discounts reports by date range
-- Dashboard summary stats
+- `GET /api/stats/dashboard` — dashboard summary
+- `GET /api/stats/sales` — sales by period
+- `GET /api/stats/products` — product popularity
+- `GET /api/stats/employees` — employee performance
+- `GET /api/stats/order-types` — breakdown by dine_in/take_away/delivery
 
 ### Supplies (`server/routes/supplies.js`)
 - CRUD for supply deliveries (admin+)
@@ -222,7 +264,27 @@ counterparties → edo_documents (one-to-many)
 - Bonus accrual and spending on orders
 
 ### Integrations (`server/routes/integrations.js`)
-- `GET/PUT /api/integrations` — tenant integration settings (ЕГАИС, Честный знак, ЭДО)
+- `GET /api/integrations` — get tenant integration settings
+- `PUT /api/integrations` — update integration settings (ЕГАИС, Честный знак, ЭДО, ККТ)
+
+### KKT Cloud (`server/routes/kkt.js`)
+- Cloud fiscal integration (АТОЛ Онлайн, etc.)
+- Receipt management and status checks
+
+### Fiscal Devices (`server/routes/fiscalDevices.js`)
+- **Admin endpoints**:
+  - `GET /api/fiscal-devices` — list physical devices
+  - `DELETE /api/fiscal-devices/:id` — remove device
+  - `POST /api/fiscal-devices/pairing-token` — generate pairing URL for bridge client
+  - `GET /api/fiscal-devices/queue` — receipt queue history
+  - `POST /api/fiscal-devices/queue` — manually enqueue receipt
+- **Public endpoint**:
+  - `POST /api/fiscal-devices/pair` — device pairing (rate limited: 10/15min)
+- **Device endpoints** (require device JWT):
+  - `POST /api/fiscal-devices/heartbeat` — device alive signal
+  - `GET /api/fiscal-devices/pending` — pull pending receipts
+  - `PATCH /api/fiscal-devices/queue/:id/confirm` — confirm printed receipt
+  - `PATCH /api/fiscal-devices/queue/:id/error` — report print error
 
 ### EGAIS (`server/routes/egais.js`)
 - EGAIS document management, stock sync
@@ -247,8 +309,12 @@ counterparties → edo_documents (one-to-many)
 ### Salary (`server/routes/salary.js`)
 - Salary settings, rates, payouts, calculations
 
-### Tenant Settings (`server/routes/tenants.js`, `server/routes/settings` via tenants)
-- `GET/PUT /api/tenant` — tenant settings (branding, company info, legal fields)
+### Upload (`server/routes/upload.js`)
+- `POST /api/upload/product-image` — upload product image (multer)
+
+### Tenant Settings (`server/routes/tenants.js`)
+- `GET /api/tenant` — get tenant settings
+- `PUT /api/tenant` — update tenant settings (branding, business_type, pos_mode, company info, legal fields)
 
 ### Subscriptions (`server/routes/subscriptions.js`)
 - Subscription status, plan changes
@@ -286,6 +352,67 @@ counterparties → edo_documents (one-to-many)
 | 019 | Free plan limits | max_orders_monthly on plans |
 | 020 | Phone & city | phone on users, city on tenants |
 | 021 | EDO integration | counterparties, edo_documents, legal fields (inn, kpp, ogrn, etc.) on tenants |
+| 022 | KKT cloud integration | kkt_receipts table, kkt_* fields on tenant_integrations, vat_rate on products |
+| 023 | Table timer & KKT env | show_table_timer on tenants, kkt_environment on tenant_integrations |
+| 024 | Order idempotency | idempotency_key on orders |
+| 025 | Product modifiers | modifiers, product_modifiers, order_item_modifiers tables |
+| 026 | Business types & variants | business_type, pos_mode, theme on tenants; product_variants, image_url on products; order_type on orders |
+| 027 | Physical KKT devices | kkt_physical_devices, kkt_pairing_tokens, kkt_physical_queue, kkt_physical_enabled flag |
+| 028 | Orders fiscal fields | fiscal_number, fiscal_document_number, fiscal_sign on orders |
+
+## KKT Bridge (Windows Desktop App)
+
+**Location**: `kkt-bridge-windows/`
+
+Electron-based Windows desktop application that connects local АТОЛ fiscal printers to the cloud POS system.
+
+### Architecture
+
+- **Main process** (`src/main.js`):
+  - System tray interface
+  - Settings window (Electron BrowserWindow)
+  - Auto-launch on Windows startup
+  - Device pairing flow
+  - Manages ATOL and Socket connections
+
+- **ATOL client** (`src/atol.js`):
+  - Communicates with АТОЛ Драйвер ККТ 10 via WebRequests API (`http://127.0.0.1:16732`)
+  - Supports: sell, sell_return, open_shift, close_shift, x_report
+  - Health checks every 10 seconds
+  - Receipt printing with fiscal data extraction
+
+- **Socket manager** (`src/socket.js`):
+  - WebSocket connection to server with device JWT
+  - Heartbeat every 30 seconds
+  - Pulls pending receipts on connect
+  - Receives real-time print jobs via `fiscal:print` event
+  - Reports success/error back to server
+
+- **Renderer** (`src/renderer/`):
+  - Settings UI (dark theme, Russian language)
+  - Device pairing via pairing URL
+  - ATOL connection testing
+  - Status indicators
+
+### Workflow
+
+1. **Pairing**: Admin creates pairing token in web UI → copies URL → pastes in bridge → bridge registers with unique device_id → receives device JWT
+2. **Online**: Bridge connects to server via WebSocket, joins `device:{deviceId}` room, sends heartbeat
+3. **Receipt printing**:
+   - POS closes order → server enqueues receipt in `kkt_physical_queue` → emits `fiscal:print` to device room
+   - Bridge receives job → calls ATOL API → gets fiscal data → reports back via `/queue/:id/confirm`
+   - Server updates order with fiscal_number/fiscal_sign
+4. **Offline resilience**: Bridge pulls pending receipts on reconnect
+
+### Build & Deploy
+
+```bash
+cd kkt-bridge-windows
+npm install
+npm run build          # Creates installer in dist/
+```
+
+Installer: NSIS with one-click install, desktop shortcut, auto-launch option.
 
 ## Client (React 19 + Vite)
 
@@ -294,15 +421,16 @@ counterparties → edo_documents (one-to-many)
 - **Routing**: `client/src/App.jsx` — react-router-dom v7. `isSubdomain()` switches between `SubdomainApp` (PinLogin + POS routes) and `MainDomainApp` (Landing, Login, Register, Superadmin, Chain). Route guards: `ProtectedRoute`, `AdminRoute`, `CashierAllowedRoute`, `FeatureRoute` (checks plan features)
 - **Subdomain utils**: `client/src/utils/subdomain.js` — `getTenantSlug()`, `isSubdomain()`, `buildSubdomainUrl(slug)`. Uses `VITE_BASE_DOMAIN` env var
 - **Branding**: `client/src/utils/branding.js` — applies tenant's `accent_color` via CSS custom properties (`--accent`, `--accent-hover`)
-- **Styling**: Dark theme via CSS custom properties in `client/src/index.css`, no CSS framework
+- **Styling**: Dark/light theme via CSS custom properties in `client/src/index.css`, no CSS framework
+- **Business type adaptation**: UI adapts based on `tenant.business_type` and `tenant.pos_mode` (table map vs fast POS grid)
 
 ### Client page structure
 
 ```
-MainDomainApp (hookahpos.ru):
-  /                — Landing page (HookahBOSLanding)
+MainDomainApp (skandata.ru):
+  /                — Landing page (multi-business marketing)
   /login           — owner email/password login → redirect to subdomain
-  /register        — new tenant registration
+  /register        — new tenant registration (choose business type)
   /accept-invite   — accept chain invitation
   /superadmin      — SuperadminTenants (platform management)
   /chain           — ChainDashboard (chain owner view)
@@ -313,15 +441,16 @@ MainDomainApp (hookahpos.ru):
   /chain/transfers — ChainTransfers between tenants
   /admin/*         — same admin routes as subdomain (for owner on main domain)
 
-SubdomainApp ({slug}.hookahpos.ru):
+SubdomainApp ({slug}.skandata.ru):
   /login                    — PinLogin (employee list + numpad)
-  /                         — HallMap (read-only for cashier, floor plan view)
-  /hall-map                 — HallMap editor (admin+)
+  /                         — HallMap (table service mode) OR FastPOS (fast_pos mode)
+  /hall-map                 — HallMap editor (admin+, table service mode only)
   /dashboard                — Dashboard with stats (requires "reports" feature)
   /stats                    — Detailed stats/analytics (admin+, requires "reports" feature)
   /admin/categories         — Category management
   /admin/workshops          — Workshop/цех management
-  /admin/products           — Product management (CRUD)
+  /admin/products           — Product management (CRUD, variants, modifiers, images)
+  /admin/modifiers          — Modifier catalog management
   /admin/ingredients        — Ingredient management
   /admin/ingredient-groups  — Ingredient group management
   /admin/supplies           — Supply deliveries (requires "inventory" feature)
@@ -329,8 +458,9 @@ SubdomainApp ({slug}.hookahpos.ru):
   /admin/users              — Employee management (name + PIN)
   /admin/inventory          — Inventory list (requires "inventory" feature)
   /admin/inventory-check    — Inventory reconciliation (requires "inventory" feature)
-  /admin/settings           — Tenant settings and branding
-  /admin/integrations       — Integration settings (ЕГАИС, Честный знак, ЭДО)
+  /admin/settings           — Tenant settings (business type, theme, branding)
+  /admin/integrations       — Integration settings (ЕГАИС, Честный знак, ЭДО, ККТ)
+  /admin/fiscal-devices     — Physical KKT device management (pairing, queue monitoring)
   /admin/egais              — EGAIS documents
   /admin/marked-items       — Marked items tracking
   /admin/guests             — Guest/loyalty management
@@ -344,15 +474,30 @@ SubdomainApp ({slug}.hookahpos.ru):
 
 ## Environment variables
 
-Server (`server/.env`): PORT, NODE_ENV, DATABASE_URL, JWT_SECRET, CORS_ORIGIN, BASE_DOMAIN
+**Server** (`server/.env`):
+```
+PORT=3001
+NODE_ENV=development|production
+DATABASE_URL=postgres://user:pass@localhost:5432/dbname
+JWT_SECRET=your-secret-key
+CORS_ORIGIN=http://localhost:5173
+BASE_DOMAIN=lvh.me|skandata.ru
+BASE_URL=http://lvh.me:3001 (optional, for pairing URLs)
+REDIS_URL=redis://localhost:6379 (optional, for socket.io clustering)
+```
 
-Client (`client/.env`): VITE_BASE_DOMAIN (must match server's BASE_DOMAIN)
+**Client** (`client/.env`):
+```
+VITE_BASE_DOMAIN=lvh.me|skandata.ru (must match server)
+```
 
-Both default to `lvh.me` for development.
+Both default to `lvh.me` for development, `skandata.ru` for production.
 
 ## Deploy
 
 Docker multi-stage build (Dockerfile): client build → server with static files. docker-compose: `db` (postgres:16), `app` (node), `nginx` (reverse proxy with wildcard subdomain support). See `DEPLOY.md` for details.
+
+**Files**: Uploads stored in `server/public/uploads/`, served at `/uploads/*`, volume-mounted in docker-compose.
 
 ## Testing & Linting
 
@@ -368,25 +513,80 @@ Docker multi-stage build (Dockerfile): client build → server with static files
 - PIN uniqueness checked via bcrypt compare against all tenant's PIN hashes
 - Vite proxy forwards `X-Forwarded-Host` header so server subdomain middleware works in dev
 - CORS uses exact suffix match (`endsWith('.' + BASE_DOMAIN)`) for security — parses origin URL hostname
-- Rate limiting: 1500 req/15min general API (keyed by host:IP), 20 req/15min for login/register/pin-login
+- Rate limiting:
+  - General API: 1500 req/15min (keyed by host:IP)
+  - Auth endpoints: 20 req/15min (keyed by IP)
+  - Device pairing: 10 req/15min (keyed by IP)
 - Money: stored as `NUMERIC(12,2)`, always `parseFloat()` on read, format as `1 234 ₽` in UI
 - Dates: stored as `TIMESTAMPTZ`, displayed in Russian format (`22 февраля 2026`)
-- Soft deletes: products and users use `is_active`/`active` flag, not actual DELETE
+- Soft deletes: products, users, modifiers use `active`/`is_active` flag, not actual DELETE
 - Mixed payment: orders support cash/card/mixed with `paid_cash` + `paid_card` split
-- Feature gating: plan `features` JSONB controls access to modules (inventory, reports, edo, chain_management) via `checkFeature()` middleware and `FeatureRoute` client guard
+- Feature gating: plan `features` JSONB controls access to modules (inventory, reports, edo, chain_management, kkt) via `checkFeature()` middleware and `FeatureRoute` client guard
 - User cache: `server/cache.js` provides in-memory LRU caches (`userById`, `integrationByTenant`) for hot-path queries
+- Modifiers: prices added to base product price, inventory tracked via `ingredient_id` FK, denormalized in order_item_modifiers
+- Variants: different prices/sizes for same product, selected at order time, stored in `variant_id` on order_items
+- Business type switching: UI/UX adapts based on `tenant.business_type` (hookah/cafe/restaurant/fastfood) and `pos_mode` (table_service/fast_pos)
+- Fiscal integration: dual-mode support — cloud KKT (АТОЛ Онлайн) OR physical KKT (bridge client). Orders store fiscal data after successful receipt print.
+
+## Key Features by Business Type
+
+### Hookah Bar (default)
+- Table service with hall map
+- Hookah master assignment
+- Workshop-based order routing (кухня, бар, кальянная)
+- Guest loyalty program
+- Table timer (session duration tracking)
+
+### Cafe / Restaurant
+- Table service OR fast POS mode
+- Order types: dine in / take away / delivery
+- Modifiers for customization (toppings, sizes)
+- Product variants (portions, drink sizes)
+- Kitchen display system (workshops)
+
+### Fast Food
+- Fast POS mode (no table map)
+- Quick order entry with product grid
+- Order types: dine in / take away / delivery
+- Modifiers (extras, sauces)
+- Simple receipt printing
+
+## Fiscal Integration
+
+### Cloud KKT (АТОЛ Онлайн)
+- Service: `server/services/kkt/`
+- Provider: АТОЛ Онлайн API
+- Mode: strict (fiscalize before order close) or soft (fiscalize after)
+- Receipt stored in `kkt_receipts` table
+- Auto token refresh
+
+### Physical KKT (АТОЛ via Bridge)
+- Bridge app: `kkt-bridge-windows/` (Electron)
+- Communication: WebSocket (socket.io)
+- Receipt queue: `kkt_physical_queue`
+- Device management: `kkt_physical_devices`
+- Pairing: one-time token system
+- Offline resilience: bridge pulls pending on reconnect
+- Real-time notifications: `fiscal:print`, `fiscal:confirmed`, `fiscal:error`
+
+On order close:
+1. If `kkt_enabled + kkt_provider`: create cloud receipt via АТОЛ API
+2. If `kkt_physical_enabled`: enqueue receipt → notify bridge → bridge prints → bridge reports fiscal data → server updates order
 
 ## Known limitations & TODO
 
 ### Not implemented yet
-- **Mobile app** — currently web-only, native app could improve cashier experience
+- **Mobile app** — currently web-only, native app in planning
 - **Notifications** — no push/email notifications for low stock, shift reminders, subscription expiry
-- **Receipt printing** — no fiscal printer integration (required for legal operation in Russia)
 - **Export** — no data export to Excel/CSV or 1C integration
 - **Backups** — no automated database backup strategy
-- **Online booking** — no table reservation from external widget/website (work schedule is employee-only)
+- **Online booking** — no table reservation from external widget/website
+- **Kitchen display system** — workshop orders visible only in reports, no dedicated KDS screen
+- **Multi-language** — currently Russian only
 
 ### Known technical debt
 - Rate limiting may be too aggressive for POS use during rush hour
 - No audit trail for financial operations (only Morgan request logging)
-- Stock movements not fully implemented — only basic current_stock tracking
+- Stock movements not fully implemented — only basic quantity tracking
+- Product images stored locally, no CDN integration
+- Bridge client Windows-only, no Mac/Linux versions

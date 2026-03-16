@@ -272,6 +272,23 @@
   margin-top: 2px;
 }
 
+.hall-table-start-timer {
+  margin-top: 2px;
+  padding: 2px 8px;
+  font-size: 10px;
+  line-height: 1.4;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.hall-table-start-timer:hover {
+  opacity: 0.85;
+}
+
 /* Кнопка удаления столика */
 .hall-table-delete {
   position: absolute;
