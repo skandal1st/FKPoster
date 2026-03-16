@@ -2,6 +2,7 @@ const express = require('express');
 const { all, get, run } = require('../db');
 const { authMiddleware, ownerOnly } = require('../middleware/auth');
 const { invalidateSubscription } = require('../cache');
+const { accrueCommissionIfReferred } = require('../utils/referralCommission');
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -66,6 +67,10 @@ router.post('/change-plan', ownerOnly, async (req, res) => {
   }
 
   invalidateSubscription(req.tenantId);
+
+  // Начислить комиссию партнёру, если тенант реферальный
+  await accrueCommissionIfReferred(req.tenantId, plan);
+
   res.json({ success: true, plan_name: plan.name });
 });
 

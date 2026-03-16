@@ -43,6 +43,13 @@ import Receiving from './pages/admin/Receiving';
 import ChainTransfers from './pages/chain/ChainTransfers';
 import KktReceipts from './pages/admin/KktReceipts';
 import TenantSelect from './pages/TenantSelect';
+import PartnerLogin from './pages/partner/PartnerLogin';
+import PartnerRegister from './pages/partner/PartnerRegister';
+import PartnerDashboard from './pages/partner/PartnerDashboard';
+import PartnerReferrals from './pages/partner/PartnerReferrals';
+import PartnerPayouts from './pages/partner/PartnerPayouts';
+import PartnerLayout from './components/PartnerLayout';
+import { usePartnerStore } from './store/partnerStore';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuthStore();
@@ -62,6 +69,15 @@ function CashierAllowedRoute({ children }) {
   const { user } = useAuthStore();
   const allowed = user?.role === 'cashier' || user?.role === 'admin' || user?.role === 'owner';
   if (!allowed) return <Navigate to="/" />;
+  return children;
+}
+
+function ProtectedPartnerRoute({ children }) {
+  const { partner, loading } = usePartnerStore();
+  const checkAuth = usePartnerStore((s) => s.checkAuth);
+  useEffect(() => { checkAuth(); }, [checkAuth]);
+  if (loading) return <div className="spinner" style={{ marginTop: '40vh' }} />;
+  if (!partner) return <Navigate to="/partner/login" />;
   return children;
 }
 
@@ -160,6 +176,13 @@ function MainDomainApp() {
 
   return (
     <Routes>
+      <Route path="/partner/login" element={<PartnerLogin />} />
+      <Route path="/partner/register" element={<PartnerRegister />} />
+      <Route path="/partner" element={<ProtectedPartnerRoute><PartnerLayout /></ProtectedPartnerRoute>}>
+        <Route index element={<PartnerDashboard />} />
+        <Route path="referrals" element={<PartnerReferrals />} />
+        <Route path="payouts" element={<PartnerPayouts />} />
+      </Route>
       <Route path="/" element={<HookahBOSLanding />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<RegisterPage />} />

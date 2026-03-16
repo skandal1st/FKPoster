@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api';
 import toast from 'react-hot-toast';
-import { LogIn, CreditCard, X, Building2, Link2, Plus } from 'lucide-react';
+import { LogIn, CreditCard, X, Building2, Link2, Plus, Users, Check, Ban, DollarSign } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import ModalOverlay from '../../components/ModalOverlay';
 
@@ -14,6 +14,7 @@ function defaultPeriodEnd() {
 const TABS = [
   { id: 'tenants', label: 'Заведения' },
   { id: 'chains', label: 'Сети' },
+  { id: 'partners', label: 'Партнёры' },
 ];
 
 export default function SuperadminTenants() {
@@ -27,6 +28,8 @@ export default function SuperadminTenants() {
   const [showChainModal, setShowChainModal] = useState(false);
   const [chainForm, setChainForm] = useState({ name: '', email: '', password: '', owner_name: '' });
   const [chainSaving, setChainSaving] = useState(false);
+  const [partners, setPartners] = useState([]);
+  const [partnerPayouts, setPartnerPayouts] = useState([]);
 
   useEffect(() => {
     load();
@@ -34,14 +37,18 @@ export default function SuperadminTenants() {
 
   const load = async () => {
     try {
-      const [t, p, c] = await Promise.all([
+      const [t, p, c, pt, pp] = await Promise.all([
         api.get('/superadmin/tenants'),
         api.get('/superadmin/plans'),
         api.get('/superadmin/chains'),
+        api.get('/superadmin/partners'),
+        api.get('/superadmin/partner-payouts'),
       ]);
       setTenants(t);
       setPlans(p);
       setChains(c);
+      setPartners(pt);
+      setPartnerPayouts(pp);
     } catch (e) {
       toast.error(e.message);
     } finally {
@@ -85,6 +92,16 @@ export default function SuperadminTenants() {
       toast.error(err.message);
     } finally {
       setChainSaving(false);
+    }
+  };
+
+  const handlePayoutAction = async (payoutId, status) => {
+    try {
+      await api.patch(`/superadmin/partner-payouts/${payoutId}`, { status });
+      toast.success(status === 'approved' ? 'Заявка одобрена' : status === 'rejected' ? 'Заявка отклонена' : 'Оплачено');
+      load();
+    } catch (e) {
+      toast.error(e.message);
     }
   };
 
@@ -224,6 +241,107 @@ export default function SuperadminTenants() {
               <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
                 Нет сетей
               </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {activeTab === 'partners' && (
+        <>
+          <p style={{ color: 'var(--text-muted)', marginBottom: 16 }}>Партнёры и заявки на вывод</p>
+
+          <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 12, color: 'var(--text-primary)' }}>Партнёры</h3>
+          <div className="card" style={{ overflow: 'hidden', marginBottom: 24 }}>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Имя</th>
+                  <th>Email</th>
+                  <th>Телефон</th>
+                  <th>Код</th>
+                  <th>Рефералов</th>
+                  <th>Баланс</th>
+                  <th>Всего заработано</th>
+                </tr>
+              </thead>
+              <tbody>
+                {partners.map((p) => (
+                  <tr key={p.id}>
+                    <td>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Users size={16} style={{ color: 'var(--text-muted)' }} />
+                        {p.name}
+                      </span>
+                    </td>
+                    <td>{p.email}</td>
+                    <td>{p.phone || '—'}</td>
+                    <td><code style={{ fontSize: 13 }}>{p.referral_code}</code></td>
+                    <td>{p.referrals_count}</td>
+                    <td style={{ fontWeight: 600 }}>{p.balance.toLocaleString('ru')} ₽</td>
+                    <td>{p.total_earned.toLocaleString('ru')} ₽</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {partners.length === 0 && (
+              <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Нет партнёров</div>
+            )}
+          </div>
+
+          <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 12, color: 'var(--text-primary)' }}>Заявки на вывод</h3>
+          <div className="card" style={{ overflow: 'hidden' }}>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Дата</th>
+                  <th>Партнёр</th>
+                  <th>Сумма</th>
+                  <th>Статус</th>
+                  <th>Реквизиты</th>
+                  <th>Действия</th>
+                </tr>
+              </thead>
+              <tbody>
+                {partnerPayouts.map((pp) => (
+                  <tr key={pp.id}>
+                    <td>{new Date(pp.created_at).toLocaleDateString('ru')}</td>
+                    <td>{pp.partner_name} ({pp.partner_email})</td>
+                    <td style={{ fontWeight: 600 }}>{pp.amount.toLocaleString('ru')} ₽</td>
+                    <td>
+                      <span className={`badge badge-${pp.status === 'paid' ? 'success' : pp.status === 'approved' ? 'success' : pp.status === 'rejected' ? 'danger' : 'warning'}`}>
+                        {{ pending: 'Ожидает', approved: 'Одобрена', rejected: 'Отклонена', paid: 'Оплачено' }[pp.status]}
+                      </span>
+                    </td>
+                    <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {pp.payment_details || '—'}
+                    </td>
+                    <td>
+                      {(pp.status === 'pending' || pp.status === 'approved') && (
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                          {pp.status === 'pending' && (
+                            <button className="btn btn-primary btn-sm" onClick={() => handlePayoutAction(pp.id, 'approved')}>
+                              <Check size={14} /> Одобрить
+                            </button>
+                          )}
+                          {pp.status === 'pending' && (
+                            <button className="btn btn-ghost btn-sm" onClick={() => handlePayoutAction(pp.id, 'rejected')}>
+                              <Ban size={14} /> Отклонить
+                            </button>
+                          )}
+                          {pp.status === 'approved' && (
+                            <button className="btn btn-primary btn-sm" onClick={() => handlePayoutAction(pp.id, 'paid')}>
+                              <DollarSign size={14} /> Оплачено
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {partnerPayouts.length === 0 && (
+              <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Нет заявок на вывод</div>
             )}
           </div>
         </>

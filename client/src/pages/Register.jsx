@@ -48,6 +48,12 @@ export default function RegisterPage() {
   const [city, setCity] = useState('');
   const [businessType, setBusinessType] = useState('hookah');
 
+  // Промокод из URL или ввода
+  const [refCode, setRefCode] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('ref') || '';
+  });
+
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [registered, setRegistered] = useState(null);
@@ -96,7 +102,7 @@ export default function RegisterPage() {
     }
     setLoading(true);
     try {
-      const data = await register(companyName, name, email, password, slug || undefined, phone, city || undefined, businessType);
+      const data = await register(companyName, name, email, password, slug || undefined, phone, city || undefined, businessType, refCode || undefined);
       setRegistered(data);
     } catch (err) {
       setError(err.message);
@@ -130,6 +136,16 @@ export default function RegisterPage() {
     <div className="login-page">
       <div className="login-card" style={{ maxWidth: 420 }}>
         <h1 className="login-title">HookahPOS</h1>
+
+        {refCode && (
+          <div style={{
+            padding: '10px 14px', borderRadius: 8, marginBottom: 16,
+            background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)',
+            fontSize: 13, color: '#22c55e', textAlign: 'center',
+          }}>
+            По реферальной ссылке — бесплатный месяц на максимальном тарифе!
+          </div>
+        )}
 
         {/* Step indicator */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 20 }}>
@@ -292,6 +308,22 @@ export default function RegisterPage() {
                 onChange={(e) => setCity(e.target.value)}
                 placeholder="Москва"
               />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Промокод</label>
+              <input
+                className="form-input"
+                type="text"
+                value={refCode}
+                onChange={(e) => setRefCode(e.target.value.toUpperCase())}
+                placeholder="Необязательно"
+                maxLength={20}
+              />
+              {refCode && (
+                <div style={{ fontSize: 12, marginTop: 4, color: '#22c55e' }}>
+                  Бесплатный месяц на максимальном тарифе
+                </div>
+              )}
             </div>
             <button className="btn btn-primary login-btn" type="submit" disabled={loading}>
               {loading ? 'Создание...' : 'Завершить регистрацию'}

@@ -73,7 +73,8 @@ router.post('/login', async (req, res) => {
 });
 
 router.post('/register', async (req, res) => {
-  const { company_name, name, email, password, slug: requestedSlug, phone, city, business_type } = req.body;
+  const { company_name, name, email, password, slug: requestedSlug, phone, city, business_type, ref_code: bodyRefCode } = req.body;
+  const refCode = bodyRefCode || req.query.ref || null;
   if (!company_name || !name || !email || !password) {
     return res.status(400).json({ error: 'Заполните все поля' });
   }
@@ -129,6 +130,31 @@ router.post('/register', async (req, res) => {
         "INSERT INTO subscriptions (tenant_id, plan_id, status, current_period_end) VALUES ($1, $2, 'trialing', NOW() + INTERVAL '14 days')",
         [tenantId, freePlan.id]
       );
+    }
+
+    // Реферальная программа: если указан промокод — бесплатный месяц на макс. плане
+    if (refCode) {
+      const partner = await tx.get(
+        'SELECT id FROM partners WHERE referral_code = $1 AND active = true',
+        [refCode]
+      );
+      if (partner) {
+        await tx.run('UPDATE tenants SET referred_by_code = $1 WHERE id = $2', [refCode, tenantId]);
+        await tx.run(
+          'INSERT INTO referrals (partner_id, tenant_id, promo_applied) VALUES ($1, $2, true)',
+          [partner.id, tenantId]
+        );
+        const maxPlan = await tx.get(
+          'SELECT id FROM plans WHERE active = true ORDER BY price DESC LIMIT 1'
+        );
+        if (maxPlan) {
+          // Обновить существующую подписку или создать новую на макс. плане 30 дней
+          await tx.run(
+            "UPDATE subscriptions SET plan_id = $1, status = 'active', current_period_end = NOW() + INTERVAL '30 days' WHERE tenant_id = $2",
+            [maxPlan.id, tenantId]
+          );
+        }
+      }
     }
 
     // Категории по умолчанию зависят от типа бизнеса

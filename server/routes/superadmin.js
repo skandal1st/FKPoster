@@ -5,6 +5,7 @@ const { all, get, run, transaction } = require('../db');
 const { authMiddleware, superadminOnly } = require('../middleware/auth');
 const config = require('../config');
 const { invalidateSubscription } = require('../cache');
+const { accrueCommissionIfReferred } = require('../utils/referralCommission');
 
 const router = express.Router();
 router.use(authMiddleware, superadminOnly);
@@ -145,6 +146,10 @@ router.put('/tenants/:id/subscription', async (req, res) => {
   }
 
   invalidateSubscription(tenantId);
+
+  // Начислить комиссию партнёру, если тенант реферальный
+  await accrueCommissionIfReferred(tenantId, plan);
+
   res.json({ success: true, plan_name: plan.name });
 });
 
@@ -202,6 +207,74 @@ router.post('/chains', async (req, res) => {
 
   const chain = await get('SELECT id, name, created_at FROM chains WHERE id = $1', [result.chainId]);
   res.json(chain);
+});
+
+/** Список всех партнёров */
+router.get('/partners', async (req, res) => {
+  const partners = await all(`
+    SELECT p.id, p.name, p.email, p.phone, p.referral_code, p.balance, p.total_earned, p.total_withdrawn, p.active, p.created_at,
+           COUNT(r.id)::int AS referrals_count
+    FROM partners p
+    LEFT JOIN referrals r ON r.partner_id = p.id
+    GROUP BY p.id
+    ORDER BY p.created_at DESC
+  `);
+  res.json(partners.map((p) => ({
+    ...p,
+    balance: parseFloat(p.balance),
+    total_earned: parseFloat(p.total_earned),
+    total_withdrawn: parseFloat(p.total_withdrawn),
+  })));
+});
+
+/** Заявки на вывод (с фильтром по статусу) */
+router.get('/partner-payouts', async (req, res) => {
+  const { status } = req.query;
+  let query = `
+    SELECT pp.*, p.name AS partner_name, p.email AS partner_email
+    FROM partner_payouts pp
+    JOIN partners p ON p.id = pp.partner_id
+  `;
+  const params = [];
+  if (status) {
+    query += ' WHERE pp.status = $1';
+    params.push(status);
+  }
+  query += ' ORDER BY pp.created_at DESC';
+  const payouts = await all(query, params);
+  res.json(payouts.map((p) => ({ ...p, amount: parseFloat(p.amount) })));
+});
+
+/** Обработка заявки на вывод */
+router.patch('/partner-payouts/:id', async (req, res) => {
+  const payoutId = Number(req.params.id);
+  const { status: newStatus, admin_comment } = req.body;
+  if (!['approved', 'rejected', 'paid'].includes(newStatus)) {
+    return res.status(400).json({ error: 'Некорректный статус' });
+  }
+
+  const payout = await get('SELECT * FROM partner_payouts WHERE id = $1', [payoutId]);
+  if (!payout) return res.status(404).json({ error: 'Заявка не найдена' });
+  if (payout.status !== 'pending' && payout.status !== 'approved') {
+    return res.status(400).json({ error: 'Заявка уже обработана' });
+  }
+
+  await transaction(async (tx) => {
+    await tx.run(
+      'UPDATE partner_payouts SET status = $1, admin_comment = $2, processed_at = NOW() WHERE id = $3',
+      [newStatus, admin_comment || null, payoutId]
+    );
+
+    // При отклонении — вернуть сумму на баланс
+    if (newStatus === 'rejected') {
+      await tx.run(
+        'UPDATE partners SET balance = balance + $1, total_withdrawn = total_withdrawn - $1 WHERE id = $2',
+        [payout.amount, payout.partner_id]
+      );
+    }
+  });
+
+  res.json({ success: true });
 });
 
 module.exports = router;

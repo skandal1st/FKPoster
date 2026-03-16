@@ -33,6 +33,7 @@ async function runMigrations() {
     require('./027_physical_kkt_devices'),
     require('./028_orders_fiscal_fields'),
     require('./029_timer_modes'),
+    require('./030_referral_program'),
   ];
 
   for (const migration of migrations) {

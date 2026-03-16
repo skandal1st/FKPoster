@@ -39,6 +39,7 @@ const kktRoutes = require('./routes/kkt');
 const fiscalDevicesRoutes = require('./routes/fiscalDevices');
 const modifierRoutes = require('./routes/modifiers');
 const uploadRoutes = require('./routes/upload');
+const partnerRoutes = require('./routes/partner');
 
 const app = express();
 
@@ -103,6 +104,8 @@ const authLimiter = rateLimit({
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 app.use('/api/auth/pin-login', authLimiter);
+app.use('/api/partner/login', authLimiter);
+app.use('/api/partner/register', authLimiter);
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -135,6 +138,7 @@ app.use('/api/kkt', kktRoutes);
 app.use('/api/fiscal-devices', fiscalDevicesRoutes);
 app.use('/api/modifiers', modifierRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/partner', partnerRoutes);
 
 // Serve uploaded files (product images)
 app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
