@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api';
+import { useAuthStore } from '../../store/authStore';
 import toast from 'react-hot-toast';
 import { Save, Wifi, WifiOff } from 'lucide-react';
 
 export default function IntegrationSettings() {
+  const { plan } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -141,6 +143,30 @@ export default function IntegrationSettings() {
     }
   };
 
+  const maxIntegrations = plan?.limits?.max_integrations;
+  const enabledCount = [form.egais_enabled, form.chestniy_znak_enabled, form.edo_enabled, form.kkt_enabled].filter(Boolean).length;
+  const limitReached = maxIntegrations != null && enabledCount >= maxIntegrations;
+
+  const canToggle = (fieldName) => {
+    // Always allow turning off
+    if (form[fieldName]) return true;
+    // Check limit
+    if (maxIntegrations != null && enabledCount >= maxIntegrations) return false;
+    return true;
+  };
+
+  const handleToggle = (fieldName, value) => {
+    if (value && !canToggle(fieldName)) {
+      toast.error(
+        maxIntegrations === 0
+          ? 'На бесплатном тарифе интеграции недоступны. Обновите план.'
+          : `На вашем тарифе доступно не более ${maxIntegrations} интеграций. Обновите план.`
+      );
+      return;
+    }
+    setForm({ ...form, [fieldName]: value });
+  };
+
   if (loading) return <div className="page"><div className="spinner" /></div>;
 
   return (
@@ -152,6 +178,18 @@ export default function IntegrationSettings() {
         </button>
       </div>
 
+      {maxIntegrations != null && (
+        <div style={{
+          marginBottom: 16, padding: '10px 16px', borderRadius: 8,
+          background: limitReached ? 'rgba(239,68,68,0.1)' : 'var(--bg-elevated)',
+          fontSize: 13, color: limitReached ? 'var(--danger)' : 'var(--text-secondary)',
+        }}>
+          {maxIntegrations === 0
+            ? 'На вашем тарифе интеграции недоступны. Обновите план для подключения.'
+            : `Включено интеграций: ${enabledCount} из ${maxIntegrations}`}
+        </div>
+      )}
+
       {/* ЕГАИС */}
       <div className="card" style={{ marginBottom: 20 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -160,7 +198,8 @@ export default function IntegrationSettings() {
             <input
               type="checkbox"
               checked={form.egais_enabled}
-              onChange={(e) => setForm({ ...form, egais_enabled: e.target.checked })}
+              onChange={(e) => handleToggle('egais_enabled', e.target.checked)}
+              disabled={!form.egais_enabled && limitReached}
             />
             Включено
           </label>
@@ -223,7 +262,8 @@ export default function IntegrationSettings() {
             <input
               type="checkbox"
               checked={form.chestniy_znak_enabled}
-              onChange={(e) => setForm({ ...form, chestniy_znak_enabled: e.target.checked })}
+              onChange={(e) => handleToggle('chestniy_znak_enabled', e.target.checked)}
+              disabled={!form.chestniy_znak_enabled && limitReached}
             />
             Включено
           </label>
@@ -288,7 +328,8 @@ export default function IntegrationSettings() {
             <input
               type="checkbox"
               checked={form.edo_enabled}
-              onChange={(e) => setForm({ ...form, edo_enabled: e.target.checked })}
+              onChange={(e) => handleToggle('edo_enabled', e.target.checked)}
+              disabled={!form.edo_enabled && limitReached}
             />
             Включено
           </label>
@@ -430,7 +471,8 @@ export default function IntegrationSettings() {
             <input
               type="checkbox"
               checked={form.kkt_enabled}
-              onChange={(e) => setForm({ ...form, kkt_enabled: e.target.checked })}
+              onChange={(e) => handleToggle('kkt_enabled', e.target.checked)}
+              disabled={!form.kkt_enabled && limitReached}
             />
             Включено
           </label>

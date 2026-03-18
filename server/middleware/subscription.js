@@ -7,7 +7,7 @@ async function checkSubscription(req, res, next) {
   let sub = subscriptionByTenant.get(req.tenantId);
   if (sub === undefined) {
     sub = await get(`
-      SELECT s.*, p.max_users, p.max_halls, p.max_products, p.max_orders_monthly, p.name as plan_name, p.features as plan_features
+      SELECT s.*, p.max_users, p.max_halls, p.max_products, p.max_orders_monthly, p.max_integrations, p.name as plan_name, p.features as plan_features
       FROM subscriptions s
       JOIN plans p ON s.plan_id = p.id
       WHERE s.tenant_id = $1 AND s.status IN ('active', 'trialing')

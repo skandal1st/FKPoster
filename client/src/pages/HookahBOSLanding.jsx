@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 export default function HookahBOSLanding() {
+  const [yearly, setYearly] = useState(false);
+
   return (
     <div className="landing-root">
       <div className="landing-grid-bg" aria-hidden="true" />
@@ -157,49 +160,88 @@ export default function HookahBOSLanding() {
         <section id="pricing" className="landing-section">
           <div className="landing-section-header">
             <h2>Простые тарифы без скрытых платежей</h2>
-            <p>Оплата помесячно, можно начать с одного зала и масштабироваться по мере роста сети.</p>
+            <p>Начните бесплатно и масштабируйтесь по мере роста. При оплате за год — скидка до 20%.</p>
+          </div>
+          <div className="landing-billing-toggle">
+            <button
+              className={`landing-billing-btn${!yearly ? ' landing-billing-btn-active' : ''}`}
+              onClick={() => setYearly(false)}
+            >
+              Помесячно
+            </button>
+            <button
+              className={`landing-billing-btn${yearly ? ' landing-billing-btn-active' : ''}`}
+              onClick={() => setYearly(true)}
+            >
+              За год <span className="landing-billing-save">-20%</span>
+            </button>
           </div>
           <div className="landing-pricing-grid">
             <div className="landing-price-card glass-card">
-              <div className="landing-price-name">Start</div>
-              <div className="landing-price-value">1&nbsp;990&nbsp;₽/мес</div>
+              <div className="landing-price-name">Бесплатный</div>
+              <div className="landing-price-value">0&nbsp;₽</div>
               <ul className="landing-price-list">
-                <li>Для небольших кальянных без кухни</li>
-                <li>Учёт кальянов и табака, касса</li>
-                <li>Базовая аналитика и отчёты</li>
-                <li>Учёт смен персонала</li>
+                <li>До 2 сотрудников</li>
+                <li>1 зал, до 50 товаров</li>
+                <li>До 150 заказов в месяц</li>
+                <li>Касса и учёт смен</li>
+                <li>Без интеграций</li>
+              </ul>
+              <Link to="/register" className="btn btn-ghost btn-sm landing-price-btn">
+                Начать бесплатно
+              </Link>
+            </div>
+            <div className="landing-price-card glass-card">
+              <div className="landing-price-name">Старт</div>
+              <div className="landing-price-value">
+                {yearly ? <>1&nbsp;783&nbsp;₽/мес</> : <>1&nbsp;990&nbsp;₽/мес</>}
+              </div>
+              {yearly && <div className="landing-price-yearly">21&nbsp;400&nbsp;₽ за год</div>}
+              <ul className="landing-price-list">
+                <li>Безлимит: сотрудники, товары, заказы</li>
+                <li>До 2 залов</li>
+                <li>Аналитика и отчёты</li>
+                <li>Складской учёт</li>
+                <li>2 интеграции из 4</li>
               </ul>
               <Link to="/register" className="btn btn-primary btn-sm landing-price-btn">
-                Подключить Start
+                Подключить Старт
               </Link>
             </div>
             <div className="landing-price-card glass-card landing-price-card-featured">
               <div className="landing-price-badge">Рекомендуем</div>
-              <div className="landing-price-name">Business</div>
-              <div className="landing-price-value">3&nbsp;990&nbsp;₽/мес</div>
+              <div className="landing-price-name">Бизнес</div>
+              <div className="landing-price-value">
+                {yearly ? <>3&nbsp;167&nbsp;₽/мес</> : <>3&nbsp;990&nbsp;₽/мес</>}
+              </div>
+              {yearly && <div className="landing-price-yearly">38&nbsp;000&nbsp;₽ за год</div>}
               <ul className="landing-price-list">
-                <li>Для кальянных с баром и простым меню</li>
-                <li>Всё из «Старта»</li>
-                <li>Расширенный складской учёт</li>
-                <li>Учёт бара и ЕГАИС</li>
+                <li>Всё из «Старта» без ограничений</li>
+                <li>Безлимит залов и интеграций</li>
+                <li>Себестоимость и финансы</li>
+                <li>ККТ, ЭДО, API</li>
                 <li>Программа лояльности</li>
               </ul>
               <Link to="/register" className="btn btn-primary btn-sm landing-price-btn">
-                Подключить Business
+                Подключить Бизнес
               </Link>
             </div>
             <div className="landing-price-card glass-card">
-              <div className="landing-price-name">Pro</div>
-              <div className="landing-price-value">5&nbsp;990&nbsp;₽/мес</div>
+              <div className="landing-price-name">Сети</div>
+              <div className="landing-price-value">
+                {yearly ? <>4&nbsp;792&nbsp;₽/мес</> : <>5&nbsp;990&nbsp;₽/мес</>}
+              </div>
+              {yearly && <div className="landing-price-yearly">57&nbsp;500&nbsp;₽ за год</div>}
               <ul className="landing-price-list">
-                <li>Для кальянных с полноценной кухней</li>
                 <li>Всё из «Бизнеса»</li>
-                <li>Техкарты и списание продуктов</li>
-                <li>Аналитика себестоимости и маржи</li>
+                <li>Управление сетью заведений</li>
+                <li>Сводная аналитика по сети</li>
+                <li>Перемещения между точками</li>
+                <li>Единый кабинет владельца</li>
               </ul>
-              <a href="mailto:sales@skandata.ru" className="btn btn-ghost btn-sm landing-price-btn">
-                Обсудить условия
-              </a>
+              <Link to="/register" className="btn btn-primary btn-sm landing-price-btn">
+                Подключить Сети
+              </Link>
             </div>
           </div>
         </section>

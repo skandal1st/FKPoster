@@ -34,6 +34,7 @@ async function runMigrations() {
     require('./028_orders_fiscal_fields'),
     require('./029_timer_modes'),
     require('./030_referral_program'),
+    require('./031_update_plans'),
   ];
 
   for (const migration of migrations) {

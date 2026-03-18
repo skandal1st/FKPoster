@@ -61,14 +61,14 @@ router.post('/impersonate', async (req, res) => {
 
   let plan = null;
   const sub = await get(
-    `SELECT p.features, p.max_orders_monthly, p.name as plan_name
+    `SELECT p.features, p.max_orders_monthly, p.max_integrations, p.name as plan_name
      FROM subscriptions s JOIN plans p ON s.plan_id = p.id
      WHERE s.tenant_id = $1 AND s.status IN ('active','trialing')
      ORDER BY s.id DESC LIMIT 1`,
     [tenant_id]
   );
   if (sub) {
-    plan = { features: sub.features || {}, limits: { max_orders_monthly: sub.max_orders_monthly }, plan_name: sub.plan_name };
+    plan = { features: sub.features || {}, limits: { max_orders_monthly: sub.max_orders_monthly, max_integrations: sub.max_integrations }, plan_name: sub.plan_name };
   }
 
   res.json({
@@ -156,7 +156,7 @@ router.put('/tenants/:id/subscription', async (req, res) => {
 /** Список планов для выбора при управлении подпиской */
 router.get('/plans', async (req, res) => {
   const plans = await all(`
-    SELECT DISTINCT ON (name) id, name, price, max_users, max_halls, max_products
+    SELECT DISTINCT ON (name) id, name, code, price, yearly_price, max_users, max_halls, max_products, max_integrations
     FROM plans WHERE active = true ORDER BY name, id
   `);
   res.json(plans.sort((a, b) => (parseFloat(a.price) || 0) - (parseFloat(b.price) || 0)));

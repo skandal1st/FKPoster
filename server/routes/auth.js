@@ -52,14 +52,14 @@ router.post('/login', async (req, res) => {
   let plan = null;
   if (user.tenant_id) {
     const sub = await get(
-      `SELECT p.features, p.max_orders_monthly, p.name as plan_name
+      `SELECT p.features, p.max_orders_monthly, p.max_integrations, p.name as plan_name
        FROM subscriptions s JOIN plans p ON s.plan_id = p.id
        WHERE s.tenant_id = $1 AND s.status IN ('active','trialing')
        ORDER BY s.id DESC LIMIT 1`,
       [user.tenant_id]
     );
     if (sub) {
-      plan = { features: sub.features || {}, limits: { max_orders_monthly: sub.max_orders_monthly }, plan_name: sub.plan_name };
+      plan = { features: sub.features || {}, limits: { max_orders_monthly: sub.max_orders_monthly, max_integrations: sub.max_integrations }, plan_name: sub.plan_name };
     }
   }
 
@@ -124,7 +124,7 @@ router.post('/register', async (req, res) => {
     );
     const userId = userRes.id;
 
-    const freePlan = await tx.get('SELECT id FROM plans WHERE name = $1 AND active = true', ['free']);
+    const freePlan = await tx.get('SELECT id FROM plans WHERE code = $1 AND active = true', ['free']);
     if (freePlan) {
       await tx.run(
         "INSERT INTO subscriptions (tenant_id, plan_id, status, current_period_end) VALUES ($1, $2, 'trialing', NOW() + INTERVAL '14 days')",
@@ -307,14 +307,14 @@ router.post('/pin-login', async (req, res) => {
   let plan = null;
   if (user.tenant_id) {
     const sub = await get(
-      `SELECT p.features, p.max_orders_monthly, p.name as plan_name
+      `SELECT p.features, p.max_orders_monthly, p.max_integrations, p.name as plan_name
        FROM subscriptions s JOIN plans p ON s.plan_id = p.id
        WHERE s.tenant_id = $1 AND s.status IN ('active','trialing')
        ORDER BY s.id DESC LIMIT 1`,
       [user.tenant_id]
     );
     if (sub) {
-      plan = { features: sub.features || {}, limits: { max_orders_monthly: sub.max_orders_monthly }, plan_name: sub.plan_name };
+      plan = { features: sub.features || {}, limits: { max_orders_monthly: sub.max_orders_monthly, max_integrations: sub.max_integrations }, plan_name: sub.plan_name };
     }
   }
 
@@ -355,14 +355,14 @@ router.get('/me', authMiddleware, async (req, res) => {
   let plan = null;
   if (req.user.tenant_id) {
     const sub = await get(
-      `SELECT p.features, p.max_orders_monthly, p.name as plan_name
+      `SELECT p.features, p.max_orders_monthly, p.max_integrations, p.name as plan_name
        FROM subscriptions s JOIN plans p ON s.plan_id = p.id
        WHERE s.tenant_id = $1 AND s.status IN ('active','trialing')
        ORDER BY s.id DESC LIMIT 1`,
       [req.user.tenant_id]
     );
     if (sub) {
-      plan = { features: sub.features || {}, limits: { max_orders_monthly: sub.max_orders_monthly }, plan_name: sub.plan_name };
+      plan = { features: sub.features || {}, limits: { max_orders_monthly: sub.max_orders_monthly, max_integrations: sub.max_integrations }, plan_name: sub.plan_name };
     }
   }
 

@@ -210,11 +210,14 @@ export default function TenantSettings() {
                 <strong style={{ color: 'var(--text-primary)' }}>В тариф входит:</strong>
               </div>
               <ul style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 16px 20px', padding: 0 }}>
-                <li>Пользователей: до {subscription.max_users}</li>
-                <li>Залы: до {subscription.max_halls}</li>
-                <li>Товары: до {subscription.max_products}</li>
-                {subscription.max_orders_monthly && (
+                <li>Пользователей: {subscription.max_users != null ? `до ${subscription.max_users}` : 'Без ограничений'}</li>
+                <li>Залы: {subscription.max_halls != null ? `до ${subscription.max_halls}` : 'Без ограничений'}</li>
+                <li>Товары: {subscription.max_products != null ? `до ${subscription.max_products}` : 'Без ограничений'}</li>
+                {subscription.max_orders_monthly != null && (
                   <li>Заказов в месяц: до {subscription.max_orders_monthly}</li>
+                )}
+                {subscription.max_integrations != null && (
+                  <li>Интеграций: {subscription.max_integrations === 0 ? 'Недоступно' : `до ${subscription.max_integrations}`}</li>
                 )}
                 {(() => {
                   const f = subscription.features;
@@ -224,7 +227,10 @@ export default function TenantSettings() {
                     reports: 'Аналитика и отчёты',
                     inventory: 'Склад',
                     cost_price: 'Себестоимость',
+                    finance: 'Финансы',
                     api: 'API',
+                    kkt: 'Онлайн-касса (ККТ)',
+                    edo: 'ЭДО',
                     chain_management: 'Управление сетью',
                   };
                   if (typeof f === 'object' && Object.keys(f).length > 0) {

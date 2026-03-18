@@ -9,8 +9,8 @@ router.use(authMiddleware);
 
 router.get('/', async (req, res) => {
   const subscription = await get(`
-    SELECT s.*, p.name as plan_name, p.price as plan_price,
-           p.max_users, p.max_halls, p.max_products, p.max_orders_monthly, p.features
+    SELECT s.*, p.name as plan_name, p.price as plan_price, p.yearly_price as plan_yearly_price,
+           p.max_users, p.max_halls, p.max_products, p.max_orders_monthly, p.max_integrations, p.features
     FROM subscriptions s
     JOIN plans p ON s.plan_id = p.id
     WHERE s.tenant_id = $1
@@ -27,7 +27,8 @@ router.get('/', async (req, res) => {
   }
 
   const plans = await all(`
-    SELECT DISTINCT ON (name) * FROM plans WHERE active = true ORDER BY name, id
+    SELECT DISTINCT ON (name) id, name, code, price, yearly_price, max_users, max_halls, max_products, max_orders_monthly, max_integrations, features, active
+    FROM plans WHERE active = true ORDER BY name, id
   `);
   const plansSorted = plans.sort((a, b) => (parseFloat(a.price) || 0) - (parseFloat(b.price) || 0));
   res.json({ subscription, plans: plansSorted, usage });

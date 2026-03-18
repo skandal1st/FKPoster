@@ -92,6 +92,18 @@ router.put('/', ownerOnly, async (req, res) => {
     kkt_group_code, kkt_login, kkt_password, kkt_inn, kkt_payment_address, kkt_sno, kkt_environment,
   } = req.body;
 
+  // Проверка лимита интеграций по тарифу
+  if (req.plan && req.plan.max_integrations != null) {
+    const enabledCount = [egais_enabled, chestniy_znak_enabled, edo_enabled, kkt_enabled].filter(Boolean).length;
+    if (enabledCount > req.plan.max_integrations) {
+      return res.status(403).json({
+        error: req.plan.max_integrations === 0
+          ? 'На бесплатном тарифе интеграции недоступны. Обновите план.'
+          : `На вашем тарифе доступно не более ${req.plan.max_integrations} интеграций. Обновите план.`,
+      });
+    }
+  }
+
   const existing = await get(
     'SELECT id FROM tenant_integrations WHERE tenant_id = $1',
     [req.tenantId]
