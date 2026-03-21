@@ -1613,6 +1613,142 @@ select optgroup {
   gap: 12px;
 }
 
+.landing-shell-full {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.landing-hero-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.landing-hero-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding: 6px 0;
+  border-top: 1px solid rgba(148, 163, 184, 0.08);
+}
+
+/* Android section */
+.landing-android {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: 32px;
+  padding: 28px 28px 24px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(17, 24, 39, 0.96));
+}
+
+.landing-android-left {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.landing-android-left h2 {
+  font-size: clamp(24px, 2.8vw, 34px);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1.15;
+}
+
+.landing-android-left > p {
+  font-size: 14px;
+  color: var(--text-secondary);
+  max-width: 480px;
+}
+
+.landing-android-features {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.landing-android-features li::before {
+  content: '✓ ';
+  color: var(--success);
+}
+
+.landing-android-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.landing-phone-mock {
+  width: 100%;
+  max-width: 280px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.landing-phone-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.landing-phone-badge {
+  background: rgba(234, 179, 8, 0.15);
+  color: #eab308;
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+
+.landing-phone-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.landing-phone-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.landing-phone-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+}
+
+.landing-phone-total {
+  font-weight: 600;
+  color: var(--text-primary);
+  border-bottom: none;
+}
+
+.landing-phone-pay-btn {
+  text-align: center;
+  font-size: 13px;
+  padding: 8px 0;
+}
+
+/* 3-column steps */
+.landing-steps-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* Full footer */
 .landing-footer {
   margin-top: 8px;
   padding-top: 8px;
@@ -1622,6 +1758,93 @@ select optgroup {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.landing-footer-full {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  gap: 24px 40px;
+  align-items: start;
+  padding-top: 24px;
+}
+
+.landing-footer-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.landing-footer-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.landing-logo-mark-sm {
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
+}
+
+.landing-footer-logo-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.landing-footer-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.landing-footer-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.landing-footer-col a,
+.landing-footer-col span {
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.landing-footer-col a:hover {
+  color: var(--text-secondary);
+}
+
+.landing-footer-col-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.landing-footer-copy {
+  grid-column: 1 / -1;
+  border-top: 1px solid rgba(148, 163, 184, 0.12);
+  padding-top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.landing-footer-copy a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.landing-footer-copy a:hover {
+  color: var(--text-secondary);
 }
 
 .landing-footer-separator {
@@ -1638,20 +1861,11 @@ select optgroup {
     gap: 24px;
   }
 
-  .landing-sidenav {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    position: static;
-    height: auto;
-    align-self: auto;
-  }
-
-  .landing-sidenav-divider {
-    display: none;
-  }
-
   .landing-hero {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  }
+
+  .landing-android {
     grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
   }
 
@@ -1663,20 +1877,19 @@ select optgroup {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .landing-steps-grid {
+  .landing-steps-grid,
+  .landing-steps-grid-3 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .landing-footer-full {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 }
 
 @media (max-width: 768px) {
   .landing-root {
     padding: 16px 16px 24px;
-  }
-
-  .landing-sidenav {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
   }
 
   .landing-header {
@@ -1694,16 +1907,16 @@ select optgroup {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .landing-android {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .landing-hero-right {
     justify-content: flex-start;
   }
 
   .landing-hero-card {
     max-width: 100%;
-  }
-
-  .landing-hero-meta {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .landing-features-grid {
@@ -1714,13 +1927,18 @@ select optgroup {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .landing-steps-grid {
+  .landing-steps-grid,
+  .landing-steps-grid-3 {
     grid-template-columns: minmax(0, 1fr);
   }
 
   .landing-cta {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .landing-footer-full {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .landing-footer {

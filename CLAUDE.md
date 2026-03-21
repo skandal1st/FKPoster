@@ -39,6 +39,13 @@ npm run test:client         # client only
 npm run test:watch          # server in watch mode
 npm run test:coverage       # with coverage
 
+# Run a single test file
+cd server && npx vitest run tests/auth.test.js
+cd client && npx vitest run src/components/SomeComponent.test.jsx
+
+# Run tests matching a name pattern
+cd server && npx vitest run -t "should login with PIN"
+
 # Linting & formatting (ESLint 9 flat config + Prettier)
 npm run lint                # check lint
 npm run lint:fix            # auto-fix lint
@@ -59,7 +66,8 @@ npm run build               # build installer
 - **Entry**: `server/index.js` — mounts all `/api/*` routes, subdomain middleware, CORS, rate limiting, socket.io setup, serves React build in production
 - **DB**: `server/db.js` — pg Pool with helpers: `run(sql, params)`, `all()`, `get()`, `transaction(callback)`. All queries use PG numbered params (`$1, $2`). Money fields are `NUMERIC(12,2)` — use `parseFloat()` when reading
 - **Config**: `server/config.js` — reads from `.env`: PORT, DATABASE_URL, JWT_SECRET, CORS_ORIGIN, NODE_ENV, BASE_DOMAIN, BASE_URL
-- **Migrations**: `server/migrations/run.js` — runs all migration files sequentially (001–028). Each exports `up()`. Idempotent (uses `IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`)
+- **Migrations**: `server/migrations/run.js` — runs all migration files sequentially (001–031). Each exports `up()`. Idempotent (uses `IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`)
+- **Utilities**: `server/utils/referralCommission.js` — `accrueCommissionIfReferred(tenantId, plan)`: начисляет 30% комиссию партнёру при смене/продлении платного плана. Идемпотентна (ловит unique constraint 23505)
 - **Services**: `server/services/` — external integration services:
   - `egais/` — UTM client, XML parser/builder for EGAIS protocol
   - `chestniyZnak/` — API client, DataMatrix barcode processing
@@ -116,8 +124,8 @@ Dev uses `lvh.me` which resolves to 127.0.0.1 and supports subdomains natively.
 
 ### Core tables (all business tables have `tenant_id` FK)
 
-- **tenants** — `id`, `company_name`, `slug` (unique, for subdomain), `business_type` (hookah/cafe/restaurant/fastfood), `pos_mode` (table_service/fast_pos), `theme` (dark/light), `accent_color`, `city`, `inn`, `kpp`, `ogrn`, `legal_address`, `actual_address`, `plan_id`, `subscription_status`, `subscription_expires_at`, `day_end_hour`, `show_table_timer`, `created_at`
-- **plans** — `id`, `name`, `code` (start/business/pro), `price`, `max_users`, `max_halls`, `max_products`, `max_orders_monthly`, `features` (JSONB — feature flags for `checkFeature()`), `is_active`
+- **tenants** — `id`, `company_name`, `slug` (unique, for subdomain), `business_type` (hookah/cafe/restaurant/fastfood), `pos_mode` (table_service/fast_pos), `theme` (dark/light), `accent_color`, `city`, `inn`, `kpp`, `ogrn`, `legal_address`, `actual_address`, `plan_id`, `subscription_status`, `subscription_expires_at`, `day_end_hour`, `show_table_timer`, `table_timer_mode` (VARCHAR 10, auto/off), `referred_by_code` (VARCHAR 20), `created_at`
+- **plans** — `id`, `name`, `code` (VARCHAR 50 UNIQUE: free/start/business/chains), `price`, `yearly_price` (NUMERIC 10,2), `max_users`, `max_halls`, `max_products`, `max_orders_monthly`, `max_integrations` (INTEGER), `features` (JSONB — feature flags for `checkFeature()`), `is_active`
 - **users** — `id`, `tenant_id`, `name`, `email`, `phone`, `password_hash`, `pin_hash` (for PIN login), `role` (superadmin/chain_owner/owner/admin/cashier), `chain_id`, `active`
 - **categories** — `id`, `tenant_id`, `name`, `workshop_id`, `sort_order`, `is_active`
 - **products** — `id`, `tenant_id`, `category_id`, `name`, `price`, `cost_price`, `unit`, `min_stock`, `quantity`, `track_inventory`, `is_ingredient`, `is_composite`, `barcode`, `image_url`, `marking_type`, `egais_alcocode`, `vat_rate`, `active`
@@ -130,7 +138,7 @@ Dev uses `lvh.me` which resolves to 127.0.0.1 and supports subdomains natively.
 - **halls** — `id`, `tenant_id`, `name`, `grid_cols`, `grid_rows`, `is_active`
 - **tables** — `id`, `tenant_id`, `hall_id`, `number`, `label`, `capacity`, `status` (free/occupied/reserved), `position_x`, `position_y`, `grid_x`, `grid_y`
 - **register_days** — `id`, `tenant_id`, `user_id` (who opened), `opened_at`, `closed_at`, `opening_cash`, `closing_cash`, `status` (open/closed)
-- **orders** — `id`, `tenant_id`, `register_day_id`, `table_id`, `user_id` (cashier), `hookah_master_id`, `guest_id`, `order_number`, `order_type` (dine_in/take_away/delivery), `status` (open/closed/cancelled), `total_before_discount`, `discount_amount`, `total`, `payment_method` (cash/card/mixed/delivery), `paid_cash`, `paid_card`, `fiscal_number`, `fiscal_document_number`, `fiscal_sign`, `idempotency_key`, `created_at`, `closed_at`
+- **orders** — `id`, `tenant_id`, `register_day_id`, `table_id`, `user_id` (cashier), `hookah_master_id`, `guest_id`, `order_number`, `order_type` (dine_in/take_away/delivery), `status` (open/closed/cancelled), `total_before_discount`, `discount_amount`, `total`, `payment_method` (cash/card/mixed/delivery), `paid_cash`, `paid_card`, `fiscal_number`, `fiscal_document_number`, `fiscal_sign`, `idempotency_key`, `timer_started_at` (TIMESTAMPTZ для ручного режима таймера), `created_at`, `closed_at`
 - **order_items** — `id`, `order_id`, `product_id`, `variant_id`, `product_name` (denormalized), `quantity`, `price`, `cost_price`, `total`, `marking_type`, `marked_codes_required`, `marked_codes_scanned`
 - **guests** — `id`, `tenant_id`, `name`, `phone`, `discount_type`, `discount_value`, `bonus_balance`, `total_spent`, `visits_count`, `active`
 - **tenant_integrations** — `id`, `tenant_id`, `egais_enabled`, `egais_fsrar_id`, `chestniy_znak_enabled`, `edo_enabled`, `edo_provider`, `kkt_enabled`, `kkt_provider`, `kkt_strict_mode`, `kkt_environment`, `kkt_physical_enabled`, ...
@@ -153,6 +161,10 @@ Dev uses `lvh.me` which resolves to 127.0.0.1 and supports subdomains natively.
 - **work_schedule** — `id`, `tenant_id`, `user_id`, `date`, `hours`, `shift_id`
 - **salary_payouts** — `id`, `tenant_id`, `user_id`, `period_start`, `period_end`, `amount`, `status`
 - **tenant_print_settings** — `id`, `tenant_id`, `header_text`, `footer_text`, `show_logo`, `paper_width`
+- **partners** — `id`, `name`, `email`, `phone`, `password_hash`, `referral_code` (unique 8-char), `user_id`, `balance`, `total_earned`, `total_withdrawn`, `active`, `created_at`
+- **referrals** — `id`, `partner_id`, `tenant_id`, `promo_applied`, `created_at` (UNIQUE tenant_id)
+- **partner_commissions** — `id`, `partner_id`, `referral_id`, `tenant_id`, `plan_name`, `plan_price`, `commission_rate` (default 0.30), `commission_amount`, `period_start`, `created_at` (UNIQUE referral_id+period_start)
+- **partner_payouts** — `id`, `partner_id`, `amount`, `status` (pending/...), `payment_details`, `admin_comment`, `processed_at`, `created_at`
 
 ### Relations
 
@@ -183,7 +195,7 @@ modifiers → products (many-to-one via ingredient_id for inventory tracking)
 ## API Routes
 
 ### Auth (`server/routes/auth.js`)
-- `POST /api/auth/register` — register new tenant + owner user
+- `POST /api/auth/register` — register new tenant + owner user (accepts optional `referral_code` для привязки тенанта к партнёру)
 - `POST /api/auth/login` — email/password login
 - `POST /api/auth/pin-login` — PIN login (subdomain only)
 - `GET /api/auth/employees` — list employees for PIN login screen (subdomain only, public)
@@ -251,7 +263,19 @@ modifiers → products (many-to-one via ingredient_id for inventory tracking)
 - `GET /api/stats/sales` — sales by period
 - `GET /api/stats/products` — product popularity
 - `GET /api/stats/employees` — employee performance
-- `GET /api/stats/order-types` — breakdown by dine_in/take_away/delivery
+- `GET /api/stats/order-types` — разбивка заказов по типу (dine_in/take_away/delivery), требует feature 'reports'
+
+### Partner / Referral (`server/routes/partner.js`)
+Отдельный JWT (`partner_id` payload), не смешивается с tenant/superadmin токенами.
+- `POST /api/partner/register` — регистрация партнёра (name, email, phone, password)
+- `POST /api/partner/login` — вход партнёра → token + partner data
+- `GET /api/partner/me` — текущий партнёр (partnerAuth middleware)
+- `GET /api/partner/stats` — статистика: рефералы, комиссии, баланс
+- `GET /api/partner/referrals` — список привлечённых тенантов с деталями комиссий
+- `GET /api/partner/commissions` — история начислений (paginated)
+- `POST /api/partner/payouts` — запрос выплаты (amount, payment_details)
+- `GET /api/partner/payouts` — история выплат
+Rate limit: /api/partner/login и /api/partner/register — 20 req/15min
 
 ### Supplies (`server/routes/supplies.js`)
 - CRUD for supply deliveries (admin+)
@@ -359,6 +383,9 @@ modifiers → products (many-to-one via ingredient_id for inventory tracking)
 | 026 | Business types & variants | business_type, pos_mode, theme on tenants; product_variants, image_url on products; order_type on orders |
 | 027 | Physical KKT devices | kkt_physical_devices, kkt_pairing_tokens, kkt_physical_queue, kkt_physical_enabled flag |
 | 028 | Orders fiscal fields | fiscal_number, fiscal_document_number, fiscal_sign on orders |
+| 029 | `029_timer_modes.js` | `table_timer_mode` VARCHAR(10) на tenants ('auto'/'off', default 'auto'); `timer_started_at` TIMESTAMPTZ на orders. Переносит данные из `show_table_timer` |
+| 030 | `030_referral_program.js` | Партнёрская программа: таблицы `partners`, `referrals`, `partner_commissions`, `partner_payouts`; колонка `referred_by_code` на tenants |
+| 031 | `031_update_plans.js` | Добавляет `yearly_price`, `max_integrations`, `code` на plans. Переименовывает планы: free→"Бесплатный"(code=free), basic→"Старт"(code=start), "Pro"→"Бизнес"(code=business), "Бизнес"→"Сети"(code=chains) |
 
 ## KKT Bridge (Windows Desktop App)
 
@@ -416,11 +443,12 @@ Installer: NSIS with one-click install, desktop shortcut, auto-launch option.
 
 ## Client (React 19 + Vite)
 
-- **State**: Zustand stores in `client/src/store/` — `authStore.js` (auth, tenant, branding, pinLogin), `posStore.js` (POS state), `socketStore.js` (WebSocket connection)
-- **API**: `client/src/api.js` — wrapper around fetch, auto-attaches JWT from localStorage, all calls go to `/api/*` (proxied to :3001 in dev)
-- **Routing**: `client/src/App.jsx` — react-router-dom v7. `isSubdomain()` switches between `SubdomainApp` (PinLogin + POS routes) and `MainDomainApp` (Landing, Login, Register, Superadmin, Chain). Route guards: `ProtectedRoute`, `AdminRoute`, `CashierAllowedRoute`, `FeatureRoute` (checks plan features)
+- **State**: Zustand stores in `client/src/store/` — `authStore.js` (auth, tenant, branding, pinLogin), `posStore.js` (POS state), `socketStore.js` (WebSocket connection), `partnerStore.js` (партнёрская авторизация: login, register, logout, checkAuth, localStorage persistence), `networkStore.js` (состояние сети)
+- **API**: `client/src/api.js` — wrapper around fetch, auto-attaches JWT from localStorage, all calls go to `/api/*` (proxied to :3001 in dev). `client/src/partnerApi.js` — отдельная API-обёртка для партнёрских эндпоинтов (использует `partner_token` из localStorage, не tenant JWT)
+- **Routing**: `client/src/App.jsx` — react-router-dom v7. `isSubdomain()` switches between `SubdomainApp` (PinLogin + POS routes) and `MainDomainApp` (Landing, Login, Register, Superadmin, Chain, Partner). Route guards: `ProtectedRoute`, `AdminRoute`, `CashierAllowedRoute`, `FeatureRoute` (checks plan features), `ProtectedPartnerRoute` (проверяет partnerStore)
 - **Subdomain utils**: `client/src/utils/subdomain.js` — `getTenantSlug()`, `isSubdomain()`, `buildSubdomainUrl(slug)`. Uses `VITE_BASE_DOMAIN` env var
 - **Branding**: `client/src/utils/branding.js` — applies tenant's `accent_color` via CSS custom properties (`--accent`, `--accent-hover`)
+- **Partner components**: `PartnerLayout` — layout обёртка для партнёрских страниц (`client/src/components/PartnerLayout.jsx`)
 - **Styling**: Dark/light theme via CSS custom properties in `client/src/index.css`, no CSS framework
 - **Business type adaptation**: UI adapts based on `tenant.business_type` and `tenant.pos_mode` (table map vs fast POS grid)
 
@@ -440,6 +468,11 @@ MainDomainApp (skandata.ru):
   /chain/products  — ChainProducts across chain
   /chain/transfers — ChainTransfers between tenants
   /admin/*         — same admin routes as subdomain (for owner on main domain)
+  /partner/login       — PartnerLogin
+  /partner/register    — PartnerRegister
+  /partner             — PartnerDashboard (ProtectedPartnerRoute)
+  /partner/referrals   — PartnerReferrals
+  /partner/payouts     — PartnerPayouts
 
 SubdomainApp ({slug}.skandata.ru):
   /login                    — PinLogin (employee list + numpad)
@@ -527,6 +560,10 @@ Docker multi-stage build (Dockerfile): client build → server with static files
 - Variants: different prices/sizes for same product, selected at order time, stored in `variant_id` on order_items
 - Business type switching: UI/UX adapts based on `tenant.business_type` (hookah/cafe/restaurant/fastfood) and `pos_mode` (table_service/fast_pos)
 - Fiscal integration: dual-mode support — cloud KKT (АТОЛ Онлайн) OR physical KKT (bridge client). Orders store fiscal data after successful receipt print.
+- Партнёрская аутентификация: отдельный JWT с `partner_id`, хранится в `partner_token` в localStorage, обрабатывается через `partnerAuth` middleware. Не смешивается с tenant/superadmin токенами
+- Реферальные комиссии: `accrueCommissionIfReferred()` вызывается в subscriptions route при смене/продлении плана, начисляет 30% от стоимости плана
+- Таймер стола: `table_timer_mode` ('auto'/'off') на уровне тенанта; в ручном режиме `timer_started_at` хранится в orders
+- Структура планов: планы имеют `code` (free/start/business/chains), `yearly_price` для годовых скидок, `max_integrations` для ограничения интеграций
 
 ## Key Features by Business Type
 
