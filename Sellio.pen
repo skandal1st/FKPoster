@@ -1,0 +1,3911 @@
+{
+  "version": "2.9",
+  "children": [
+    {
+      "type": "frame",
+      "id": "Ck3nA",
+      "x": 0,
+      "y": 0,
+      "name": "Sellio Landing Page",
+      "width": 1440,
+      "fill": "#F5F4F1",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "9M0PO",
+          "name": "Header",
+          "width": "fill_container",
+          "padding": [
+            16,
+            80
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "0hzlN",
+              "name": "logoGroup",
+              "gap": 10,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "xA9Rp",
+                  "name": "logoIcon",
+                  "width": 32,
+                  "height": 32,
+                  "fill": "#3D8A5A",
+                  "cornerRadius": 8,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "frg2N",
+                      "name": "logoS",
+                      "fill": "#FFFFFF",
+                      "content": "S",
+                      "fontFamily": "Outfit",
+                      "fontSize": 18,
+                      "fontWeight": "700"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "GGnOM",
+                  "name": "logoText",
+                  "fill": "#1A1918",
+                  "content": "Sellio",
+                  "fontFamily": "Outfit",
+                  "fontSize": 22,
+                  "fontWeight": "700"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "C3oDK",
+              "name": "nav",
+              "gap": 32,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "srxeQ",
+                  "name": "nav1",
+                  "fill": "#6B6A68",
+                  "content": "Возможности",
+                  "fontFamily": "Outfit",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "1ed8C",
+                  "name": "nav2",
+                  "fill": "#6B6A68",
+                  "content": "Тарифы",
+                  "fontFamily": "Outfit",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "PVXeL",
+                  "name": "nav3",
+                  "fill": "#6B6A68",
+                  "content": "Партнёрам",
+                  "fontFamily": "Outfit",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "raDbC",
+              "name": "actions",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "qX9mI",
+                  "name": "loginBtn",
+                  "fill": "#1A1918",
+                  "content": "Войти",
+                  "fontFamily": "Outfit",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "frame",
+                  "id": "f2TWE",
+                  "name": "regBtn",
+                  "fill": "#3D8A5A",
+                  "cornerRadius": 10,
+                  "padding": [
+                    10,
+                    20
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "t7l5C",
+                      "name": "regBtnTxt",
+                      "fill": "#FFFFFF",
+                      "content": "Попробовать бесплатно",
+                      "fontFamily": "Outfit",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "z0hgd",
+          "name": "Hero",
+          "width": "fill_container",
+          "gap": 60,
+          "padding": 80,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "Im9i0",
+              "name": "heroLeft",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 24,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "6alID",
+                  "name": "heroBadge",
+                  "fill": "#C8F0D8",
+                  "cornerRadius": 100,
+                  "padding": [
+                    6,
+                    14
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "j9X5E",
+                      "name": "heroBadgeTxt",
+                      "fill": "#3D8A5A",
+                      "content": "Универсальная POS-система для бизнеса",
+                      "fontFamily": "Outfit",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "phaTk",
+                  "name": "heroTitle",
+                  "fill": "#1A1918",
+                  "content": "Sellio — облачная касса\nдля любого формата",
+                  "fontFamily": "Outfit",
+                  "fontSize": 48,
+                  "fontWeight": "700",
+                  "letterSpacing": -2
+                },
+                {
+                  "type": "text",
+                  "id": "b14WC",
+                  "name": "heroSub",
+                  "fill": "#6B6A68",
+                  "content": "Кальянные, кафе, рестораны, фастфуд — одна платформа для всех. Учёт\nзаказов, смен, склада и финансов. Работает в браузере и на Android с оффлайн-\nрежимом.",
+                  "fontFamily": "Outfit",
+                  "fontSize": 16,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "k8Lkq",
+                  "name": "heroBtns",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "61Sdf",
+                      "name": "heroBtn1",
+                      "fill": "#3D8A5A",
+                      "cornerRadius": 12,
+                      "padding": [
+                        14,
+                        28
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "FXkMx",
+                          "name": "heroBtn1Txt",
+                          "fill": "#FFFFFF",
+                          "content": "Начать бесплатно",
+                          "fontFamily": "Outfit",
+                          "fontSize": 15,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "Oivk2",
+                      "name": "heroBtn2",
+                      "cornerRadius": 12,
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "#D1D0CD"
+                      },
+                      "padding": [
+                        14,
+                        28
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "Jaznz",
+                          "name": "heroBtn2Txt",
+                          "fill": "#1A1918",
+                          "content": "Смотреть демо",
+                          "fontFamily": "Outfit",
+                          "fontSize": 15,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "BbBl7",
+              "name": "Hero Visual",
+              "width": 520,
+              "height": 400,
+              "fill": "#FFFFFF",
+              "cornerRadius": 20,
+              "effect": {
+                "type": "shadow",
+                "shadowType": "outer",
+                "color": "#1A191812",
+                "offset": {
+                  "x": 0,
+                  "y": 8
+                },
+                "blur": 40
+              },
+              "layout": "vertical",
+              "gap": 16,
+              "padding": 24,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "hmJ4e",
+                  "name": "visHeader",
+                  "width": "fill_container",
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "wQQRg",
+                      "name": "visTitle",
+                      "fill": "#1A1918",
+                      "content": "Сегодня",
+                      "fontFamily": "Outfit",
+                      "fontSize": 16,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "KVrf6",
+                      "name": "visPeriod",
+                      "fill": "#F5F4F1",
+                      "cornerRadius": 8,
+                      "padding": [
+                        6,
+                        12
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "lkEAc",
+                          "name": "visPeriodTxt",
+                          "fill": "#6B6A68",
+                          "content": "Статистика за день",
+                          "fontFamily": "Outfit",
+                          "fontSize": 12,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "APW90",
+                  "name": "visStats",
+                  "width": "fill_container",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "SyktX",
+                      "name": "stat1",
+                      "width": "fill_container",
+                      "fill": "#F5F4F1",
+                      "cornerRadius": 12,
+                      "layout": "vertical",
+                      "gap": 4,
+                      "padding": [
+                        12,
+                        16
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "YnBbm",
+                          "name": "stat1label",
+                          "fill": "#9C9B99",
+                          "content": "Выручка",
+                          "fontFamily": "Outfit",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "vYm2o",
+                          "name": "stat1val",
+                          "fill": "#1A1918",
+                          "content": "87 400 ₽",
+                          "fontFamily": "Outfit",
+                          "fontSize": 24,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "9NvFi",
+                      "name": "stat2",
+                      "width": "fill_container",
+                      "fill": "#F5F4F1",
+                      "cornerRadius": 12,
+                      "layout": "vertical",
+                      "gap": 4,
+                      "padding": [
+                        12,
+                        16
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "8Z1Kv",
+                          "name": "stat2label",
+                          "fill": "#9C9B99",
+                          "content": "Средний чек",
+                          "fontFamily": "Outfit",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "hF4WY",
+                          "name": "stat2val",
+                          "fill": "#1A1918",
+                          "content": "1 850 ₽",
+                          "fontFamily": "Outfit",
+                          "fontSize": 24,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ssvrL",
+                  "name": "visTable",
+                  "width": "fill_container",
+                  "fill": "#F5F4F1",
+                  "cornerRadius": 12,
+                  "layout": "vertical",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "cqPIY",
+                      "name": "tRow1",
+                      "width": "fill_container",
+                      "padding": [
+                        10,
+                        16
+                      ],
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "rkFby",
+                          "name": "tRow1l",
+                          "fill": "#6B6A68",
+                          "content": "Столы",
+                          "fontFamily": "Outfit",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "j3OpG",
+                          "name": "tRow1r",
+                          "fill": "#1A1918",
+                          "content": "8 / 12",
+                          "fontFamily": "Outfit",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "qbbNc",
+                      "name": "tRow2",
+                      "width": "fill_container",
+                      "padding": [
+                        10,
+                        16
+                      ],
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "c6fvU",
+                          "name": "tRow2l",
+                          "fill": "#6B6A68",
+                          "content": "Заказы",
+                          "fontFamily": "Outfit",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "HXbQT",
+                          "name": "tRow2r",
+                          "fill": "#1A1918",
+                          "content": "47",
+                          "fontFamily": "Outfit",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "OOM87",
+                      "name": "tRow3",
+                      "width": "fill_container",
+                      "padding": [
+                        10,
+                        16
+                      ],
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "9pLDQ",
+                          "name": "tRow3l",
+                          "fill": "#6B6A68",
+                          "content": "Наличные / Карта",
+                          "fontFamily": "Outfit",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "DO9uh",
+                          "name": "tRow3r",
+                          "fill": "#1A1918",
+                          "content": "44% / 56%",
+                          "fontFamily": "Outfit",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "VcxLU",
+          "name": "Features",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 48,
+          "padding": 80,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "0UBpv",
+              "name": "featHeader",
+              "width": 700,
+              "layout": "vertical",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "eLxQc",
+                  "name": "featBadge",
+                  "fill": "#E5E4E1",
+                  "cornerRadius": 100,
+                  "padding": [
+                    6,
+                    14
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "5rfWo",
+                      "name": "featBadgeTxt",
+                      "fill": "#6B6A68",
+                      "content": "Всё для управления заведением",
+                      "fontFamily": "Outfit",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "Jg73X",
+                  "name": "featTitle",
+                  "fill": "#1A1918",
+                  "content": "Функции, которые работают на вас",
+                  "textAlign": "center",
+                  "fontFamily": "Outfit",
+                  "fontSize": 36,
+                  "fontWeight": "700",
+                  "letterSpacing": -1
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "QOxfU",
+              "name": "featGrid",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "Onatn",
+                  "name": "featRow1",
+                  "width": "fill_container",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "0C6Kb",
+                      "name": "f1",
+                      "width": "fill_container",
+                      "fill": "#FFFFFF",
+                      "cornerRadius": 16,
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "#1A191808",
+                        "offset": {
+                          "x": 0,
+                          "y": 2
+                        },
+                        "blur": 12
+                      },
+                      "layout": "vertical",
+                      "gap": 12,
+                      "padding": 24,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "hdFoI",
+                          "name": "f1icon",
+                          "width": 40,
+                          "height": 40,
+                          "fill": "#C8F0D8",
+                          "cornerRadius": 10,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "aq02m",
+                              "name": "f1iconI",
+                              "width": 20,
+                              "height": 20,
+                              "iconFontName": "monitor",
+                              "iconFontFamily": "lucide",
+                              "fill": "#3D8A5A"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "WpEo4",
+                          "name": "f1title",
+                          "fill": "#1A1918",
+                          "content": "POS-экран",
+                          "fontFamily": "Outfit",
+                          "fontSize": 18,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "wlytk",
+                          "name": "f1desc",
+                          "fill": "#6B6A68",
+                          "content": "Удобный интерфейс кассира с карточками товаров, модификаторами и быстрым поиском",
+                          "fontFamily": "Outfit",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "31hTP",
+                      "name": "f2",
+                      "width": "fill_container",
+                      "fill": "#FFFFFF",
+                      "cornerRadius": 16,
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "#1A191808",
+                        "offset": {
+                          "x": 0,
+                          "y": 2
+                        },
+                        "blur": 12
+                      },
+                      "layout": "vertical",
+                      "gap": 12,
+                      "padding": 24,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "sPWOm",
+                          "name": "f2icon",
+                          "width": 40,
+                          "height": 40,
+                          "fill": "#C8F0D8",
+                          "cornerRadius": 10,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "y7gp9",
+                              "name": "f2iconI",
+                              "width": 20,
+                              "height": 20,
+                              "iconFontName": "trending-up",
+                              "iconFontFamily": "lucide",
+                              "fill": "#3D8A5A"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "lvb7S",
+                          "name": "f2title",
+                          "fill": "#1A1918",
+                          "content": "Аналитика",
+                          "fontFamily": "Outfit",
+                          "fontSize": 18,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "6C37l",
+                          "name": "f2desc",
+                          "fill": "#6B6A68",
+                          "content": "Отчёты по выручке, среднему чеку, популярности товаров и эффективности сотрудников",
+                          "fontFamily": "Outfit",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "gbWsU",
+                      "name": "f3",
+                      "width": "fill_container",
+                      "fill": "#FFFFFF",
+                      "cornerRadius": 16,
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "#1A191808",
+                        "offset": {
+                          "x": 0,
+                          "y": 2
+                        },
+                        "blur": 12
+                      },
+                      "layout": "vertical",
+                      "gap": 12,
+                      "padding": 24,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "HD5PB",
+                          "name": "f3icon",
+                          "width": 40,
+                          "height": 40,
+                          "fill": "#C8F0D8",
+                          "cornerRadius": 10,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "WrQ3g",
+                              "name": "f3iconI",
+                              "width": 20,
+                              "height": 20,
+                              "iconFontName": "package",
+                              "iconFontFamily": "lucide",
+                              "fill": "#3D8A5A"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "uy74G",
+                          "name": "f3title",
+                          "fill": "#1A1918",
+                          "content": "Складской учёт",
+                          "fontFamily": "Outfit",
+                          "fontSize": 18,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "9fmgX",
+                          "name": "f3desc",
+                          "fill": "#6B6A68",
+                          "content": "Приёмка, инвентаризация, себестоимость. Контроль остатков и автоматическое списание",
+                          "fontFamily": "Outfit",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "tDXFs",
+                  "name": "featRow2",
+                  "width": "fill_container",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "LWf3m",
+                      "name": "f4",
+                      "width": "fill_container",
+                      "fill": "#FFFFFF",
+                      "cornerRadius": 16,
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "#1A191808",
+                        "offset": {
+                          "x": 0,
+                          "y": 2
+                        },
+                        "blur": 12
+                      },
+                      "layout": "vertical",
+                      "gap": 12,
+                      "padding": 24,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "5m7sH",
+                          "name": "f4icon",
+                          "width": 40,
+                          "height": 40,
+                          "fill": "#C8F0D8",
+                          "cornerRadius": 10,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "UhsVw",
+                              "name": "f4iconI",
+                              "width": 20,
+                              "height": 20,
+                              "iconFontName": "smartphone",
+                              "iconFontFamily": "lucide",
+                              "fill": "#3D8A5A"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "77fQT",
+                          "name": "f4title",
+                          "fill": "#1A1918",
+                          "content": "Android-приложение",
+                          "fontFamily": "Outfit",
+                          "fontSize": 18,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "huQ1N",
+                          "name": "f4desc",
+                          "fill": "#6B6A68",
+                          "content": "Работает без интернета. Данные синхронизируются автоматически при подключении к сети",
+                          "fontFamily": "Outfit",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "eynxp",
+                      "name": "f5",
+                      "width": "fill_container",
+                      "fill": "#FFFFFF",
+                      "cornerRadius": 16,
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "#1A191808",
+                        "offset": {
+                          "x": 0,
+                          "y": 2
+                        },
+                        "blur": 12
+                      },
+                      "layout": "vertical",
+                      "gap": 12,
+                      "padding": 24,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "fmFVb",
+                          "name": "f5icon",
+                          "width": 40,
+                          "height": 40,
+                          "fill": "#C8F0D8",
+                          "cornerRadius": 10,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "iLu8b",
+                              "name": "f5iconI",
+                              "width": 20,
+                              "height": 20,
+                              "iconFontName": "plug",
+                              "iconFontFamily": "lucide",
+                              "fill": "#3D8A5A"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "J2kb1",
+                          "name": "f5title",
+                          "fill": "#1A1918",
+                          "content": "Интеграции",
+                          "fontFamily": "Outfit",
+                          "fontSize": 18,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "5X4VN",
+                          "name": "f5desc",
+                          "fill": "#6B6A68",
+                          "content": "ЕГАИС, Честный знак, ЭДО, онлайн-кассы АТОЛ. Подключение в пару кликов",
+                          "fontFamily": "Outfit",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "Dyyfg",
+                      "name": "f6",
+                      "width": "fill_container",
+                      "fill": "#FFFFFF",
+                      "cornerRadius": 16,
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "#1A191808",
+                        "offset": {
+                          "x": 0,
+                          "y": 2
+                        },
+                        "blur": 12
+                      },
+                      "layout": "vertical",
+                      "gap": 12,
+                      "padding": 24,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "S317o",
+                          "name": "f6icon",
+                          "width": 40,
+                          "height": 40,
+                          "fill": "#C8F0D8",
+                          "cornerRadius": 10,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "xJRAF",
+                              "name": "f6iconI",
+                              "width": 20,
+                              "height": 20,
+                              "iconFontName": "building",
+                              "iconFontFamily": "lucide",
+                              "fill": "#3D8A5A"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "text",
+                          "id": "JROMj",
+                          "name": "f6title",
+                          "fill": "#1A1918",
+                          "content": "Управление сетью",
+                          "fontFamily": "Outfit",
+                          "fontSize": 18,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "5mL0Q",
+                          "name": "f6desc",
+                          "fill": "#6B6A68",
+                          "content": "Несколько заведений в одном кабинете. Сводная аналитика и перемещения между точками",
+                          "fontFamily": "Outfit",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ojwSk",
+          "name": "Android Section",
+          "width": "fill_container",
+          "fill": "#FFFFFF",
+          "gap": 60,
+          "padding": [
+            64,
+            80
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "ZrtLt",
+              "name": "androidLeft",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 20,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "4lkuq",
+                  "name": "aBadge",
+                  "fill": "#C8F0D8",
+                  "cornerRadius": 100,
+                  "padding": [
+                    6,
+                    14
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "yR3rX",
+                      "name": "aBadgeTxt",
+                      "fill": "#3D8A5A",
+                      "content": "Android-приложение",
+                      "fontFamily": "Outfit",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "Yl6sV",
+                  "name": "aTitle",
+                  "fill": "#1A1918",
+                  "content": "Работайте даже\nбез интернета",
+                  "fontFamily": "Outfit",
+                  "fontSize": 36,
+                  "fontWeight": "700",
+                  "letterSpacing": -1
+                },
+                {
+                  "type": "text",
+                  "id": "eQfLE",
+                  "name": "aDesc",
+                  "fill": "#6B6A68",
+                  "content": "Установите приложение Sellio на любой Android-планшет или смартфон. Принимайте заказы, открывайте смены и\nпечатайте чеки — даже без подключения к сети. Все данные автоматически синхронизируются при появлении интернета.",
+                  "fontFamily": "Outfit",
+                  "fontSize": 15,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "94cRZ",
+                  "name": "aFeats",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Zxpem",
+                      "name": "af1",
+                      "fill": "#6B6A68",
+                      "content": "Оффлайн-режим — заказы создаются локально",
+                      "fontFamily": "Outfit",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "a63J5",
+                      "name": "af2",
+                      "fill": "#6B6A68",
+                      "content": "Автоматическая синхронизация с облаком",
+                      "fontFamily": "Outfit",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "4IAv2",
+                      "name": "af3",
+                      "fill": "#6B6A68",
+                      "content": "Печать чеков через Bluetooth и USB",
+                      "fontFamily": "Outfit",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "bcVNr",
+              "name": "Phone Mockup",
+              "width": 320,
+              "height": 440,
+              "fill": "#1A1918",
+              "cornerRadius": 32,
+              "effect": {
+                "type": "shadow",
+                "shadowType": "outer",
+                "color": "#1A191820",
+                "offset": {
+                  "x": 0,
+                  "y": 16
+                },
+                "blur": 48
+              },
+              "layout": "vertical",
+              "gap": 16,
+              "padding": [
+                40,
+                20,
+                20,
+                20
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "vHsf4",
+                  "name": "phoneBar",
+                  "width": "fill_container",
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "1BP4l",
+                      "name": "phoneTime",
+                      "fill": "#FFFFFF",
+                      "content": "14:52",
+                      "fontFamily": "Outfit",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "Kz9u7",
+                      "name": "phoneBat",
+                      "fill": "#9C9B99",
+                      "content": "Sellio",
+                      "fontFamily": "Outfit",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "BEi8s",
+                  "name": "phoneScreen",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": 16,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "iPwf6",
+                      "name": "psTitle",
+                      "fill": "#1A1918",
+                      "content": "Быстрый заказ",
+                      "fontFamily": "Outfit",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "GzqE1",
+                      "name": "psRow1",
+                      "width": "fill_container",
+                      "padding": [
+                        8,
+                        0
+                      ],
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "4u6v1",
+                          "name": "psR1l",
+                          "fill": "#6B6A68",
+                          "content": "Капучино x2",
+                          "fontFamily": "Outfit",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "xq26O",
+                          "name": "psR1r",
+                          "fill": "#1A1918",
+                          "content": "400 ₽",
+                          "fontFamily": "Outfit",
+                          "fontSize": 13,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "mCx3r",
+                      "name": "psRow2",
+                      "width": "fill_container",
+                      "padding": [
+                        8,
+                        0
+                      ],
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "nyx5V",
+                          "name": "psR2l",
+                          "fill": "#6B6A68",
+                          "content": "Круассан",
+                          "fontFamily": "Outfit",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "iTcif",
+                          "name": "psR2r",
+                          "fill": "#1A1918",
+                          "content": "310 ₽",
+                          "fontFamily": "Outfit",
+                          "fontSize": 13,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "1Wa45",
+                      "name": "psDivider",
+                      "width": "fill_container",
+                      "height": 1,
+                      "fill": "#E5E4E1"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "TFOmn",
+                      "name": "psTotal",
+                      "width": "fill_container",
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "t8eAS",
+                          "name": "psTotalL",
+                          "fill": "#1A1918",
+                          "content": "Итого",
+                          "fontFamily": "Outfit",
+                          "fontSize": 14,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "1Iq7k",
+                          "name": "psTotalR",
+                          "fill": "#1A1918",
+                          "content": "710 ₽",
+                          "fontFamily": "Outfit",
+                          "fontSize": 16,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "s2NnM",
+                      "name": "psBtn",
+                      "width": "fill_container",
+                      "fill": "#3D8A5A",
+                      "cornerRadius": 10,
+                      "padding": [
+                        10,
+                        0
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "XVyQr",
+                          "name": "psBtnTxt",
+                          "fill": "#FFFFFF",
+                          "content": "Оплатить",
+                          "fontFamily": "Outfit",
+                          "fontSize": 14,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "rm9Pi",
+                      "name": "psOffline",
+                      "width": "fill_container",
+                      "fill": "#FFF3E0",
+                      "cornerRadius": 8,
+                      "padding": [
+                        6,
+                        10
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "FPPZu",
+                          "name": "psOffTxt",
+                          "fill": "#E65100",
+                          "content": "Оффлайн-режим",
+                          "fontFamily": "Outfit",
+                          "fontSize": 11,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "WI2ry",
+          "name": "Pricing",
+          "width": "fill_container",
+          "fill": "#F5F4F1",
+          "layout": "vertical",
+          "gap": 40,
+          "padding": 80,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "Lb361",
+              "name": "priceHeader",
+              "width": 600,
+              "layout": "vertical",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "BdZ3R",
+                  "name": "priceTitle",
+                  "fill": "#1A1918",
+                  "content": "Простые тарифы без скрытых платежей",
+                  "textAlign": "center",
+                  "fontFamily": "Outfit",
+                  "fontSize": 36,
+                  "fontWeight": "700",
+                  "letterSpacing": -1
+                },
+                {
+                  "type": "text",
+                  "id": "jDqIE",
+                  "name": "priceSub",
+                  "fill": "#6B6A68",
+                  "content": "Начните бесплатно. При оплате за год — скидка до 20%.",
+                  "textAlign": "center",
+                  "fontFamily": "Outfit",
+                  "fontSize": 16,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "OiNlH",
+              "name": "toggle",
+              "fill": "#E5E4E1",
+              "cornerRadius": 100,
+              "gap": 4,
+              "padding": 4,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "5jujC",
+                  "name": "togM",
+                  "cornerRadius": 100,
+                  "padding": [
+                    8,
+                    16
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "noykI",
+                      "name": "togMTxt",
+                      "fill": "#6B6A68",
+                      "content": "Помесячно",
+                      "fontFamily": "Outfit",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "4V13n",
+                  "name": "togY",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 100,
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "#1A191810",
+                    "offset": {
+                      "x": 0,
+                      "y": 1
+                    },
+                    "blur": 4
+                  },
+                  "padding": [
+                    8,
+                    16
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "2r0sq",
+                      "name": "togYTxt",
+                      "fill": "#1A1918",
+                      "content": "За год",
+                      "fontFamily": "Outfit",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "iNxny",
+              "name": "priceGrid",
+              "width": "fill_container",
+              "gap": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "HFSvc",
+                  "name": "p1",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 16,
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "#1A191808",
+                    "offset": {
+                      "x": 0,
+                      "y": 2
+                    },
+                    "blur": 12
+                  },
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 24,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "pfoYn",
+                      "name": "p1name",
+                      "fill": "#9C9B99",
+                      "content": "БЕСПЛАТНЫЙ",
+                      "fontFamily": "Outfit",
+                      "fontSize": 12,
+                      "fontWeight": "600",
+                      "letterSpacing": 1.5
+                    },
+                    {
+                      "type": "text",
+                      "id": "9K0ww",
+                      "name": "p1price",
+                      "fill": "#1A1918",
+                      "content": "0 ₽",
+                      "fontFamily": "Outfit",
+                      "fontSize": 32,
+                      "fontWeight": "700",
+                      "letterSpacing": -1
+                    },
+                    {
+                      "type": "frame",
+                      "id": "hnM9J",
+                      "name": "p1list",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "5Z4HQ",
+                          "name": "p1i1",
+                          "fill": "#6B6A68",
+                          "content": "До 2 сотрудников",
+                          "fontFamily": "Outfit",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "YsBsC",
+                          "name": "p1i2",
+                          "fill": "#6B6A68",
+                          "content": "1 зал, до 50 товаров",
+                          "fontFamily": "Outfit",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "xQk27",
+                          "name": "p1i3",
+                          "fill": "#6B6A68",
+                          "content": "150 заказов в месяц",
+                          "fontFamily": "Outfit",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "fAmjs",
+                          "name": "p1i4",
+                          "fill": "#6B6A68",
+                          "content": "Касса и учёт смен",
+                          "fontFamily": "Outfit",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "dpu7x",
+                          "name": "p1i5",
+                          "fill": "#6B6A68",
+                          "content": "Без интеграций",
+                          "fontFamily": "Outfit",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "JwGQu",
+                      "name": "p1btn",
+                      "width": "fill_container",
+                      "cornerRadius": 10,
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "#D1D0CD"
+                      },
+                      "padding": [
+                        12,
+                        0
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "TAUGr",
+                          "name": "p1btnTxt",
+                          "fill": "#1A1918",
+                          "content": "Начать бесплатно",
+                          "fontFamily": "Outfit",
+                          "fontSize": 14,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "b09fd",
+                  "name": "p2",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 16,
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "#1A191808",
+                    "offset": {
+                      "x": 0,
+                      "y": 2
+                    },
+                    "blur": 12
+                  },
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 24,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "5FKeQ",
+                      "name": "p2name",
+                      "fill": "#9C9B99",
+                      "content": "СТАРТ",
+                      "fontFamily": "Outfit",
+                      "fontSize": 12,
+                      "fontWeight": "600",
+                      "letterSpacing": 1.5
+                    },
+                    {
+                      "type": "text",
+                      "id": "tCwYy",
+                      "name": "p2price",
+                      "fill": "#1A1918",
+                      "content": "1 990 ₽/мес",
+                      "fontFamily": "Outfit",
+                      "fontSize": 32,
+                      "fontWeight": "700",
+                      "letterSpacing": -1
+                    },
+                    {
+                      "type": "frame",
+                      "id": "vU0si",
+                      "name": "p2list",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "CyIhX",
+                          "name": "p2i1",
+                          "fill": "#6B6A68",
+                          "content": "Безлимит сотрудников",
+                          "fontFamily": "Outfit",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "4TJvw",
+                          "name": "p2i2",
+                          "fill": "#6B6A68",
+                          "content": "2 зала, все товары",
+                          "fontFamily": "Outfit",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "ybp9u",
+                          "name": "p2i3",
+                          "fill": "#6B6A68",
+                          "content": "Безлимит заказов",
+                          "fontFamily": "Outfit",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "JdTda",
+                          "name": "p2i4",
+                          "fill": "#6B6A68",
+                          "content": "Складской учёт и отчёты",
+                          "fontFamily": "Outfit",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "hvUfP",
+                          "name": "p2i5",
+                          "fill": "#6B6A68",
+                          "content": "2 интеграции из 4",
+                          "fontFamily": "Outfit",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "a7bew",
+                      "name": "p2btn",
+                      "width": "fill_container",
+                      "fill": "#3D8A5A",
+                      "cornerRadius": 10,
+                      "padding": [
+                        12,
+                        0
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "SY5tc",
+                          "name": "p2btnTxt",
+                          "fill": "#FFFFFF",
+                          "content": "Подключить Старт",
+                          "fontFamily": "Outfit",
+                          "fontSize": 14,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "T5E4K",
+                  "name": "p3",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 16,
+                  "stroke": {
+                    "thickness": 2,
+                    "fill": "#3D8A5A"
+                  },
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "#3D8A5A18",
+                    "offset": {
+                      "x": 0,
+                      "y": 4
+                    },
+                    "blur": 20
+                  },
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 24,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "l3qDp",
+                      "name": "p3badge",
+                      "fill": "#C8F0D8",
+                      "cornerRadius": 100,
+                      "padding": [
+                        4,
+                        10
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "cY2xB",
+                          "name": "p3badgeTxt",
+                          "fill": "#3D8A5A",
+                          "content": "Рекомендуем",
+                          "fontFamily": "Outfit",
+                          "fontSize": 11,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "ofReR",
+                      "name": "p3name",
+                      "fill": "#3D8A5A",
+                      "content": "БИЗНЕС",
+                      "fontFamily": "Outfit",
+                      "fontSize": 12,
+                      "fontWeight": "600",
+                      "letterSpacing": 1.5
+                    },
+                    {
+                      "type": "text",
+                      "id": "dkWos",
+                      "name": "p3price",
+                      "fill": "#1A1918",
+                      "content": "3 990 ₽/мес",
+                      "fontFamily": "Outfit",
+                      "fontSize": 32,
+                      "fontWeight": "700",
+                      "letterSpacing": -1
+                    },
+                    {
+                      "type": "frame",
+                      "id": "j4q9t",
+                      "name": "p3list",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "uJ1YC",
+                          "name": "p3i1",
+                          "fill": "#6B6A68",
+                          "content": "Всё из Старта",
+                          "fontFamily": "Outfit",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "cJ1Es",
+                          "name": "p3i2",
+                          "fill": "#6B6A68",
+                          "content": "Безлимит залов и интеграций",
+                          "fontFamily": "Outfit",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "byaeK",
+                          "name": "p3i3",
+                          "fill": "#6B6A68",
+                          "content": "Себестоимость и финансы",
+                          "fontFamily": "Outfit",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "y3yDj",
+                          "name": "p3i4",
+                          "fill": "#6B6A68",
+                          "content": "ККТ, ЭДО, API",
+                          "fontFamily": "Outfit",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "SfjZk",
+                      "name": "p3btn",
+                      "width": "fill_container",
+                      "fill": "#3D8A5A",
+                      "cornerRadius": 10,
+                      "padding": [
+                        12,
+                        0
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "m15Lj",
+                          "name": "p3btnTxt",
+                          "fill": "#FFFFFF",
+                          "content": "Подключить Бизнес",
+                          "fontFamily": "Outfit",
+                          "fontSize": 14,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "mA7s7",
+                  "name": "p4",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 16,
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "#1A191808",
+                    "offset": {
+                      "x": 0,
+                      "y": 2
+                    },
+                    "blur": 12
+                  },
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 24,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "0aROI",
+                      "name": "p4name",
+                      "fill": "#9C9B99",
+                      "content": "СЕТИ",
+                      "fontFamily": "Outfit",
+                      "fontSize": 12,
+                      "fontWeight": "600",
+                      "letterSpacing": 1.5
+                    },
+                    {
+                      "type": "text",
+                      "id": "H89Hq",
+                      "name": "p4price",
+                      "fill": "#1A1918",
+                      "content": "5 990 ₽/мес",
+                      "fontFamily": "Outfit",
+                      "fontSize": 32,
+                      "fontWeight": "700",
+                      "letterSpacing": -1
+                    },
+                    {
+                      "type": "frame",
+                      "id": "qClpQ",
+                      "name": "p4list",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "EDLuI",
+                          "name": "p4i1",
+                          "fill": "#6B6A68",
+                          "content": "Всё из тарифа Бизнес",
+                          "fontFamily": "Outfit",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "Cfn8D",
+                          "name": "p4i2",
+                          "fill": "#6B6A68",
+                          "content": "Управление сетью заведений",
+                          "fontFamily": "Outfit",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "33OFJ",
+                          "name": "p4i3",
+                          "fill": "#6B6A68",
+                          "content": "Сводная аналитика по сети",
+                          "fontFamily": "Outfit",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "rV8KC",
+                          "name": "p4i4",
+                          "fill": "#6B6A68",
+                          "content": "Перемещения между точками",
+                          "fontFamily": "Outfit",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "fho4K",
+                      "name": "p4btn",
+                      "width": "fill_container",
+                      "cornerRadius": 10,
+                      "stroke": {
+                        "thickness": 1,
+                        "fill": "#D1D0CD"
+                      },
+                      "padding": [
+                        12,
+                        0
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "Z7tdF",
+                          "name": "p4btnTxt",
+                          "fill": "#1A1918",
+                          "content": "Связаться с нами",
+                          "fontFamily": "Outfit",
+                          "fontSize": 14,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "auBtP",
+          "name": "How It Works",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 48,
+          "padding": 80,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "ZuzBC",
+              "name": "howTitle",
+              "fill": "#1A1918",
+              "content": "Запуск за 5 минут",
+              "textAlign": "center",
+              "fontFamily": "Outfit",
+              "fontSize": 36,
+              "fontWeight": "700",
+              "letterSpacing": -1
+            },
+            {
+              "type": "frame",
+              "id": "r1z5U",
+              "name": "stepsRow",
+              "width": "fill_container",
+              "gap": 24,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "RrmTI",
+                  "name": "step1",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 16,
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "#1A191808",
+                    "offset": {
+                      "x": 0,
+                      "y": 2
+                    },
+                    "blur": 12
+                  },
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 32,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "Qkzmj",
+                      "name": "s1c",
+                      "width": 48,
+                      "height": 48,
+                      "fill": "#C8F0D8",
+                      "cornerRadius": 100,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "1wAPM",
+                          "name": "s1n",
+                          "fill": "#3D8A5A",
+                          "content": "1",
+                          "fontFamily": "Outfit",
+                          "fontSize": 20,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "uS4RV",
+                      "name": "s1t",
+                      "fill": "#1A1918",
+                      "content": "Регистрация",
+                      "textAlign": "center",
+                      "fontFamily": "Outfit",
+                      "fontSize": 18,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "7zGCJ",
+                      "name": "s1d",
+                      "fill": "#6B6A68",
+                      "content": "Укажите название и тип заведения. Аккаунт создаётся мгновенно.",
+                      "textAlign": "center",
+                      "fontFamily": "Outfit",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "DRXMF",
+                  "name": "step2",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 16,
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "#1A191808",
+                    "offset": {
+                      "x": 0,
+                      "y": 2
+                    },
+                    "blur": 12
+                  },
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 32,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "FADLm",
+                      "name": "s2c",
+                      "width": 48,
+                      "height": 48,
+                      "fill": "#C8F0D8",
+                      "cornerRadius": 100,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "ZKulK",
+                          "name": "s2n",
+                          "fill": "#3D8A5A",
+                          "content": "2",
+                          "fontFamily": "Outfit",
+                          "fontSize": 20,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "lYYW5",
+                      "name": "s2t",
+                      "fill": "#1A1918",
+                      "content": "Настройка",
+                      "textAlign": "center",
+                      "fontFamily": "Outfit",
+                      "fontSize": 18,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "jJeyl",
+                      "name": "s2d",
+                      "fill": "#6B6A68",
+                      "content": "Добавьте меню, залы и сотрудников. Импорт из Excel за минуту.",
+                      "textAlign": "center",
+                      "fontFamily": "Outfit",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "rEmJM",
+                  "name": "step3",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 16,
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "#1A191808",
+                    "offset": {
+                      "x": 0,
+                      "y": 2
+                    },
+                    "blur": 12
+                  },
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 32,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "XQUf6",
+                      "name": "s3c",
+                      "width": 48,
+                      "height": 48,
+                      "fill": "#C8F0D8",
+                      "cornerRadius": 100,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "BwEml",
+                          "name": "s3n",
+                          "fill": "#3D8A5A",
+                          "content": "3",
+                          "fontFamily": "Outfit",
+                          "fontSize": 20,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "cZZjF",
+                      "name": "s3t",
+                      "fill": "#1A1918",
+                      "content": "Старт работы",
+                      "textAlign": "center",
+                      "fontFamily": "Outfit",
+                      "fontSize": 18,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "bDws8",
+                      "name": "s3d",
+                      "fill": "#6B6A68",
+                      "content": "Откройте смену и принимайте заказы. С любого устройства.",
+                      "textAlign": "center",
+                      "fontFamily": "Outfit",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "FV5xC",
+          "name": "Final CTA",
+          "width": "fill_container",
+          "fill": "#3D8A5A",
+          "layout": "vertical",
+          "gap": 24,
+          "padding": [
+            80,
+            120
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "TW6yH",
+              "name": "ctaTitle",
+              "fill": "#FFFFFF",
+              "content": "Готовы автоматизировать\nваше заведение?",
+              "textAlign": "center",
+              "fontFamily": "Outfit",
+              "fontSize": 40,
+              "fontWeight": "700",
+              "letterSpacing": -1
+            },
+            {
+              "type": "text",
+              "id": "DLF8O",
+              "name": "ctaSub",
+              "fill": "#FFFFFFCC",
+              "content": "Попробуйте бесплатно — без привязки карты и ограничений по времени",
+              "textAlign": "center",
+              "fontFamily": "Outfit",
+              "fontSize": 18,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "C4N6U",
+              "name": "ctaBtns",
+              "gap": 16,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "xq8h1",
+                  "name": "ctaB1",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 12,
+                  "padding": [
+                    16,
+                    32
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "V4tVk",
+                      "name": "ctaB1T",
+                      "fill": "#3D8A5A",
+                      "content": "Попробовать бесплатно",
+                      "fontFamily": "Outfit",
+                      "fontSize": 16,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "LFcqJ",
+                  "name": "ctaB2",
+                  "cornerRadius": 12,
+                  "stroke": {
+                    "thickness": 1,
+                    "fill": "#FFFFFF80"
+                  },
+                  "padding": [
+                    16,
+                    32
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "iY3uh",
+                      "name": "ctaB2T",
+                      "fill": "#FFFFFF",
+                      "content": "Запросить демо",
+                      "fontFamily": "Outfit",
+                      "fontSize": 16,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "3yWQT",
+          "name": "Footer",
+          "width": "fill_container",
+          "fill": "#1A1918",
+          "layout": "vertical",
+          "gap": 32,
+          "padding": [
+            48,
+            80
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "hLnDh",
+              "name": "ftTop",
+              "width": "fill_container",
+              "justifyContent": "space_between",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "RKxOL",
+                  "name": "ftLeft",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "4m16k",
+                      "name": "ftLogo",
+                      "fill": "#FFFFFF",
+                      "content": "Sellio",
+                      "fontFamily": "Outfit",
+                      "fontSize": 24,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "a7TV6",
+                      "name": "ftDesc",
+                      "fill": "#9C9B99",
+                      "content": "Облачная POS-система для кафе,\nресторанов, кальянных и фастфуда",
+                      "fontFamily": "Outfit",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "8htcN",
+                  "name": "ftMid",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "0DgNr",
+                      "name": "ftMidT",
+                      "fill": "#FFFFFF",
+                      "content": "Продукт",
+                      "fontFamily": "Outfit",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "cYovC",
+                      "name": "ftM1",
+                      "fill": "#9C9B99",
+                      "content": "Возможности",
+                      "fontFamily": "Outfit",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "SdSbC",
+                      "name": "ftM2",
+                      "fill": "#9C9B99",
+                      "content": "Тарифы",
+                      "fontFamily": "Outfit",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "Tt4ff",
+                      "name": "ftM3",
+                      "fill": "#9C9B99",
+                      "content": "Android-приложение",
+                      "fontFamily": "Outfit",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "eJy17",
+                      "name": "ftM4",
+                      "fill": "#9C9B99",
+                      "content": "Интеграции",
+                      "fontFamily": "Outfit",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "IuY17",
+                  "name": "ftRight",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "p1Tdh",
+                      "name": "ftRT",
+                      "fill": "#FFFFFF",
+                      "content": "Контакты",
+                      "fontFamily": "Outfit",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "OC2e5",
+                      "name": "ftR1",
+                      "fill": "#9C9B99",
+                      "content": "info@sellio.ru",
+                      "fontFamily": "Outfit",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "gAgly",
+                      "name": "ftR2",
+                      "fill": "#9C9B99",
+                      "content": "+7 (800) 000-00-00",
+                      "fontFamily": "Outfit",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "oUCtl",
+                      "name": "ftR3",
+                      "fill": "#9C9B99",
+                      "content": "Telegram: @sellio_support",
+                      "fontFamily": "Outfit",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "W58XA",
+              "name": "ftDivider",
+              "width": "fill_container",
+              "height": 1,
+              "fill": "#333333"
+            },
+            {
+              "type": "frame",
+              "id": "OemeI",
+              "name": "ftBottom",
+              "width": "fill_container",
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "k4wzK",
+                  "name": "ftCopy",
+                  "fill": "#6B6A68",
+                  "content": "© 2026 Sellio. Все права защищены.",
+                  "fontFamily": "Outfit",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "bzSaM",
+                  "name": "ftLegal",
+                  "fill": "#6B6A68",
+                  "content": "Политика конфиденциальности   Условия использования",
+                  "fontFamily": "Outfit",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "C9sRS",
+      "x": 1540,
+      "y": 0,
+      "name": "Partner Program Page",
+      "width": 1440,
+      "fill": "#F5F4F1",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "Zc7VU",
+          "name": "Header",
+          "width": "fill_container",
+          "padding": [
+            16,
+            80
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "CHFus",
+              "name": "logoGroup",
+              "gap": 10,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "QtAm1",
+                  "name": "hLogoI",
+                  "width": 32,
+                  "height": 32,
+                  "fill": "#3D8A5A",
+                  "cornerRadius": 8,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "bzc94",
+                      "name": "hLogoS",
+                      "fill": "#FFFFFF",
+                      "content": "S",
+                      "fontFamily": "Outfit",
+                      "fontSize": 18,
+                      "fontWeight": "700"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "OOiYS",
+                  "name": "hLogoT",
+                  "fill": "#1A1918",
+                  "content": "Sellio",
+                  "fontFamily": "Outfit",
+                  "fontSize": 22,
+                  "fontWeight": "700"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "g1ZCS",
+              "name": "nav",
+              "gap": 32,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "0IvAi",
+                  "name": "hN1",
+                  "fill": "#6B6A68",
+                  "content": "Возможности",
+                  "fontFamily": "Outfit",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "vQU9E",
+                  "name": "hN2",
+                  "fill": "#6B6A68",
+                  "content": "Тарифы",
+                  "fontFamily": "Outfit",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "QHK4c",
+                  "name": "hN3",
+                  "fill": "#3D8A5A",
+                  "content": "Партнёрам",
+                  "fontFamily": "Outfit",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "3KbO6",
+              "name": "actions",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "c234F",
+                  "name": "hLogin",
+                  "fill": "#1A1918",
+                  "content": "Войти",
+                  "fontFamily": "Outfit",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "frame",
+                  "id": "xPamQ",
+                  "name": "hBtn",
+                  "fill": "#3D8A5A",
+                  "cornerRadius": 10,
+                  "padding": [
+                    10,
+                    20
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "WOiV2",
+                      "name": "hBtnT",
+                      "fill": "#FFFFFF",
+                      "content": "Попробовать",
+                      "fontFamily": "Outfit",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "hSxGm",
+          "name": "Partner Hero",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 24,
+          "padding": [
+            80,
+            120
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "WC30r",
+              "name": "heroBadge",
+              "fill": "#C8F0D8",
+              "cornerRadius": 100,
+              "padding": [
+                8,
+                16
+              ],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "GjuGb",
+                  "name": "heroBadgeT",
+                  "fill": "#3D8A5A",
+                  "content": "Партнёрская программа",
+                  "fontFamily": "Outfit",
+                  "fontSize": 13,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "e86oP",
+              "name": "heroTitle",
+              "fill": "#1A1918",
+              "content": "Зарабатывайте 30%\nс каждого клиента",
+              "textAlign": "center",
+              "fontFamily": "Outfit",
+              "fontSize": 52,
+              "fontWeight": "700",
+              "letterSpacing": -2
+            },
+            {
+              "type": "text",
+              "id": "Wz3t4",
+              "name": "heroSub",
+              "fill": "#6B6A68",
+              "content": "Рекомендуйте Sellio владельцам кафе, ресторанов и кальянных.\nПолучайте 30% комиссии с каждой оплаты — каждый месяц, пока клиент активен.",
+              "textAlign": "center",
+              "fontFamily": "Outfit",
+              "fontSize": 18,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "5w75u",
+              "name": "heroBtns",
+              "gap": 16,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "AQZdN",
+                  "name": "hB1",
+                  "fill": "#3D8A5A",
+                  "cornerRadius": 12,
+                  "padding": [
+                    16,
+                    32
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "lw8sG",
+                      "name": "hB1T",
+                      "fill": "#FFFFFF",
+                      "content": "Стать партнёром",
+                      "fontFamily": "Outfit",
+                      "fontSize": 16,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "L5iZT",
+                  "name": "hB2",
+                  "cornerRadius": 12,
+                  "stroke": {
+                    "thickness": 1,
+                    "fill": "#D1D0CD"
+                  },
+                  "padding": [
+                    16,
+                    32
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "30nEx",
+                      "name": "hB2T",
+                      "fill": "#1A1918",
+                      "content": "Узнать подробнее",
+                      "fontFamily": "Outfit",
+                      "fontSize": 16,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "V8rl4",
+          "name": "How It Works",
+          "width": "fill_container",
+          "fill": "#FFFFFF",
+          "layout": "vertical",
+          "gap": 48,
+          "padding": 80,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "owsic",
+              "name": "howT",
+              "fill": "#1A1918",
+              "content": "Как это работает",
+              "textAlign": "center",
+              "fontFamily": "Outfit",
+              "fontSize": 36,
+              "fontWeight": "700",
+              "letterSpacing": -1
+            },
+            {
+              "type": "frame",
+              "id": "bTO0v",
+              "name": "stepsRow",
+              "width": "fill_container",
+              "gap": 32,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "lvcBz",
+                  "name": "st1",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 32,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "R8VYN",
+                      "name": "st1c",
+                      "width": 56,
+                      "height": 56,
+                      "fill": "#C8F0D8",
+                      "cornerRadius": 100,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "b47lL",
+                          "name": "st1n",
+                          "fill": "#3D8A5A",
+                          "content": "1",
+                          "fontFamily": "Outfit",
+                          "fontSize": 24,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "LJdLs",
+                      "name": "st1t",
+                      "fill": "#1A1918",
+                      "content": "Регистрация",
+                      "textAlign": "center",
+                      "fontFamily": "Outfit",
+                      "fontSize": 20,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "6vDBu",
+                      "name": "st1d",
+                      "fill": "#6B6A68",
+                      "content": "Заполните форму и получите\nуникальный реферальный код\nи персональную ссылку",
+                      "textAlign": "center",
+                      "fontFamily": "Outfit",
+                      "fontSize": 15,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "bth7L",
+                  "name": "st2",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 32,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "Ta89q",
+                      "name": "st2c",
+                      "width": 56,
+                      "height": 56,
+                      "fill": "#C8F0D8",
+                      "cornerRadius": 100,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "L0cA9",
+                          "name": "st2n",
+                          "fill": "#3D8A5A",
+                          "content": "2",
+                          "fontFamily": "Outfit",
+                          "fontSize": 24,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "bf1KI",
+                      "name": "st2t",
+                      "fill": "#1A1918",
+                      "content": "Привлечение",
+                      "textAlign": "center",
+                      "fontFamily": "Outfit",
+                      "fontSize": 20,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "XrFd4",
+                      "name": "st2d",
+                      "fill": "#6B6A68",
+                      "content": "Делитесь ссылкой с владельцами\nзаведений. Клиент получает\n1 бесплатный месяц при регистрации",
+                      "textAlign": "center",
+                      "fontFamily": "Outfit",
+                      "fontSize": 15,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "GK9z3",
+                  "name": "st3",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 32,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "z76Vh",
+                      "name": "st3c",
+                      "width": 56,
+                      "height": 56,
+                      "fill": "#C8F0D8",
+                      "cornerRadius": 100,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "PH0E7",
+                          "name": "st3n",
+                          "fill": "#3D8A5A",
+                          "content": "3",
+                          "fontFamily": "Outfit",
+                          "fontSize": 24,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "3xALd",
+                      "name": "st3t",
+                      "fill": "#1A1918",
+                      "content": "Заработок",
+                      "textAlign": "center",
+                      "fontFamily": "Outfit",
+                      "fontSize": 20,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "M3LhH",
+                      "name": "st3d",
+                      "fill": "#6B6A68",
+                      "content": "Получайте 30% от оплаты\nклиента каждый месяц.\nВыводите на карту или счёт",
+                      "textAlign": "center",
+                      "fontFamily": "Outfit",
+                      "fontSize": 15,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "nYEnv",
+          "name": "Earnings",
+          "width": "fill_container",
+          "gap": 60,
+          "padding": 80,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "a6bZF",
+              "name": "eLeft",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 20,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "cuCqM",
+                  "name": "eTitle",
+                  "fill": "#1A1918",
+                  "content": "Сколько можно\nзарабатывать",
+                  "fontFamily": "Outfit",
+                  "fontSize": 36,
+                  "fontWeight": "700",
+                  "letterSpacing": -1
+                },
+                {
+                  "type": "text",
+                  "id": "L4CPE",
+                  "name": "eDesc",
+                  "fill": "#6B6A68",
+                  "content": "Пример: вы привлекли 10 заведений на тариф Бизнес (3 990 ₽/мес).\nВаша комиссия — 30% = 1 197 ₽ с каждого клиента ежемесячно.",
+                  "fontFamily": "Outfit",
+                  "fontSize": 16,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "9Z1g0",
+                  "name": "eHL",
+                  "width": 320,
+                  "fill": "#C8F0D8",
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "gap": 4,
+                  "padding": [
+                    20,
+                    24
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "fI4Ge",
+                      "name": "eHLlabel",
+                      "fill": "#3D8A5A",
+                      "content": "Ваш доход с 10 клиентов",
+                      "fontFamily": "Outfit",
+                      "fontSize": 14,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "ui33L",
+                      "name": "eHLval",
+                      "fill": "#1A1918",
+                      "content": "11 970 ₽ / мес",
+                      "fontFamily": "Outfit",
+                      "fontSize": 32,
+                      "fontWeight": "700",
+                      "letterSpacing": -1
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "Vfhhx",
+              "name": "eRight",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "xKMfh",
+                  "name": "r1",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 12,
+                  "padding": [
+                    16,
+                    20
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "AH2y6",
+                      "name": "r1l",
+                      "fill": "#6B6A68",
+                      "content": "5 клиентов × Старт",
+                      "fontFamily": "Outfit",
+                      "fontSize": 15,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "wlQrh",
+                      "name": "r1r",
+                      "fill": "#1A1918",
+                      "content": "2 985 ₽/мес",
+                      "fontFamily": "Outfit",
+                      "fontSize": 15,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "O3wbH",
+                  "name": "r2",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 12,
+                  "padding": [
+                    16,
+                    20
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "iO8P3",
+                      "name": "r2l",
+                      "fill": "#6B6A68",
+                      "content": "10 клиентов × Бизнес",
+                      "fontFamily": "Outfit",
+                      "fontSize": 15,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "HtB2a",
+                      "name": "r2r",
+                      "fill": "#1A1918",
+                      "content": "11 970 ₽/мес",
+                      "fontFamily": "Outfit",
+                      "fontSize": 15,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "pCVRY",
+                  "name": "r3",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 12,
+                  "padding": [
+                    16,
+                    20
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "WZAZX",
+                      "name": "r3l",
+                      "fill": "#6B6A68",
+                      "content": "20 клиентов × Бизнес",
+                      "fontFamily": "Outfit",
+                      "fontSize": 15,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "shOcc",
+                      "name": "r3r",
+                      "fill": "#1A1918",
+                      "content": "23 940 ₽/мес",
+                      "fontFamily": "Outfit",
+                      "fontSize": 15,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "an44X",
+                  "name": "r4",
+                  "width": "fill_container",
+                  "fill": "#3D8A5A",
+                  "cornerRadius": 12,
+                  "padding": [
+                    16,
+                    20
+                  ],
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ypKMR",
+                      "name": "r4l",
+                      "fill": "#FFFFFFCC",
+                      "content": "50 клиентов × Бизнес",
+                      "fontFamily": "Outfit",
+                      "fontSize": 15,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "Dkiiu",
+                      "name": "r4r",
+                      "fill": "#FFFFFF",
+                      "content": "59 850 ₽/мес",
+                      "fontFamily": "Outfit",
+                      "fontSize": 15,
+                      "fontWeight": "700"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "qS8rO",
+          "name": "Conditions",
+          "width": "fill_container",
+          "fill": "#FFFFFF",
+          "layout": "vertical",
+          "gap": 48,
+          "padding": 80,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "liTZG",
+              "name": "condT",
+              "fill": "#1A1918",
+              "content": "Условия партнёрской программы",
+              "textAlign": "center",
+              "fontFamily": "Outfit",
+              "fontSize": 36,
+              "fontWeight": "700",
+              "letterSpacing": -1
+            },
+            {
+              "type": "frame",
+              "id": "S3LQI",
+              "name": "condGrid",
+              "width": "fill_container",
+              "gap": 24,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "XxySe",
+                  "name": "cP",
+                  "width": "fill_container",
+                  "fill": "#F5F4F1",
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 32,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "jmNVP",
+                      "name": "cPt",
+                      "fill": "#1A1918",
+                      "content": "Для партнёра",
+                      "fontFamily": "Outfit",
+                      "fontSize": 20,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "aEfp8",
+                      "name": "cPl",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 10,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "ZHQAa",
+                          "name": "cP1",
+                          "fill": "#6B6A68",
+                          "content": "30% комиссии с каждой оплаты клиента",
+                          "fontFamily": "Outfit",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "g81EI",
+                          "name": "cP2",
+                          "fill": "#6B6A68",
+                          "content": "Ежемесячные выплаты — пока клиент активен",
+                          "fontFamily": "Outfit",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "1nHsK",
+                          "name": "cP3",
+                          "fill": "#6B6A68",
+                          "content": "Персональный кабинет с аналитикой",
+                          "fontFamily": "Outfit",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "S04wW",
+                          "name": "cP4",
+                          "fill": "#6B6A68",
+                          "content": "Уникальная реферальная ссылка и код",
+                          "fontFamily": "Outfit",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "G4v0U",
+                          "name": "cP5",
+                          "fill": "#6B6A68",
+                          "content": "Вывод средств на карту или расчётный счёт",
+                          "fontFamily": "Outfit",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "IGtPh",
+                          "name": "cP6",
+                          "fill": "#6B6A68",
+                          "content": "Без ограничений по количеству рефералов",
+                          "fontFamily": "Outfit",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "hFCDZ",
+                  "name": "cC",
+                  "width": "fill_container",
+                  "fill": "#F5F4F1",
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 32,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "CJ07j",
+                      "name": "cCt",
+                      "fill": "#1A1918",
+                      "content": "Для клиента",
+                      "fontFamily": "Outfit",
+                      "fontSize": 20,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "isvD0",
+                      "name": "cCl",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 10,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "nJ0SM",
+                          "name": "cC1",
+                          "fill": "#6B6A68",
+                          "content": "1 бесплатный месяц на максимальном тарифе",
+                          "fontFamily": "Outfit",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "mI4u6",
+                          "name": "cC2",
+                          "fill": "#6B6A68",
+                          "content": "Полный доступ ко всем функциям системы",
+                          "fontFamily": "Outfit",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "RWrIz",
+                          "name": "cC3",
+                          "fill": "#6B6A68",
+                          "content": "Техническая поддержка с первого дня",
+                          "fontFamily": "Outfit",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "YSbEq",
+                          "name": "cC4",
+                          "fill": "#6B6A68",
+                          "content": "Android-приложение с оффлайн-режимом",
+                          "fontFamily": "Outfit",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "aCn24",
+                          "name": "cC5",
+                          "fill": "#6B6A68",
+                          "content": "Помощь в настройке и переносе данных",
+                          "fontFamily": "Outfit",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "5P5cL",
+                          "name": "cC6",
+                          "fill": "#6B6A68",
+                          "content": "Без привязки карты при регистрации",
+                          "fontFamily": "Outfit",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "J4HgE",
+          "name": "FAQ",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 40,
+          "padding": 80,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "N8iBC",
+              "name": "faqT",
+              "fill": "#1A1918",
+              "content": "Частые вопросы",
+              "textAlign": "center",
+              "fontFamily": "Outfit",
+              "fontSize": 36,
+              "fontWeight": "700",
+              "letterSpacing": -1
+            },
+            {
+              "type": "frame",
+              "id": "BgvbZ",
+              "name": "faqL",
+              "width": 800,
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "ReErD",
+                  "name": "q1",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 12,
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": [
+                    20,
+                    24
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "eWSUe",
+                      "name": "q1q",
+                      "fill": "#1A1918",
+                      "content": "Кто может стать партнёром?",
+                      "fontFamily": "Outfit",
+                      "fontSize": 16,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "qgLXy",
+                      "name": "q1a",
+                      "fill": "#6B6A68",
+                      "content": "Любой — консультант, интегратор, блогер, владелец заведения. Нет требований к опыту или квалификации.",
+                      "fontFamily": "Outfit",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "OfTyn",
+                  "name": "q2",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 12,
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": [
+                    20,
+                    24
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "XpAQN",
+                      "name": "q2q",
+                      "fill": "#1A1918",
+                      "content": "Как начисляется комиссия?",
+                      "fontFamily": "Outfit",
+                      "fontSize": 16,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "fNjeG",
+                      "name": "q2a",
+                      "fill": "#6B6A68",
+                      "content": "30% от суммы каждой оплаты привлечённого клиента. Комиссия начисляется автоматически каждый месяц, пока клиент оплачивает подписку.",
+                      "fontFamily": "Outfit",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "SyPJY",
+                  "name": "q3",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 12,
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": [
+                    20,
+                    24
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "rmGPF",
+                      "name": "q3q",
+                      "fill": "#1A1918",
+                      "content": "Как вывести заработанные средства?",
+                      "fontFamily": "Outfit",
+                      "fontSize": 16,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "P38wj",
+                      "name": "q3a",
+                      "fill": "#6B6A68",
+                      "content": "Через личный кабинет партнёра. Укажите реквизиты карты или расчётного счёта, подайте заявку — выплата в течение 3 рабочих дней.",
+                      "fontFamily": "Outfit",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "pJW8J",
+                  "name": "q4",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 12,
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": [
+                    20,
+                    24
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Ohn7H",
+                      "name": "q4q",
+                      "fill": "#1A1918",
+                      "content": "Что получает привлечённый клиент?",
+                      "fontFamily": "Outfit",
+                      "fontSize": 16,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "AocZc",
+                      "name": "q4a",
+                      "fill": "#6B6A68",
+                      "content": "1 бесплатный месяц на максимальном тарифе. Полный доступ ко всем функциям системы без ограничений.",
+                      "fontFamily": "Outfit",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "6ZiiX",
+          "name": "Partner CTA",
+          "width": "fill_container",
+          "fill": "#3D8A5A",
+          "layout": "vertical",
+          "gap": 24,
+          "padding": [
+            80,
+            120
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "GVpvP",
+              "name": "pctaT",
+              "fill": "#FFFFFF",
+              "content": "Начните зарабатывать\nуже сегодня",
+              "textAlign": "center",
+              "fontFamily": "Outfit",
+              "fontSize": 40,
+              "fontWeight": "700",
+              "letterSpacing": -1
+            },
+            {
+              "type": "text",
+              "id": "e3VS4",
+              "name": "pctaS",
+              "fill": "#FFFFFFCC",
+              "content": "Регистрация бесплатна. Получите реферальную ссылку за 2 минуты.",
+              "textAlign": "center",
+              "fontFamily": "Outfit",
+              "fontSize": 18,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "5csZR",
+              "name": "pctaBtn",
+              "fill": "#FFFFFF",
+              "cornerRadius": 12,
+              "padding": [
+                16,
+                40
+              ],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "BnT9W",
+                  "name": "pctaBtnT",
+                  "fill": "#3D8A5A",
+                  "content": "Стать партнёром",
+                  "fontFamily": "Outfit",
+                  "fontSize": 18,
+                  "fontWeight": "600"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "RLNHe",
+          "name": "Footer",
+          "width": "fill_container",
+          "fill": "#1A1918",
+          "layout": "vertical",
+          "gap": 32,
+          "padding": [
+            48,
+            80
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "h477g",
+              "name": "pftTop",
+              "width": "fill_container",
+              "justifyContent": "space_between",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "pBRns",
+                  "name": "pftL",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Ur5VK",
+                      "name": "pftLogo",
+                      "fill": "#FFFFFF",
+                      "content": "Sellio",
+                      "fontFamily": "Outfit",
+                      "fontSize": 24,
+                      "fontWeight": "700"
+                    },
+                    {
+                      "type": "text",
+                      "id": "Ap1jC",
+                      "name": "pftDesc",
+                      "fill": "#9C9B99",
+                      "content": "Облачная POS-система для кафе,\nресторанов, кальянных и фастфуда",
+                      "fontFamily": "Outfit",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "zpsqo",
+                  "name": "pftM",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "pL5xm",
+                      "name": "pftMt",
+                      "fill": "#FFFFFF",
+                      "content": "Партнёрам",
+                      "fontFamily": "Outfit",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "cxIhF",
+                      "name": "pftM1",
+                      "fill": "#9C9B99",
+                      "content": "Условия программы",
+                      "fontFamily": "Outfit",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "h0I1Z",
+                      "name": "pftM2",
+                      "fill": "#9C9B99",
+                      "content": "Личный кабинет",
+                      "fontFamily": "Outfit",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "z4sI9",
+                      "name": "pftM3",
+                      "fill": "#9C9B99",
+                      "content": "FAQ",
+                      "fontFamily": "Outfit",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "OxzAp",
+                  "name": "pftR",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "AWVA5",
+                      "name": "pftRt",
+                      "fill": "#FFFFFF",
+                      "content": "Контакты",
+                      "fontFamily": "Outfit",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "6gzLk",
+                      "name": "pftR1",
+                      "fill": "#9C9B99",
+                      "content": "partners@sellio.ru",
+                      "fontFamily": "Outfit",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "uroEE",
+                      "name": "pftR2",
+                      "fill": "#9C9B99",
+                      "content": "Telegram: @sellio_partners",
+                      "fontFamily": "Outfit",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ZfgXR",
+              "name": "pftDiv",
+              "width": "fill_container",
+              "height": 1,
+              "fill": "#333333"
+            },
+            {
+              "type": "frame",
+              "id": "u6kcP",
+              "name": "pftBot",
+              "width": "fill_container",
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "dKSOE",
+                  "name": "pftCopy",
+                  "fill": "#6B6A68",
+                  "content": "© 2026 Sellio. Все права защищены.",
+                  "fontFamily": "Outfit",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "p5lVe",
+                  "name": "pftLeg",
+                  "fill": "#6B6A68",
+                  "content": "Политика конфиденциальности   Условия использования",
+                  "fontFamily": "Outfit",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

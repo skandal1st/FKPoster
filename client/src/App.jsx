@@ -30,6 +30,7 @@ import Guests from './pages/admin/Guests';
 import IngredientGroups from './pages/admin/IngredientGroups';
 import Workshops from './pages/admin/Workshops';
 import HookahBOSLanding from './pages/HookahBOSLanding';
+import PartnerProgram from './pages/PartnerProgram';
 import ChainDashboard from './pages/chain/ChainDashboard';
 import ChainTenants from './pages/chain/ChainTenants';
 import ChainSales from './pages/chain/ChainSales';
@@ -184,6 +185,7 @@ function MainDomainApp() {
         <Route path="payouts" element={<PartnerPayouts />} />
       </Route>
       <Route path="/" element={<HookahBOSLanding />} />
+      <Route path="/partners" element={<PartnerProgram />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/accept-invite" element={<AcceptInvite />} />
