@@ -9,7 +9,11 @@ router.use(authMiddleware, checkSubscription);
 
 router.get('/current', async (req, res) => {
   const day = await get("SELECT * FROM register_days WHERE status = 'open' AND tenant_id = $1 ORDER BY id DESC LIMIT 1", [req.tenantId]);
-  res.json(day || null);
+  if (!day) return res.json(null);
+
+  day.cash_balance = (parseFloat(day.expected_cash) || 0) - (parseFloat(day.total_expenses_cash) || 0);
+  day.card_balance = (parseFloat(day.total_card) || 0) - (parseFloat(day.total_expenses_card) || 0);
+  res.json(day);
 });
 
 router.get('/history', async (req, res) => {

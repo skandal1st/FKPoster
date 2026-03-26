@@ -41,6 +41,7 @@ const modifierRoutes = require('./routes/modifiers');
 const uploadRoutes = require('./routes/upload');
 const partnerRoutes = require('./routes/partner');
 const loyaltyRoutes = require('./routes/loyalty');
+const cashOperationsRoutes = require('./routes/cashOperations');
 
 const app = express();
 
@@ -129,6 +130,7 @@ app.use('/api/egais', egaisRoutes);
 app.use('/api/marking', markingRoutes);
 app.use('/api/guests', guestRoutes);
 app.use('/api/loyalty', loyaltyRoutes);
+app.use('/api/cash-operations', cashOperationsRoutes);
 app.use('/api/ingredient-groups', ingredientGroupRoutes);
 app.use('/api/workshops', workshopRoutes);
 app.use('/api/chain', chainRoutes);

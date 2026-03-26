@@ -36,6 +36,7 @@ async function runMigrations() {
     require('./030_referral_program'),
     require('./031_update_plans'),
     require('./032_bonus_tiers'),
+    require('./033_cash_operations'),
   ];
 
   for (const migration of migrations) {

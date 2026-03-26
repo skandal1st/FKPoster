@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { usePosStore } from '../store/posStore';
 import toast from 'react-hot-toast';
 import { Plus, Minus, X, Banknote, CreditCard, Trash2, Receipt, Info, User, Printer, ArrowRightLeft, Users } from 'lucide-react';
+import { api } from '../api';
 import ReceiptModal from '../components/ReceiptModal';
 import TechCardPopover from '../components/TechCardPopover';
 import MarkingScanner from '../components/MarkingScanner';
@@ -46,6 +47,10 @@ export default function POS({ embedded = false, onClose }) {
   const [movePickerHall, setMovePickerHall] = useState(null);
   /** Товар с модификаторами, для которого показываем модальное окно */
   const [modifierProduct, setModifierProduct] = useState(null);
+  /** Расходная операция */
+  const [showExpenseModal, setShowExpenseModal] = useState(false);
+  const [expenseForm, setExpenseForm] = useState({ description: '', amount: '', payment_type: 'cash' });
+  const [expenseSubmitting, setExpenseSubmitting] = useState(false);
 
   useEffect(() => {
     loadCategories();
@@ -105,6 +110,29 @@ export default function POS({ embedded = false, onClose }) {
     const html = formatKitchenTicket({ ...currentOrder, items: enrichedItems }, printSettings);
     const kitchenTitle = currentOrder.table_label || (currentOrder.table_number ? `Стол ${currentOrder.table_number}` : `#${currentOrder.id}`);
     openPrintWindow(html, `Кухня - ${kitchenTitle}`, { width: printSettings?.receipt_width });
+  };
+
+  const handleExpenseSubmit = async () => {
+    const desc = (expenseForm.description || '').trim();
+    if (!desc) { toast.error('Введите описание'); return; }
+    const amt = parseFloat(expenseForm.amount);
+    if (!amt || amt <= 0) { toast.error('Введите сумму больше нуля'); return; }
+    setExpenseSubmitting(true);
+    try {
+      await api.post('/cash-operations', {
+        description: desc,
+        amount: amt,
+        payment_type: expenseForm.payment_type,
+        type: 'expense',
+      });
+      setShowExpenseModal(false);
+      setExpenseForm({ description: '', amount: '', payment_type: 'cash' });
+      toast.success('Расход добавлен');
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setExpenseSubmitting(false);
+    }
   };
 
   const handleNewOrder = async (tableId) => {
@@ -509,6 +537,16 @@ export default function POS({ embedded = false, onClose }) {
       {!embedded && (
       <div className="pos-bottom-bar no-print">
         <div className="pos-bottom-bar-label">Открытые заказы:</div>
+        {registerDay && (
+          <button
+            className="btn btn-ghost"
+            style={{ marginLeft: 8, padding: '3px 10px', fontSize: 12, flexShrink: 0 }}
+            onClick={() => setShowExpenseModal(true)}
+            title="Добавить расходную операцию"
+          >
+            <Minus size={13} /> Расход
+          </button>
+        )}
         {openOrders.map((order) => (
           <button
             key={order.id}
@@ -778,6 +816,71 @@ export default function POS({ embedded = false, onClose }) {
           onClose={() => { setShowMarkingScanner(false); setPendingPayment(null); }}
           onComplete={handleMarkingScanComplete}
         />
+      )}
+
+      {/* Модалка расходной операции */}
+      {showExpenseModal && (
+        <div className="modal-overlay" onClick={() => setShowExpenseModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 360 }}>
+            <div className="modal-header">
+              <h3 className="modal-title">Расходная операция</h3>
+              <button className="btn-icon" onClick={() => setShowExpenseModal(false)}><X size={18} /></button>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Описание *</label>
+              <input
+                className="form-input"
+                value={expenseForm.description}
+                onChange={(e) => setExpenseForm({ ...expenseForm, description: e.target.value })}
+                placeholder="Например: закупка расходников"
+                autoFocus
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Сумма *</label>
+              <input
+                className="form-input"
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={expenseForm.amount}
+                onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })}
+                placeholder="0"
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Тип оплаты</label>
+              <div style={{ display: 'flex', gap: 20, marginTop: 6 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                  <input
+                    type="radio"
+                    name="pos_exp_payment_type"
+                    value="cash"
+                    checked={expenseForm.payment_type === 'cash'}
+                    onChange={() => setExpenseForm({ ...expenseForm, payment_type: 'cash' })}
+                  />
+                  Наличные
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                  <input
+                    type="radio"
+                    name="pos_exp_payment_type"
+                    value="card"
+                    checked={expenseForm.payment_type === 'card'}
+                    onChange={() => setExpenseForm({ ...expenseForm, payment_type: 'card' })}
+                  />
+                  Карта
+                </label>
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button className="btn btn-ghost" onClick={() => setShowExpenseModal(false)}>Отмена</button>
+              <button className="btn btn-danger" onClick={handleExpenseSubmit} disabled={expenseSubmitting}>
+                {expenseSubmitting ? 'Сохранение...' : 'Добавить'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
