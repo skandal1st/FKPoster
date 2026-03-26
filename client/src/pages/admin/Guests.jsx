@@ -35,6 +35,7 @@ export default function Guests() {
     discount_type: 'percent',
     discount_value: 0,
     bonus_balance: 0,
+    bonus_rate_override: '',
   });
   const [detailGuest, setDetailGuest] = useState(null);
   const [stats, setStats] = useState(null);
@@ -62,7 +63,7 @@ export default function Guests() {
 
   const openNew = () => {
     setEditing(null);
-    setForm({ name: '', phone: '', discount_type: 'percent', discount_value: 0, bonus_balance: 0 });
+    setForm({ name: '', phone: '', discount_type: 'percent', discount_value: 0, bonus_balance: 0, bonus_rate_override: '' });
     setShowModal(true);
   };
 
@@ -74,6 +75,7 @@ export default function Guests() {
       discount_type: g.discount_type || 'percent',
       discount_value: g.discount_value ?? 0,
       bonus_balance: g.bonus_balance ?? 0,
+      bonus_rate_override: g.bonus_rate_override != null ? String(g.bonus_rate_override) : '',
     });
     setShowModal(true);
   };
@@ -85,6 +87,7 @@ export default function Guests() {
         toast.error('Укажите имя гостя');
         return;
       }
+      const bonusOverride = form.bonus_rate_override !== '' ? parseFloat(form.bonus_rate_override) : null;
       if (editing) {
         await api.put(`/guests/${editing.id}`, {
           name: nameStr,
@@ -92,6 +95,7 @@ export default function Guests() {
           discount_type: form.discount_type,
           discount_value: parseFloat(form.discount_value) || 0,
           bonus_balance: parseFloat(form.bonus_balance) || 0,
+          bonus_rate_override: bonusOverride,
         });
         toast.success('Гость обновлён');
       } else {
@@ -101,6 +105,7 @@ export default function Guests() {
           discount_type: form.discount_type,
           discount_value: parseFloat(form.discount_value) || 0,
           bonus_balance: parseFloat(form.bonus_balance) || 0,
+          bonus_rate_override: bonusOverride,
         });
         toast.success('Гость добавлен');
       }
@@ -162,7 +167,8 @@ export default function Guests() {
               <th>Имя</th>
               <th>Телефон</th>
               <th>Скидка</th>
-              <th>Бонусы</th>
+              <th>Бонусов</th>
+              <th>Потрачено</th>
               <th>Статус</th>
               <th></th>
             </tr>
@@ -173,7 +179,8 @@ export default function Guests() {
                 <td>{g.name}</td>
                 <td>{g.phone || '—'}</td>
                 <td>{discountLabel(g)}</td>
-                <td>{g.bonus_balance ? `${g.bonus_balance} ₽` : '—'}</td>
+                <td>{g.bonus_balance > 0 ? `${Number(g.bonus_balance).toFixed(0)} ₽` : '—'}</td>
+                <td>{g.total_spent > 0 ? `${Number(g.total_spent).toLocaleString('ru')} ₽` : '—'}</td>
                 <td>
                   {g.active !== false
                     ? <span className="badge badge-success">Активен</span>
@@ -251,6 +258,22 @@ export default function Guests() {
                 <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>К оплате</div>
                 <div style={{ fontSize: 20, fontWeight: 700 }}>{Number(stats.total_paid).toFixed(0)} ₽</div>
               </div>
+              {(stats.total_bonus_earned > 0 || stats.total_bonus_used > 0) && (
+                <>
+                  <div style={{ padding: 12, background: 'var(--bg-secondary)', borderRadius: 8 }}>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Начислено бонусов</div>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--accent)' }}>
+                      +{Number(stats.total_bonus_earned).toFixed(0)} ₽
+                    </div>
+                  </div>
+                  <div style={{ padding: 12, background: 'var(--bg-secondary)', borderRadius: 8 }}>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Списано бонусов</div>
+                    <div style={{ fontSize: 20, fontWeight: 700 }}>
+                      {Number(stats.total_bonus_used).toFixed(0)} ₽
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           ) : (
             <p style={{ color: 'var(--text-muted)' }}>Нет данных за выбранный период</p>
@@ -320,6 +343,22 @@ export default function Guests() {
                 value={form.bonus_balance}
                 onChange={(e) => setForm({ ...form, bonus_balance: e.target.value })}
               />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Персональный % начисления бонусов</label>
+              <input
+                className="form-input"
+                type="number"
+                min={0}
+                max={100}
+                step={0.5}
+                value={form.bonus_rate_override}
+                onChange={(e) => setForm({ ...form, bonus_rate_override: e.target.value })}
+                placeholder="Оставьте пустым — по уровню программы"
+              />
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+                Если задано, игнорирует уровни бонусной программы
+              </div>
             </div>
             <div className="modal-actions">
               <button className="btn btn-ghost" onClick={() => setShowModal(false)}>Отмена</button>

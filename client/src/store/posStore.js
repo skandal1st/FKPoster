@@ -333,7 +333,7 @@ export const usePosStore = create((set, get) => ({
     refreshPendingCount();
   },
 
-  closeOrder: async (paymentMethod, guestId = null, paidCash = null, paidCard = null) => {
+  closeOrder: async (paymentMethod, guestId = null, paidCash = null, paidCard = null, bonusSpend = 0) => {
     const { currentOrder } = get();
     if (!currentOrder) return;
 
@@ -344,6 +344,7 @@ export const usePosStore = create((set, get) => ({
       try {
         const body = { payment_method: paymentMethod };
         if (guestId) body.guest_id = guestId;
+        if (bonusSpend > 0) body.bonus_spend = bonusSpend;
         if (paymentMethod === 'mixed') {
           body.paid_cash = paidCash;
           body.paid_card = paidCard;
@@ -353,6 +354,7 @@ export const usePosStore = create((set, get) => ({
         get().loadOpenOrders();
         get().loadRegisterDay();
         get().loadProducts();
+        get().loadGuests();
         return order;
       } catch (err) {
         if (err instanceof OfflineError) {
@@ -378,6 +380,7 @@ export const usePosStore = create((set, get) => ({
     // Офлайн: закрыть заказ локально
     const body = { payment_method: paymentMethod };
     if (guestId) body.guest_id = guestId;
+    if (bonusSpend > 0) body.bonus_spend = bonusSpend;
     if (paymentMethod === 'mixed') {
       body.paid_cash = paidCash;
       body.paid_card = paidCard;

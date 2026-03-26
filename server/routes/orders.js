@@ -274,7 +274,7 @@ router.delete('/:id/items/:itemId', async (req, res) => {
 });
 
 router.post('/:id/close', async (req, res) => {
-  const { payment_method, guest_id, paid_cash, paid_card } = req.body;
+  const { payment_method, guest_id, paid_cash, paid_card, bonus_spend } = req.body;
   const order = await get("SELECT * FROM orders WHERE id = $1 AND status = 'open' AND tenant_id = $2", [req.params.id, req.tenantId]);
   if (!order) return res.status(400).json({ error: 'Заказ не найден или уже закрыт' });
 
@@ -288,10 +288,12 @@ router.post('/:id/close', async (req, res) => {
   const totalBeforeDiscount = items.reduce((sum, i) => sum + parseFloat(i.total || 0), 0);
   let discountAmount = 0;
   let finalGuestId = null;
+  let guestForBonus = null;
 
   if (guest_id) {
     const guest = await get('SELECT * FROM guests WHERE id = $1 AND tenant_id = $2 AND active = true', [guest_id, req.tenantId]);
     if (guest) {
+      guestForBonus = guest;
       finalGuestId = guest.id;
       if (guest.discount_type === 'percent') {
         const pct = Math.min(100, Math.max(0, parseFloat(guest.discount_value) || 0));
@@ -302,7 +304,27 @@ router.post('/:id/close', async (req, res) => {
     }
   }
 
-  const totalToPay = Math.max(0, totalBeforeDiscount - discountAmount);
+  // Расчёт бонусов: списание и начисление
+  let bonusUsed = 0;
+  let bonusEarned = 0;
+  if (guestForBonus) {
+    const afterDiscount = totalBeforeDiscount - discountAmount;
+    const requestedSpend = Math.max(0, parseFloat(bonus_spend) || 0);
+    bonusUsed = Math.floor(
+      Math.min(requestedSpend, parseFloat(guestForBonus.bonus_balance) || 0, afterDiscount) * 100
+    ) / 100;
+
+    const tiers = await all(
+      'SELECT * FROM loyalty_tiers WHERE tenant_id = $1 ORDER BY min_spent ASC',
+      [req.tenantId]
+    );
+    const { resolveGuestBonusRate } = require('../utils/resolveGuestBonusRate');
+    const bonusRate = resolveGuestBonusRate(guestForBonus, tiers);
+    const paidWithMoney = afterDiscount - bonusUsed;
+    bonusEarned = Math.floor(paidWithMoney * bonusRate / 100 * 100) / 100;
+  }
+
+  const totalToPay = Math.max(0, totalBeforeDiscount - discountAmount - bonusUsed);
 
   // Расчёт paid_cash / paid_card
   let finalPaidCash = 0;
@@ -428,13 +450,26 @@ router.post('/:id/close', async (req, res) => {
       }
     }
 
-    // Update order: итог к оплате, скидка, гость, paid_cash/paid_card
+    // Update order: итог к оплате, скидка, гость, paid_cash/paid_card, бонусы
     await tx.run(
       `UPDATE orders SET status = 'closed', payment_method = $1, closed_at = NOW(),
        total = $2, discount_amount = $3, total_before_discount = $4, guest_id = $5,
-       paid_cash = $6, paid_card = $7 WHERE id = $8`,
-      [payment_method, totalToPay, discountAmount, totalBeforeDiscount, finalGuestId, finalPaidCash, finalPaidCard, order.id]
+       paid_cash = $6, paid_card = $7, bonus_used = $8, bonus_earned = $9 WHERE id = $10`,
+      [payment_method, totalToPay, discountAmount, totalBeforeDiscount, finalGuestId, finalPaidCash, finalPaidCard, bonusUsed, bonusEarned, order.id]
     );
+
+    // Обновить бонусный баланс и статистику гостя
+    if (finalGuestId) {
+      await tx.run(
+        `UPDATE guests SET
+          bonus_balance = GREATEST(0, bonus_balance - $1 + $2),
+          total_spent = total_spent + $3,
+          visits_count = visits_count + 1,
+          updated_at = NOW()
+        WHERE id = $4 AND tenant_id = $5`,
+        [bonusUsed, bonusEarned, totalToPay, finalGuestId, req.tenantId]
+      );
+    }
 
     // Update register day totals (учитываем фактическую сумму к оплате)
     const day = await tx.get('SELECT * FROM register_days WHERE id = $1', [order.register_day_id]);

@@ -40,6 +40,7 @@ const fiscalDevicesRoutes = require('./routes/fiscalDevices');
 const modifierRoutes = require('./routes/modifiers');
 const uploadRoutes = require('./routes/upload');
 const partnerRoutes = require('./routes/partner');
+const loyaltyRoutes = require('./routes/loyalty');
 
 const app = express();
 
@@ -127,6 +128,7 @@ app.use('/api/integrations', integrationRoutes);
 app.use('/api/egais', egaisRoutes);
 app.use('/api/marking', markingRoutes);
 app.use('/api/guests', guestRoutes);
+app.use('/api/loyalty', loyaltyRoutes);
 app.use('/api/ingredient-groups', ingredientGroupRoutes);
 app.use('/api/workshops', workshopRoutes);
 app.use('/api/chain', chainRoutes);

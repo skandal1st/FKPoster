@@ -8,7 +8,7 @@ import {
   CreditCard, Users, BarChart3, LogOut, Boxes, LayoutDashboard,
   Building2, LogIn, ScanBarcode, Wine, Tag, UserCircle,
   ChevronLeft, ChevronRight, Link2, FileText, BookUser, PackageCheck, Truck, Receipt,
-  Sun, Moon, ShoppingBag
+  Sun, Moon, ShoppingBag, Gift
 } from 'lucide-react';
 import { CATALOG_TABS, STOCK_TABS, STAFF_TABS } from '../constants/tabGroups';
 
@@ -138,6 +138,9 @@ export default function Layout() {
               </NavLink>
               <NavLink to="/admin/guests" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Гости и скидки">
                 <UserCircle /><span className="sidebar-link-text">Гости и скидки</span>
+              </NavLink>
+              <NavLink to="/admin/loyalty" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} title="Бонусная программа">
+                <Gift /><span className="sidebar-link-text">Бонусная программа</span>
               </NavLink>
             </div>
           )}

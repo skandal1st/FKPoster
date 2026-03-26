@@ -27,6 +27,7 @@ import IntegrationSettings from './pages/admin/IntegrationSettings';
 import EgaisDocuments from './pages/admin/EgaisDocuments';
 import MarkedItems from './pages/admin/MarkedItems';
 import Guests from './pages/admin/Guests';
+import LoyaltySettings from './pages/admin/LoyaltySettings';
 import IngredientGroups from './pages/admin/IngredientGroups';
 import Workshops from './pages/admin/Workshops';
 import HookahBOSLanding from './pages/HookahBOSLanding';
@@ -152,6 +153,7 @@ function SubdomainApp() {
         <Route path="admin/egais" element={<AdminRoute><EgaisDocuments /></AdminRoute>} />
         <Route path="admin/marked-items" element={<AdminRoute><MarkedItems /></AdminRoute>} />
         <Route path="admin/guests" element={<AdminRoute><Guests /></AdminRoute>} />
+        <Route path="admin/loyalty" element={<AdminRoute><LoyaltySettings /></AdminRoute>} />
         <Route path="admin/schedule" element={<AdminRoute><Schedule /></AdminRoute>} />
         <Route path="admin/salary" element={<AdminRoute><Salary /></AdminRoute>} />
         <Route path="admin/edo" element={<AdminRoute><FeatureRoute feature="edo"><EdoDocumentsPage /></FeatureRoute></AdminRoute>} />
@@ -213,6 +215,7 @@ function MainDomainApp() {
         <Route path="admin/egais" element={<AdminRoute><EgaisDocuments /></AdminRoute>} />
         <Route path="admin/marked-items" element={<AdminRoute><MarkedItems /></AdminRoute>} />
         <Route path="admin/guests" element={<AdminRoute><Guests /></AdminRoute>} />
+        <Route path="admin/loyalty" element={<AdminRoute><LoyaltySettings /></AdminRoute>} />
         <Route path="admin/schedule" element={<AdminRoute><Schedule /></AdminRoute>} />
         <Route path="admin/salary" element={<AdminRoute><Salary /></AdminRoute>} />
         <Route path="admin/edo" element={<AdminRoute><FeatureRoute feature="edo"><EdoDocumentsPage /></FeatureRoute></AdminRoute>} />

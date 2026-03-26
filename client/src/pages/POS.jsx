@@ -36,6 +36,10 @@ export default function POS({ embedded = false, onClose }) {
   const [mixedCashAmount, setMixedCashAmount] = useState('');
   /** Выбранный гость для скидки */
   const [selectedGuest, setSelectedGuest] = useState(null);
+  /** Сумма бонусов к списанию */
+  const [bonusToSpend, setBonusToSpend] = useState(0);
+  /** Уровни бонусной программы */
+  const [loyaltyTiers, setLoyaltyTiers] = useState([]);
   /** Модалка выбора стола для пересадки */
   const [showMovePicker, setShowMovePicker] = useState(false);
   /** Выбранный зал в модалке пересадки */
@@ -53,6 +57,9 @@ export default function POS({ embedded = false, onClose }) {
     loadGuests();
     loadWorkshops();
     loadPrintSettings();
+    import('../api').then(({ api }) => {
+      api.get('/loyalty/tiers').then(setLoyaltyTiers).catch(() => {});
+    });
   }, []);
 
   const filteredProducts = selectedCategory
@@ -69,7 +76,23 @@ export default function POS({ embedded = false, onClose }) {
     }
     return Math.min(total, Math.max(0, parseFloat(selectedGuest.discount_value) || 0));
   })();
-  const totalToPay = Math.max(0, totalBeforeDiscount - discountAmount);
+  const afterDiscount = Math.max(0, totalBeforeDiscount - discountAmount);
+  const guestBonusBalance = parseFloat(selectedGuest?.bonus_balance) || 0;
+  const clampedBonus = Math.min(bonusToSpend, guestBonusBalance, afterDiscount);
+  const totalToPay = Math.max(0, afterDiscount - clampedBonus);
+
+  // Вычисляем текущую ставку начисления для предпросмотра
+  const effectiveBonusRate = (() => {
+    if (!selectedGuest) return 0;
+    if (selectedGuest.bonus_rate_override != null) return parseFloat(selectedGuest.bonus_rate_override) || 0;
+    if (loyaltyTiers.length === 0) return 0;
+    const spent = parseFloat(selectedGuest.total_spent) || 0;
+    const sorted = [...loyaltyTiers].sort((a, b) => parseFloat(b.min_spent) - parseFloat(a.min_spent));
+    const tier = sorted.find((t) => spent >= parseFloat(t.min_spent));
+    return tier ? parseFloat(tier.bonus_rate) || 0 : 0;
+  })();
+  const previewEarned = Math.floor(totalToPay * effectiveBonusRate / 100 * 100) / 100;
+
   const activeGuests = guests.filter((g) => g.active !== false);
 
   const handleKitchenPrint = () => {
@@ -129,7 +152,7 @@ export default function POS({ embedded = false, onClose }) {
   const handlePayConfirm = async () => {
     if (!paymentConfirm) return;
     const method = paymentConfirm;
-    const orderTotal = selectedGuest && discountAmount > 0 ? totalToPay : parseFloat(currentOrder.total);
+    const orderTotal = totalToPay;
 
     let paidCash = null;
     let paidCard = null;
@@ -144,9 +167,10 @@ export default function POS({ embedded = false, onClose }) {
 
     setPaymentConfirm(null);
     try {
-      const order = await closeOrder(method, selectedGuest?.id ?? null, paidCash, paidCard);
+      const order = await closeOrder(method, selectedGuest?.id ?? null, paidCash, paidCard, clampedBonus);
       setShowReceipt(order);
       setSelectedGuest(null);
+      setBonusToSpend(0);
       toast.success('Заказ оплачен');
       if (printSettings?.auto_print_receipt) {
         const html = formatReceipt(order, tenant, printSettings);
@@ -173,9 +197,10 @@ export default function POS({ embedded = false, onClose }) {
       const { method, paidCash, paidCard } = typeof pendingPayment === 'object' ? pendingPayment : { method: pendingPayment, paidCash: null, paidCard: null };
       setPendingPayment(null);
       try {
-        const order = await closeOrder(method, selectedGuest?.id ?? null, paidCash, paidCard);
+        const order = await closeOrder(method, selectedGuest?.id ?? null, paidCash, paidCard, clampedBonus);
         setShowReceipt(order);
         setSelectedGuest(null);
+        setBonusToSpend(0);
         toast.success('Заказ оплачен');
         if (printSettings?.auto_print_receipt) {
           const html = formatReceipt(order, tenant, printSettings);
@@ -310,7 +335,7 @@ export default function POS({ embedded = false, onClose }) {
         {currentOrder && (
           <div className="pos-guest-row" style={{ marginBottom: 8 }}>
             <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>
-              <User size={12} style={{ verticalAlign: 'middle', marginRight: 4 }} /> Гость (скидка)
+              <User size={12} style={{ verticalAlign: 'middle', marginRight: 4 }} /> Гость
             </label>
             <select
               className="form-input"
@@ -318,6 +343,7 @@ export default function POS({ embedded = false, onClose }) {
               onChange={(e) => {
                 const id = e.target.value ? Number(e.target.value) : null;
                 setSelectedGuest(id ? activeGuests.find((g) => g.id === id) ?? null : null);
+                setBonusToSpend(0);
               }}
               style={{ width: '100%', padding: '6px 8px', fontSize: 13 }}
             >
@@ -325,10 +351,44 @@ export default function POS({ embedded = false, onClose }) {
               {activeGuests.map((g) => (
                 <option key={g.id} value={g.id}>
                   {g.name}
-                  {g.discount_type === 'percent' ? ` (−${g.discount_value}%)` : ` (−${g.discount_value} ₽)`}
+                  {g.discount_type === 'percent' && g.discount_value > 0 ? ` (−${g.discount_value}%)` : ''}
+                  {g.discount_type === 'fixed' && g.discount_value > 0 ? ` (−${g.discount_value} ₽)` : ''}
                 </option>
               ))}
             </select>
+            {selectedGuest && (guestBonusBalance > 0 || effectiveBonusRate > 0) && (
+              <div style={{ marginTop: 6, padding: '8px 10px', background: 'var(--bg-secondary)', borderRadius: 6, fontSize: 13 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: guestBonusBalance > 0 ? 6 : 0 }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Бонусный баланс:</span>
+                  <strong>{guestBonusBalance.toFixed(0)} ₽</strong>
+                </div>
+                {guestBonusBalance > 0 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ color: 'var(--text-muted)', flex: 1 }}>Списать:</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={Math.min(guestBonusBalance, afterDiscount)}
+                      step={1}
+                      value={bonusToSpend || ''}
+                      onChange={(e) => {
+                        const val = Math.max(0, Math.min(parseFloat(e.target.value) || 0, guestBonusBalance, afterDiscount));
+                        setBonusToSpend(val);
+                      }}
+                      placeholder="0"
+                      style={{ width: 80, padding: '3px 6px', fontSize: 13, textAlign: 'right' }}
+                      className="form-input"
+                    />
+                    <span style={{ color: 'var(--text-muted)' }}>₽</span>
+                  </div>
+                )}
+                {effectiveBonusRate > 0 && (
+                  <div style={{ marginTop: 4, color: 'var(--accent)', fontSize: 12 }}>
+                    Начислится: +{previewEarned.toFixed(0)} бонусов ({effectiveBonusRate}%)
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -369,21 +429,29 @@ export default function POS({ embedded = false, onClose }) {
         {/* Total & pay */}
         {currentOrder && (
           <div className="pos-order-footer">
-            {selectedGuest && discountAmount > 0 ? (
+            {selectedGuest && (discountAmount > 0 || clampedBonus > 0) ? (
               <>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--text-muted)' }}>
                   <span>Без скидки:</span>
                   <span>{totalBeforeDiscount} ₽</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--accent)' }}>
-                  <span>Скидка ({selectedGuest.name}):</span>
-                  <span>−{discountAmount} ₽</span>
-                </div>
+                {discountAmount > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--accent)' }}>
+                    <span>Скидка ({selectedGuest.name}):</span>
+                    <span>−{discountAmount} ₽</span>
+                  </div>
+                )}
+                {clampedBonus > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--accent)' }}>
+                    <span>Бонусов списано:</span>
+                    <span>−{clampedBonus.toFixed(0)} ₽</span>
+                  </div>
+                )}
               </>
             ) : null}
             <div className="pos-order-total">
               <span>К оплате:</span>
-              <span>{selectedGuest && discountAmount > 0 ? totalToPay : currentOrder.total} ₽</span>
+              <span>{selectedGuest && (discountAmount > 0 || clampedBonus > 0) ? totalToPay : currentOrder.total} ₽</span>
             </div>
             <button className="btn btn-success pos-pay-btn" onClick={handlePayClick} style={{ width: '100%' }}>
               <Banknote size={18} /> Оплатить

@@ -17,7 +17,8 @@ function wrap(fn) {
 router.get('/', wrap(async (req, res) => {
   const { search } = req.query;
   let sql = `
-    SELECT id, name, phone, discount_type, discount_value, bonus_balance, active, created_at
+    SELECT id, name, phone, discount_type, discount_value, bonus_balance,
+           total_spent, visits_count, bonus_rate_override, active, created_at
     FROM guests
     WHERE tenant_id = $1
   `;
@@ -52,7 +53,9 @@ router.get('/:id/stats', wrap(async (req, res) => {
       COUNT(*)::int AS orders_count,
       SUM(COALESCE(o.total_before_discount, o.total + COALESCE(o.discount_amount, 0))) AS total_ordered,
       COALESCE(SUM(o.discount_amount), 0) AS total_discount,
-      COALESCE(SUM(o.total), 0) AS total_paid
+      COALESCE(SUM(o.total), 0) AS total_paid,
+      COALESCE(SUM(o.bonus_earned), 0) AS total_bonus_earned,
+      COALESCE(SUM(o.bonus_used), 0) AS total_bonus_used
     FROM orders o
     WHERE o.tenant_id = $1 AND o.guest_id = $2 AND o.status = 'closed'
   `;
@@ -76,23 +79,28 @@ router.get('/:id/stats', wrap(async (req, res) => {
     total_ordered: totalOrdered,
     total_discount: totalDiscount,
     total_paid: totalPaid,
+    total_bonus_earned: parseFloat(stats.total_bonus_earned) || 0,
+    total_bonus_used: parseFloat(stats.total_bonus_used) || 0,
   });
 }));
 
 /** Создать гостя — только админ */
 router.post('/', adminOnly, wrap(async (req, res) => {
-  const { name, phone, discount_type, discount_value, bonus_balance } = req.body;
+  const { name, phone, discount_type, discount_value, bonus_balance, bonus_rate_override } = req.body;
   const nameStr = typeof name === 'string' ? name.trim() : '';
   if (!nameStr) return res.status(400).json({ error: 'Укажите имя гостя' });
 
   const dtype = discount_type === 'fixed' ? 'fixed' : 'percent';
   const dval = Math.max(0, parseFloat(discount_value) || 0);
   const bonus = Math.max(0, parseFloat(bonus_balance) || 0);
+  const bonusOverride = bonus_rate_override != null && bonus_rate_override !== ''
+    ? Math.min(100, Math.max(0, parseFloat(bonus_rate_override) || 0))
+    : null;
 
   const result = await run(
-    `INSERT INTO guests (tenant_id, name, phone, discount_type, discount_value, bonus_balance, updated_at)
-     VALUES ($1, $2, $3, $4, $5, $6, NOW()) RETURNING id`,
-    [req.tenantId, nameStr, phone ? String(phone).trim() : null, dtype, dval, bonus]
+    `INSERT INTO guests (tenant_id, name, phone, discount_type, discount_value, bonus_balance, bonus_rate_override, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, NOW()) RETURNING id`,
+    [req.tenantId, nameStr, phone ? String(phone).trim() : null, dtype, dval, bonus, bonusOverride]
   );
   const guest = await get('SELECT * FROM guests WHERE id = $1', [result.id]);
   res.status(201).json(guest);
@@ -100,7 +108,7 @@ router.post('/', adminOnly, wrap(async (req, res) => {
 
 /** Обновить гостя — только админ */
 router.put('/:id', adminOnly, wrap(async (req, res) => {
-  const { name, phone, discount_type, discount_value, bonus_balance, active } = req.body;
+  const { name, phone, discount_type, discount_value, bonus_balance, active, bonus_rate_override } = req.body;
   const guest = await get('SELECT id FROM guests WHERE id = $1 AND tenant_id = $2', [req.params.id, req.tenantId]);
   if (!guest) return res.status(404).json({ error: 'Гость не найден' });
 
@@ -133,6 +141,13 @@ router.put('/:id', adminOnly, wrap(async (req, res) => {
   if (active !== undefined) {
     updates.push(`active = $${idx++}`);
     params.push(!!active);
+  }
+  if (bonus_rate_override !== undefined) {
+    updates.push(`bonus_rate_override = $${idx++}`);
+    const val = bonus_rate_override != null && bonus_rate_override !== ''
+      ? Math.min(100, Math.max(0, parseFloat(bonus_rate_override) || 0))
+      : null;
+    params.push(val);
   }
 
   if (updates.length === 0) {
