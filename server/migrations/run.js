@@ -37,6 +37,7 @@ async function runMigrations() {
     require('./031_update_plans'),
     require('./032_bonus_tiers'),
     require('./033_cash_operations'),
+    require('./034_supply_items_packaging'),
   ];
 
   for (const migration of migrations) {
