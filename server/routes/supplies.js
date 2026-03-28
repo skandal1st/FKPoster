@@ -77,4 +77,40 @@ router.post('/', async (req, res) => {
   res.json(result);
 });
 
+router.delete('/:id', async (req, res) => {
+  const supply = await get('SELECT * FROM supplies WHERE id = $1 AND tenant_id = $2', [req.params.id, req.tenantId]);
+  if (!supply) return res.status(404).json({ error: 'Поставка не найдена' });
+
+  await transaction(async (tx) => {
+    const items = await tx.all('SELECT * FROM supply_items WHERE supply_id = $1', [supply.id]);
+
+    // Откатываем изменения остатков и себестоимости
+    for (const item of items) {
+      const product = await tx.get('SELECT quantity, cost_price FROM products WHERE id = $1 AND tenant_id = $2', [item.product_id, req.tenantId]);
+      if (product) {
+        const currentQty = parseFloat(product.quantity);
+        const currentCost = parseFloat(product.cost_price);
+        const supplyQty = parseFloat(item.quantity);
+        const supplyCost = parseFloat(item.unit_cost);
+        const newQty = currentQty - supplyQty;
+
+        // Обратный пересчёт средневзвешенной себестоимости
+        const newCost = newQty > 0
+          ? (currentQty * currentCost - supplyQty * supplyCost) / newQty
+          : currentCost;
+
+        await tx.run(
+          'UPDATE products SET quantity = $1, cost_price = $2 WHERE id = $3 AND tenant_id = $4',
+          [Math.max(0, newQty), Math.max(0, Math.round(newCost * 100) / 100), item.product_id, req.tenantId]
+        );
+      }
+    }
+
+    await tx.run('DELETE FROM supply_items WHERE supply_id = $1', [supply.id]);
+    await tx.run('DELETE FROM supplies WHERE id = $1', [supply.id]);
+  });
+
+  res.json({ ok: true });
+});
+
 module.exports = router;

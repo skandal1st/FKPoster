@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { api } from '../../api';
 import toast from 'react-hot-toast';
-import { Plus, X, ChevronDown, ChevronRight, Download, ScanBarcode } from 'lucide-react';
+import { Plus, X, ChevronDown, ChevronRight, Download, ScanBarcode, Trash2 } from 'lucide-react';
 import { exportToCsv } from '../../utils/exportCsv';
 import MarkingScanner from '../../components/MarkingScanner';
 import ModalOverlay from '../../components/ModalOverlay';
@@ -106,6 +106,17 @@ export default function Supplies() {
     setForm({ ...form, items: form.items.filter((_, i) => i !== idx) });
   };
 
+  const deleteSupply = async (id) => {
+    if (!confirm('Удалить поставку? Остатки и себестоимость будут пересчитаны.')) return;
+    try {
+      await api.delete(`/supplies/${id}`);
+      toast.success('Поставка удалена');
+      load();
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
   const save = async () => {
     try {
       const items = form.items
@@ -190,6 +201,7 @@ export default function Supplies() {
               <th>Поставщик</th>
               <th>Сумма</th>
               <th>Кто принял</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -202,6 +214,16 @@ export default function Supplies() {
                   <td>{s.supplier || '—'}</td>
                   <td>{s.total} ₽</td>
                   <td>{s.user_name || '—'}</td>
+                  <td>
+                    <button
+                      className="btn-icon"
+                      title="Удалить поставку"
+                      onClick={(e) => { e.stopPropagation(); deleteSupply(s.id); }}
+                      style={{ color: 'var(--danger)' }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </td>
                 </tr>
                 {expanded === s.id && s.items?.map((item) => (
                   <tr key={`${s.id}-${item.id}`} style={{ background: 'var(--bg-tertiary)' }}>
