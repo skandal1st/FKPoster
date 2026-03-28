@@ -48,8 +48,9 @@ router.post('/', async (req, res) => {
       const expectedMarkedCount = markingType !== 'none' ? Math.ceil(item.quantity) : 0;
 
       await tx.run(
-        'INSERT INTO supply_items (supply_id, product_id, quantity, unit_cost, marking_type, expected_marked_count) VALUES ($1, $2, $3, $4, $5, $6)',
-        [supplyId, item.product_id, item.quantity, item.unit_cost, markingType, expectedMarkedCount]
+        'INSERT INTO supply_items (supply_id, product_id, quantity, unit_cost, marking_type, expected_marked_count, package_size, package_price, package_qty) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+        [supplyId, item.product_id, item.quantity, item.unit_cost, markingType, expectedMarkedCount,
+         item.package_size || null, item.package_price || null, item.package_qty || null]
       );
 
       const product = await tx.get('SELECT quantity, cost_price FROM products WHERE id = $1 AND tenant_id = $2', [item.product_id, req.tenantId]);
