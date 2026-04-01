@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import { isSubdomain } from './utils/subdomain';
@@ -12,6 +12,7 @@ import AcceptInvite from './pages/AcceptInvite';
 import PinLogin from './pages/PinLogin';
 import HallMap from './pages/HallMap';
 import FastPOS from './pages/FastPOS';
+import MobileHookahPOS from './pages/MobileHookahPOS';
 import Categories from './pages/admin/Categories';
 import Products from './pages/admin/Products';
 import Ingredients from './pages/admin/Ingredients';
@@ -118,7 +119,16 @@ function useNativeInit() {
 /** Выбор стартовой страницы по pos_mode тенанта */
 function PosIndexRoute() {
   const tenant = useAuthStore((s) => s.tenant);
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+
   if (tenant?.pos_mode === 'fast_pos') return <FastPOS />;
+  if (isMobile) return <MobileHookahPOS />;
   return <HallMap readOnly />;
 }
 
